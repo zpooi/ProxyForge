@@ -52,7 +52,7 @@ func (h *Handlers) saveSettings(r *http.Request) error {
 	}
 	for _, k := range keys {
 		v := r.FormValue(k)
-		if v == "" {
+		if v == "" && k != SettingProxyPassword {
 			continue
 		}
 		_ = h.DB.SetSetting(k, v)

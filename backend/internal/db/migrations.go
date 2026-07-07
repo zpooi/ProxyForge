@@ -25,14 +25,10 @@ const (
 )
 
 func (d *DB) SeedDefaultsIfEmpty(projectRoot string) error {
-	proxyPassword, err := randomPassword()
-	if err != nil {
-		return err
-	}
 	defaults := map[string]string{
 		SettingTargetAccountCount:   fmt.Sprint(DefaultProxyIPCount),
 		SettingAutoGeneration:       "on",
-		SettingProxyPassword:        proxyPassword,
+		SettingProxyPassword:        "",
 		SettingDedupIntervalSeconds: "600",
 		SettingProxyListenAddr:      "0.0.0.0",
 		SettingProxyPort:            "7843",
