@@ -19,13 +19,27 @@ import (
 // requests, CONNECT, and SOCKS5 username/password auth on the same TCP port.
 type mixedServer struct {
 	resolve func(username, password string) []*Tunnel
+	onUsage func(ProxyUsage)
 
 	ln     net.Listener
 	closed chan struct{}
 	wg     sync.WaitGroup
 }
 
-func startProxy(bindAddr string, port int, resolve func(string, string) []*Tunnel) (*mixedServer, error) {
+type proxySession struct {
+	username string
+	tunnels  []*Tunnel
+}
+
+type ProxyUsage struct {
+	ClientIP   string
+	Username   string
+	AccountTag string
+	UpBytes    int64
+	DownBytes  int64
+}
+
+func startProxy(bindAddr string, port int, resolve func(string, string) []*Tunnel, onUsage func(ProxyUsage)) (*mixedServer, error) {
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0"
 	}
@@ -36,6 +50,7 @@ func startProxy(bindAddr string, port int, resolve func(string, string) []*Tunne
 	}
 	s := &mixedServer{
 		resolve: resolve,
+		onUsage: onUsage,
 		ln:      ln,
 		closed:  make(chan struct{}),
 	}
@@ -88,6 +103,7 @@ func (s *mixedServer) Close() {
 func (s *mixedServer) handle(client net.Conn) {
 	defer client.Close()
 	_ = client.SetDeadline(time.Now().Add(30 * time.Second))
+	clientIP := remoteIP(client.RemoteAddr())
 
 	br := bufio.NewReader(client)
 	first, err := br.Peek(1)
@@ -96,15 +112,15 @@ func (s *mixedServer) handle(client net.Conn) {
 	}
 
 	if first[0] == 0x05 {
-		s.handleSOCKS5(client, br)
+		s.handleSOCKS5(client, br, clientIP)
 		return
 	}
-	s.handleHTTP(client, br)
+	s.handleHTTP(client, br, clientIP)
 }
 
 // ---------- SOCKS5 ----------
 
-func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader) {
+func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader, clientIP string) {
 	ver, err := br.ReadByte()
 	if err != nil || ver != 0x05 {
 		return
@@ -125,8 +141,8 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader) {
 	if _, err := client.Write([]byte{0x05, 0x02}); err != nil {
 		return
 	}
-	tunnels := s.socks5Auth(client, br)
-	if len(tunnels) == 0 {
+	session := s.socks5Auth(client, br)
+	if session == nil || len(session.tunnels) == 0 {
 		return
 	}
 
@@ -181,7 +197,7 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader) {
 	}
 
 	target := net.JoinHostPort(host, strconv.Itoa(port))
-	remote, tun, err := s.dialVia(tunnels, target)
+	remote, tun, err := s.dialVia(session.tunnels, target)
 	if err != nil {
 		s.socks5Reply(client, 0x05)
 		return
@@ -193,10 +209,10 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader) {
 	}
 
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, tun)
+	s.relay(client, br, remote, tun, session, clientIP)
 }
 
-func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader) []*Tunnel {
+func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader) *proxySession {
 	ver, err := br.ReadByte()
 	if err != nil || ver != 0x01 {
 		return nil
@@ -218,13 +234,14 @@ func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader) []*Tunnel {
 		return nil
 	}
 
-	tunnels := s.resolve(string(uname), string(passwd))
+	username := string(uname)
+	tunnels := s.resolve(username, string(passwd))
 	if len(tunnels) == 0 {
 		_, _ = client.Write([]byte{0x01, 0x01})
 		return nil
 	}
 	_, _ = client.Write([]byte{0x01, 0x00})
-	return tunnels
+	return &proxySession{username: username, tunnels: tunnels}
 }
 
 func (s *mixedServer) socks5Reply(client net.Conn, code byte) {
@@ -242,14 +259,14 @@ func bytesContains(items []byte, target byte) bool {
 
 // ---------- HTTP ----------
 
-func (s *mixedServer) handleHTTP(client net.Conn, br *bufio.Reader) {
+func (s *mixedServer) handleHTTP(client net.Conn, br *bufio.Reader, clientIP string) {
 	req, err := http.ReadRequest(br)
 	if err != nil {
 		return
 	}
 
-	tunnels := s.httpAuthTunnels(req)
-	if len(tunnels) == 0 {
+	session := s.httpAuthSession(req)
+	if session == nil || len(session.tunnels) == 0 {
 		resp := "HTTP/1.1 407 Proxy Authentication Required\r\n" +
 			"Proxy-Authenticate: Basic realm=\"proxyforge\"\r\n" +
 			"Content-Length: 0\r\n\r\n"
@@ -258,13 +275,13 @@ func (s *mixedServer) handleHTTP(client net.Conn, br *bufio.Reader) {
 	}
 
 	if req.Method == http.MethodConnect {
-		s.httpConnect(client, br, req.Host, tunnels)
+		s.httpConnect(client, br, req.Host, session, clientIP)
 		return
 	}
-	s.httpForward(client, br, req, tunnels)
+	s.httpForward(client, br, req, session, clientIP)
 }
 
-func (s *mixedServer) httpAuthTunnels(req *http.Request) []*Tunnel {
+func (s *mixedServer) httpAuthSession(req *http.Request) *proxySession {
 	auth := req.Header.Get("Proxy-Authorization")
 	const prefix = "Basic "
 	if !strings.HasPrefix(auth, prefix) {
@@ -278,14 +295,18 @@ func (s *mixedServer) httpAuthTunnels(req *http.Request) []*Tunnel {
 	if !ok {
 		return nil
 	}
-	return s.resolve(user, pass)
+	tunnels := s.resolve(user, pass)
+	if len(tunnels) == 0 {
+		return nil
+	}
+	return &proxySession{username: user, tunnels: tunnels}
 }
 
-func (s *mixedServer) httpConnect(client net.Conn, br *bufio.Reader, hostport string, tunnels []*Tunnel) {
+func (s *mixedServer) httpConnect(client net.Conn, br *bufio.Reader, hostport string, session *proxySession, clientIP string) {
 	if !strings.Contains(hostport, ":") {
 		hostport = hostport + ":443"
 	}
-	remote, tun, err := s.dialVia(tunnels, hostport)
+	remote, tun, err := s.dialVia(session.tunnels, hostport)
 	if err != nil {
 		_, _ = client.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
 		return
@@ -296,10 +317,10 @@ func (s *mixedServer) httpConnect(client net.Conn, br *bufio.Reader, hostport st
 		return
 	}
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, tun)
+	s.relay(client, br, remote, tun, session, clientIP)
 }
 
-func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.Request, tunnels []*Tunnel) {
+func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.Request, session *proxySession, clientIP string) {
 	host := req.Host
 	if host == "" {
 		host = req.URL.Host
@@ -307,7 +328,7 @@ func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.R
 	if !strings.Contains(host, ":") {
 		host = host + ":80"
 	}
-	remote, tun, err := s.dialVia(tunnels, host)
+	remote, tun, err := s.dialVia(session.tunnels, host)
 	if err != nil {
 		_, _ = client.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
 		return
@@ -322,7 +343,7 @@ func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.R
 		return
 	}
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, tun)
+	s.relay(client, br, remote, tun, session, clientIP)
 }
 
 // ---------- shared ----------
@@ -353,12 +374,15 @@ func (s *mixedServer) dialVia(tunnels []*Tunnel, target string) (net.Conn, *Tunn
 	return nil, nil, lastErr
 }
 
-func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, tun *Tunnel) {
+func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, tun *Tunnel, session *proxySession, clientIP string) {
 	done := make(chan struct{}, 2)
+	var upBytes int64
+	var downBytes int64
 
 	go func() {
 		n, _ := io.Copy(remote, br)
 		tun.txBytes.Add(n)
+		upBytes = n
 		if tc, ok := remote.(interface{ CloseWrite() error }); ok {
 			_ = tc.CloseWrite()
 		}
@@ -368,6 +392,7 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 	go func() {
 		n, _ := io.Copy(client, remote)
 		tun.rxBytes.Add(n)
+		downBytes = n
 		if tc, ok := client.(interface{ CloseWrite() error }); ok {
 			_ = tc.CloseWrite()
 		}
@@ -376,4 +401,29 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 
 	<-done
 	<-done
+
+	if s.onUsage != nil && tun != nil && (upBytes > 0 || downBytes > 0) {
+		username := ""
+		if session != nil {
+			username = session.username
+		}
+		s.onUsage(ProxyUsage{
+			ClientIP:   clientIP,
+			Username:   username,
+			AccountTag: tun.cfg.Tag,
+			UpBytes:    upBytes,
+			DownBytes:  downBytes,
+		})
+	}
+}
+
+func remoteIP(addr net.Addr) string {
+	if addr == nil {
+		return ""
+	}
+	host, _, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		return addr.String()
+	}
+	return host
 }

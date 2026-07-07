@@ -6,6 +6,7 @@ import {
 	check_outros,
 	create_component,
 	destroy_component,
+	destroy_each,
 	detach,
 	element,
 	empty,
@@ -17,6 +18,7 @@ import {
 	safe_not_equal,
 	set_data,
 	space,
+	svg_element,
 	text,
 	transition_in,
 	transition_out
@@ -25,9 +27,16 @@ import {
 import { onMount } from 'svelte';
 import StatCard from '../components/StatCard.js';
 import { fetchJSON } from '../lib/api.js';
-import { fmtBytes, fmtTime } from '../lib/format.js';
+import { fmtBps, fmtBytes, fmtTime } from '../lib/format.js';
 
-function create_else_block(ctx) {
+function get_each_context(ctx, list, i) {
+	const child_ctx = ctx.slice();
+	child_ctx[13] = list[i];
+	return child_ctx;
+}
+
+// (156:0) {:else}
+function create_else_block_2(ctx) {
 	let div;
 
 	return {
@@ -48,9 +57,9 @@ function create_else_block(ctx) {
 	};
 }
 
-// (32:20) 
+// (79:20) 
 function create_if_block_1(ctx) {
-	let div;
+	let div0;
 	let statcard0;
 	let t0;
 	let statcard1;
@@ -70,6 +79,34 @@ function create_if_block_1(ctx) {
 	let statcard8;
 	let t8;
 	let statcard9;
+	let t9;
+	let section0;
+	let div2;
+	let h30;
+	let t11;
+	let div1;
+	let span0;
+	let i0;
+	let t12;
+	let t13_value = fmtBps(/*latestSample*/ ctx[6].upBps) + "";
+	let t13;
+	let t14;
+	let span1;
+	let i1;
+	let t15;
+	let t16_value = fmtBps(/*latestSample*/ ctx[6].downBps) + "";
+	let t16;
+	let t17;
+	let div3;
+	let t18;
+	let section1;
+	let div4;
+	let t22;
+	let div5;
+	let table;
+	let thead;
+	let t36;
+	let tbody;
 	let current;
 
 	statcard0 = new StatCard({
@@ -134,20 +171,36 @@ function create_if_block_1(ctx) {
 			props: {
 				label: "后台状态",
 				value: /*dashboard*/ ctx[0].running ? '运行中' : '空闲',
-				sub: '上次：' + /*lastRun*/ ctx[3]
+				sub: '上次：' + /*lastRun*/ ctx[8]
 			}
 		});
 
 	statcard9 = new StatCard({
 			props: {
 				label: "下次自动检测",
-				value: /*nextRun*/ ctx[2]
+				value: /*nextRun*/ ctx[7]
 			}
 		});
 
+	function select_block_type_1(ctx, dirty) {
+		if (/*samples*/ ctx[1].length > 1) return create_if_block_3;
+		return create_else_block_1;
+	}
+
+	let current_block_type = select_block_type_1(ctx, -1);
+	let if_block0 = current_block_type(ctx);
+
+	function select_block_type_2(ctx, dirty) {
+		if (/*clients*/ ctx[3].length === 0) return create_if_block_2;
+		return create_else_block;
+	}
+
+	let current_block_type_1 = select_block_type_2(ctx, -1);
+	let if_block1 = current_block_type_1(ctx);
+
 	return {
 		c() {
-			div = element("div");
+			div0 = element("div");
 			create_component(statcard0.$$.fragment);
 			t0 = space();
 			create_component(statcard1.$$.fragment);
@@ -167,29 +220,109 @@ function create_if_block_1(ctx) {
 			create_component(statcard8.$$.fragment);
 			t8 = space();
 			create_component(statcard9.$$.fragment);
-			attr(div, "class", "dashboard-grid");
+			t9 = space();
+			section0 = element("section");
+			div2 = element("div");
+			h30 = element("h3");
+			h30.textContent = "实时流量";
+			t11 = space();
+			div1 = element("div");
+			span0 = element("span");
+			i0 = element("i");
+			t12 = text("上行 ");
+			t13 = text(t13_value);
+			t14 = space();
+			span1 = element("span");
+			i1 = element("i");
+			t15 = text("下行 ");
+			t16 = text(t16_value);
+			t17 = space();
+			div3 = element("div");
+			if_block0.c();
+			t18 = space();
+			section1 = element("section");
+			div4 = element("div");
+
+			div4.innerHTML = `<h3>最近使用者 IP</h3> 
+      <span class="section-sub">按最近访问排序</span>`;
+
+			t22 = space();
+			div5 = element("div");
+			table = element("table");
+			thead = element("thead");
+
+			thead.innerHTML = `<tr><th>使用者 IP</th> 
+            <th>代理账号</th> 
+            <th>WARP 节点</th> 
+            <th>上行</th> 
+            <th>下行</th> 
+            <th>连接次数</th> 
+            <th>最近使用</th></tr>`;
+
+			t36 = space();
+			tbody = element("tbody");
+			if_block1.c();
+			attr(div0, "class", "dashboard-grid");
+			attr(i0, "class", "dot up");
+			attr(i1, "class", "dot down");
+			attr(div1, "class", "traffic-summary");
+			attr(div2, "class", "section-header");
+			attr(div3, "class", "traffic-chart");
+			attr(section0, "class", "dashboard-section");
+			attr(div4, "class", "section-header");
+			attr(table, "class", "clients-table");
+			attr(div5, "class", "table-wrap compact");
+			attr(section1, "class", "dashboard-section");
 		},
 		m(target, anchor) {
-			insert(target, div, anchor);
-			mount_component(statcard0, div, null);
-			append(div, t0);
-			mount_component(statcard1, div, null);
-			append(div, t1);
-			mount_component(statcard2, div, null);
-			append(div, t2);
-			mount_component(statcard3, div, null);
-			append(div, t3);
-			mount_component(statcard4, div, null);
-			append(div, t4);
-			mount_component(statcard5, div, null);
-			append(div, t5);
-			mount_component(statcard6, div, null);
-			append(div, t6);
-			mount_component(statcard7, div, null);
-			append(div, t7);
-			mount_component(statcard8, div, null);
-			append(div, t8);
-			mount_component(statcard9, div, null);
+			insert(target, div0, anchor);
+			mount_component(statcard0, div0, null);
+			append(div0, t0);
+			mount_component(statcard1, div0, null);
+			append(div0, t1);
+			mount_component(statcard2, div0, null);
+			append(div0, t2);
+			mount_component(statcard3, div0, null);
+			append(div0, t3);
+			mount_component(statcard4, div0, null);
+			append(div0, t4);
+			mount_component(statcard5, div0, null);
+			append(div0, t5);
+			mount_component(statcard6, div0, null);
+			append(div0, t6);
+			mount_component(statcard7, div0, null);
+			append(div0, t7);
+			mount_component(statcard8, div0, null);
+			append(div0, t8);
+			mount_component(statcard9, div0, null);
+			insert(target, t9, anchor);
+			insert(target, section0, anchor);
+			append(section0, div2);
+			append(div2, h30);
+			append(div2, t11);
+			append(div2, div1);
+			append(div1, span0);
+			append(span0, i0);
+			append(span0, t12);
+			append(span0, t13);
+			append(div1, t14);
+			append(div1, span1);
+			append(span1, i1);
+			append(span1, t15);
+			append(span1, t16);
+			append(section0, t17);
+			append(section0, div3);
+			if_block0.m(div3, null);
+			insert(target, t18, anchor);
+			insert(target, section1, anchor);
+			append(section1, div4);
+			append(section1, t22);
+			append(section1, div5);
+			append(div5, table);
+			append(table, thead);
+			append(table, t36);
+			append(table, tbody);
+			if_block1.m(tbody, null);
 			current = true;
 		},
 		p(ctx, dirty) {
@@ -221,11 +354,37 @@ function create_if_block_1(ctx) {
 			statcard7.$set(statcard7_changes);
 			const statcard8_changes = {};
 			if (dirty & /*dashboard*/ 1) statcard8_changes.value = /*dashboard*/ ctx[0].running ? '运行中' : '空闲';
-			if (dirty & /*lastRun*/ 8) statcard8_changes.sub = '上次：' + /*lastRun*/ ctx[3];
+			if (dirty & /*lastRun*/ 256) statcard8_changes.sub = '上次：' + /*lastRun*/ ctx[8];
 			statcard8.$set(statcard8_changes);
 			const statcard9_changes = {};
-			if (dirty & /*nextRun*/ 4) statcard9_changes.value = /*nextRun*/ ctx[2];
+			if (dirty & /*nextRun*/ 128) statcard9_changes.value = /*nextRun*/ ctx[7];
 			statcard9.$set(statcard9_changes);
+			if ((!current || dirty & /*latestSample*/ 64) && t13_value !== (t13_value = fmtBps(/*latestSample*/ ctx[6].upBps) + "")) set_data(t13, t13_value);
+			if ((!current || dirty & /*latestSample*/ 64) && t16_value !== (t16_value = fmtBps(/*latestSample*/ ctx[6].downBps) + "")) set_data(t16, t16_value);
+
+			if (current_block_type === (current_block_type = select_block_type_1(ctx, dirty)) && if_block0) {
+				if_block0.p(ctx, dirty);
+			} else {
+				if_block0.d(1);
+				if_block0 = current_block_type(ctx);
+
+				if (if_block0) {
+					if_block0.c();
+					if_block0.m(div3, null);
+				}
+			}
+
+			if (current_block_type_1 === (current_block_type_1 = select_block_type_2(ctx, dirty)) && if_block1) {
+				if_block1.p(ctx, dirty);
+			} else {
+				if_block1.d(1);
+				if_block1 = current_block_type_1(ctx);
+
+				if (if_block1) {
+					if_block1.c();
+					if_block1.m(tbody, null);
+				}
+			}
 		},
 		i(local) {
 			if (current) return;
@@ -255,7 +414,7 @@ function create_if_block_1(ctx) {
 			current = false;
 		},
 		d(detaching) {
-			if (detaching) detach(div);
+			if (detaching) detach(div0);
 			destroy_component(statcard0);
 			destroy_component(statcard1);
 			destroy_component(statcard2);
@@ -266,11 +425,17 @@ function create_if_block_1(ctx) {
 			destroy_component(statcard7);
 			destroy_component(statcard8);
 			destroy_component(statcard9);
+			if (detaching) detach(t9);
+			if (detaching) detach(section0);
+			if_block0.d();
+			if (detaching) detach(t18);
+			if (detaching) detach(section1);
+			if_block1.d();
 		}
 	};
 }
 
-// (30:0) {#if error}
+// (77:0) {#if error}
 function create_if_block(ctx) {
 	let div;
 	let t0;
@@ -280,7 +445,7 @@ function create_if_block(ctx) {
 		c() {
 			div = element("div");
 			t0 = text("加载失败：");
-			t1 = text(/*error*/ ctx[1]);
+			t1 = text(/*error*/ ctx[2]);
 			attr(div, "class", "alert");
 		},
 		m(target, anchor) {
@@ -289,12 +454,276 @@ function create_if_block(ctx) {
 			append(div, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*error*/ 2) set_data(t1, /*error*/ ctx[1]);
+			if (dirty & /*error*/ 4) set_data(t1, /*error*/ ctx[2]);
 		},
 		i: noop,
 		o: noop,
 		d(detaching) {
 			if (detaching) detach(div);
+		}
+	};
+}
+
+// (110:6) {:else}
+function create_else_block_1(ctx) {
+	let div;
+
+	return {
+		c() {
+			div = element("div");
+			div.textContent = "等待下一次统计采样";
+			attr(div, "class", "chart-empty");
+		},
+		m(target, anchor) {
+			insert(target, div, anchor);
+		},
+		p: noop,
+		d(detaching) {
+			if (detaching) detach(div);
+		}
+	};
+}
+
+// (102:6) {#if samples.length > 1}
+function create_if_block_3(ctx) {
+	let svg;
+	let line0;
+	let line0_y__value;
+	let line1;
+	let line1_y__value;
+	let line1_x__value;
+	let line1_y__value_1;
+	let path0;
+	let path0_d_value;
+	let path1;
+	let path2;
+	let svg_viewBox_value;
+
+	return {
+		c() {
+			svg = svg_element("svg");
+			line0 = svg_element("line");
+			line1 = svg_element("line");
+			path0 = svg_element("path");
+			path1 = svg_element("path");
+			path2 = svg_element("path");
+			attr(line0, "x1", chartPad);
+			attr(line0, "y1", chartPad);
+			attr(line0, "x2", chartPad);
+			attr(line0, "y2", line0_y__value = chartHeight - chartPad);
+			attr(line1, "x1", chartPad);
+			attr(line1, "y1", line1_y__value = chartHeight - chartPad);
+			attr(line1, "x2", line1_x__value = chartWidth - chartPad);
+			attr(line1, "y2", line1_y__value_1 = chartHeight - chartPad);
+			attr(path0, "class", "area down");
+			attr(path0, "d", path0_d_value = `${/*downPath*/ ctx[4]} L ${chartWidth - chartPad} ${chartHeight - chartPad} L ${chartPad} ${chartHeight - chartPad} Z`);
+			attr(path1, "class", "line down");
+			attr(path1, "d", /*downPath*/ ctx[4]);
+			attr(path2, "class", "line up");
+			attr(path2, "d", /*upPath*/ ctx[5]);
+			attr(svg, "viewBox", svg_viewBox_value = `0 0 ${chartWidth} ${chartHeight}`);
+			attr(svg, "role", "img");
+			attr(svg, "aria-label", "实时流量统计图");
+		},
+		m(target, anchor) {
+			insert(target, svg, anchor);
+			append(svg, line0);
+			append(svg, line1);
+			append(svg, path0);
+			append(svg, path1);
+			append(svg, path2);
+		},
+		p(ctx, dirty) {
+			if (dirty & /*downPath*/ 16 && path0_d_value !== (path0_d_value = `${/*downPath*/ ctx[4]} L ${chartWidth - chartPad} ${chartHeight - chartPad} L ${chartPad} ${chartHeight - chartPad} Z`)) {
+				attr(path0, "d", path0_d_value);
+			}
+
+			if (dirty & /*downPath*/ 16) {
+				attr(path1, "d", /*downPath*/ ctx[4]);
+			}
+
+			if (dirty & /*upPath*/ 32) {
+				attr(path2, "d", /*upPath*/ ctx[5]);
+			}
+		},
+		d(detaching) {
+			if (detaching) detach(svg);
+		}
+	};
+}
+
+// (139:10) {:else}
+function create_else_block(ctx) {
+	let each_1_anchor;
+	let each_value = /*clients*/ ctx[3];
+	let each_blocks = [];
+
+	for (let i = 0; i < each_value.length; i += 1) {
+		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+	}
+
+	return {
+		c() {
+			for (let i = 0; i < each_blocks.length; i += 1) {
+				each_blocks[i].c();
+			}
+
+			each_1_anchor = empty();
+		},
+		m(target, anchor) {
+			for (let i = 0; i < each_blocks.length; i += 1) {
+				if (each_blocks[i]) {
+					each_blocks[i].m(target, anchor);
+				}
+			}
+
+			insert(target, each_1_anchor, anchor);
+		},
+		p(ctx, dirty) {
+			if (dirty & /*fmtTime, clients, fmtBytes*/ 8) {
+				each_value = /*clients*/ ctx[3];
+				let i;
+
+				for (i = 0; i < each_value.length; i += 1) {
+					const child_ctx = get_each_context(ctx, each_value, i);
+
+					if (each_blocks[i]) {
+						each_blocks[i].p(child_ctx, dirty);
+					} else {
+						each_blocks[i] = create_each_block(child_ctx);
+						each_blocks[i].c();
+						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
+					}
+				}
+
+				for (; i < each_blocks.length; i += 1) {
+					each_blocks[i].d(1);
+				}
+
+				each_blocks.length = each_value.length;
+			}
+		},
+		d(detaching) {
+			destroy_each(each_blocks, detaching);
+			if (detaching) detach(each_1_anchor);
+		}
+	};
+}
+
+// (135:10) {#if clients.length === 0}
+function create_if_block_2(ctx) {
+	let tr;
+
+	return {
+		c() {
+			tr = element("tr");
+			tr.innerHTML = `<td colspan="7">暂时没有代理使用记录</td>`;
+		},
+		m(target, anchor) {
+			insert(target, tr, anchor);
+		},
+		p: noop,
+		d(detaching) {
+			if (detaching) detach(tr);
+		}
+	};
+}
+
+// (140:12) {#each clients as client}
+function create_each_block(ctx) {
+	let tr;
+	let td0;
+	let code;
+	let t0_value = (/*client*/ ctx[13].client_ip || '-') + "";
+	let t0;
+	let t1;
+	let td1;
+	let t2_value = (/*client*/ ctx[13].username || '-') + "";
+	let t2;
+	let t3;
+	let td2;
+	let t4_value = (/*client*/ ctx[13].account_tag || '-') + "";
+	let t4;
+	let t5;
+	let td3;
+	let t6_value = fmtBytes(/*client*/ ctx[13].total_up || 0) + "";
+	let t6;
+	let t7;
+	let td4;
+	let t8_value = fmtBytes(/*client*/ ctx[13].total_down || 0) + "";
+	let t8;
+	let t9;
+	let td5;
+	let t10_value = (/*client*/ ctx[13].hit_count || 0) + "";
+	let t10;
+	let t11;
+	let td6;
+	let t12_value = fmtTime(/*client*/ ctx[13].last_seen_at, '-') + "";
+	let t12;
+	let t13;
+
+	return {
+		c() {
+			tr = element("tr");
+			td0 = element("td");
+			code = element("code");
+			t0 = text(t0_value);
+			t1 = space();
+			td1 = element("td");
+			t2 = text(t2_value);
+			t3 = space();
+			td2 = element("td");
+			t4 = text(t4_value);
+			t5 = space();
+			td3 = element("td");
+			t6 = text(t6_value);
+			t7 = space();
+			td4 = element("td");
+			t8 = text(t8_value);
+			t9 = space();
+			td5 = element("td");
+			t10 = text(t10_value);
+			t11 = space();
+			td6 = element("td");
+			t12 = text(t12_value);
+			t13 = space();
+		},
+		m(target, anchor) {
+			insert(target, tr, anchor);
+			append(tr, td0);
+			append(td0, code);
+			append(code, t0);
+			append(tr, t1);
+			append(tr, td1);
+			append(td1, t2);
+			append(tr, t3);
+			append(tr, td2);
+			append(td2, t4);
+			append(tr, t5);
+			append(tr, td3);
+			append(td3, t6);
+			append(tr, t7);
+			append(tr, td4);
+			append(td4, t8);
+			append(tr, t9);
+			append(tr, td5);
+			append(td5, t10);
+			append(tr, t11);
+			append(tr, td6);
+			append(td6, t12);
+			append(tr, t13);
+		},
+		p(ctx, dirty) {
+			if (dirty & /*clients*/ 8 && t0_value !== (t0_value = (/*client*/ ctx[13].client_ip || '-') + "")) set_data(t0, t0_value);
+			if (dirty & /*clients*/ 8 && t2_value !== (t2_value = (/*client*/ ctx[13].username || '-') + "")) set_data(t2, t2_value);
+			if (dirty & /*clients*/ 8 && t4_value !== (t4_value = (/*client*/ ctx[13].account_tag || '-') + "")) set_data(t4, t4_value);
+			if (dirty & /*clients*/ 8 && t6_value !== (t6_value = fmtBytes(/*client*/ ctx[13].total_up || 0) + "")) set_data(t6, t6_value);
+			if (dirty & /*clients*/ 8 && t8_value !== (t8_value = fmtBytes(/*client*/ ctx[13].total_down || 0) + "")) set_data(t8, t8_value);
+			if (dirty & /*clients*/ 8 && t10_value !== (t10_value = (/*client*/ ctx[13].hit_count || 0) + "")) set_data(t10, t10_value);
+			if (dirty & /*clients*/ 8 && t12_value !== (t12_value = fmtTime(/*client*/ ctx[13].last_seen_at, '-') + "")) set_data(t12, t12_value);
+		},
+		d(detaching) {
+			if (detaching) detach(tr);
 		}
 	};
 }
@@ -306,11 +735,11 @@ function create_fragment(ctx) {
 	let if_block;
 	let if_block_anchor;
 	let current;
-	const if_block_creators = [create_if_block, create_if_block_1, create_else_block];
+	const if_block_creators = [create_if_block, create_if_block_1, create_else_block_2];
 	const if_blocks = [];
 
 	function select_block_type(ctx, dirty) {
-		if (/*error*/ ctx[1]) return 0;
+		if (/*error*/ ctx[2]) return 0;
 		if (/*dashboard*/ ctx[0]) return 1;
 		return 2;
 	}
@@ -378,19 +807,68 @@ function create_fragment(ctx) {
 	};
 }
 
+const chartWidth = 640;
+const chartHeight = 180;
+const chartPad = 18;
+const maxSamples = 36;
+
 function instance($$self, $$props, $$invalidate) {
 	let lastRun;
 	let nextRun;
+	let latestSample;
+	let maxBps;
+	let upPath;
+	let downPath;
+	let clients;
 	let dashboard = null;
 	let error = '';
+	let samples = [];
 
 	async function loadDashboard() {
 		try {
-			$$invalidate(0, dashboard = await fetchJSON('/api/dashboard/json'));
-			$$invalidate(1, error = '');
+			const data = await fetchJSON('/api/dashboard/json');
+			$$invalidate(0, dashboard = data);
+			appendTrafficSample(data);
+			$$invalidate(2, error = '');
 		} catch(err) {
-			$$invalidate(1, error = err.message);
+			$$invalidate(2, error = err.message);
 		}
+	}
+
+	function appendTrafficSample(data) {
+		const at = new Date(data.now || Date.now()).getTime();
+		if (!Number.isFinite(at)) return;
+
+		const next = {
+			at,
+			totalUp: Number(data.total_up || 0),
+			totalDown: Number(data.total_down || 0),
+			upBps: 0,
+			downBps: 0
+		};
+
+		const prev = samples[samples.length - 1];
+		if (prev && at <= prev.at) return;
+
+		if (prev) {
+			const seconds = Math.max(1, (at - prev.at) / 1000);
+			next.upBps = Math.max(0, (next.totalUp - prev.totalUp) / seconds);
+			next.downBps = Math.max(0, (next.totalDown - prev.totalDown) / seconds);
+		}
+
+		$$invalidate(1, samples = [...samples, next].slice(-maxSamples));
+	}
+
+	function chartPath(key, maxValue) {
+		if (samples.length < 2) return '';
+		const usableWidth = chartWidth - chartPad * 2;
+		const usableHeight = chartHeight - chartPad * 2;
+
+		return samples.map((item, index) => {
+			const x = chartPad + usableWidth * index / Math.max(1, samples.length - 1);
+			const y = chartHeight - chartPad - Math.min(item[key], maxValue) / maxValue * usableHeight;
+			return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+		}).join(' ');
 	}
 
 	onMount(() => {
@@ -401,15 +879,46 @@ function instance($$self, $$props, $$invalidate) {
 
 	$$self.$$.update = () => {
 		if ($$self.$$.dirty & /*dashboard*/ 1) {
-			$: $$invalidate(3, lastRun = dashboard ? fmtTime(dashboard.last_run_at, '从未') : '');
+			$: $$invalidate(8, lastRun = dashboard ? fmtTime(dashboard.last_run_at, '从未') : '');
 		}
 
 		if ($$self.$$.dirty & /*dashboard*/ 1) {
-			$: $$invalidate(2, nextRun = dashboard ? fmtTime(dashboard.next_run_at, '-') : '');
+			$: $$invalidate(7, nextRun = dashboard ? fmtTime(dashboard.next_run_at, '-') : '');
+		}
+
+		if ($$self.$$.dirty & /*samples*/ 2) {
+			$: $$invalidate(6, latestSample = samples[samples.length - 1] || { upBps: 0, downBps: 0 });
+		}
+
+		if ($$self.$$.dirty & /*samples*/ 2) {
+			$: $$invalidate(9, maxBps = Math.max(1, ...samples.map(item => Math.max(item.upBps, item.downBps))));
+		}
+
+		if ($$self.$$.dirty & /*maxBps*/ 512) {
+			$: $$invalidate(5, upPath = chartPath('upBps', maxBps));
+		}
+
+		if ($$self.$$.dirty & /*maxBps*/ 512) {
+			$: $$invalidate(4, downPath = chartPath('downBps', maxBps));
+		}
+
+		if ($$self.$$.dirty & /*dashboard*/ 1) {
+			$: $$invalidate(3, clients = dashboard?.clients || []);
 		}
 	};
 
-	return [dashboard, error, nextRun, lastRun];
+	return [
+		dashboard,
+		samples,
+		error,
+		clients,
+		downPath,
+		upPath,
+		latestSample,
+		nextRun,
+		lastRun,
+		maxBps
+	];
 }
 
 class Dashboard extends SvelteComponent {

@@ -163,6 +163,102 @@ select {
   gap: 12px;
 }
 
+.dashboard-section {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid #e0e6dd;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(38,51,44,0.05);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e7ece4;
+}
+
+.section-header h3 {
+  font-size: 16px;
+  color: #1d261f;
+  font-weight: 700;
+}
+
+.section-sub {
+  color: #718075;
+  font-size: 12px;
+}
+
+.traffic-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #4f5d52;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.traffic-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.dot.up { background: #2f765d; }
+.dot.down { background: #2b5c8a; }
+
+.traffic-chart {
+  width: 100%;
+  min-height: 220px;
+  padding: 14px 16px 16px;
+}
+
+.traffic-chart svg {
+  width: 100%;
+  height: 220px;
+  display: block;
+}
+
+.traffic-chart line {
+  stroke: #d8e1d5;
+  stroke-width: 1;
+}
+
+.traffic-chart .line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.traffic-chart .line.up { stroke: #2f765d; }
+.traffic-chart .line.down { stroke: #2b5c8a; }
+
+.traffic-chart .area.down {
+  fill: rgba(43,92,138,0.10);
+  stroke: none;
+}
+
+.chart-empty {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718075;
+  background: #f8faf6;
+  border-radius: 6px;
+}
+
 .stat-card {
   min-height: 96px;
   background: #fff;
@@ -199,6 +295,16 @@ select {
   box-shadow: 0 1px 2px rgba(38,51,44,0.05);
 }
 
+.dashboard-section .table-wrap {
+  border: 0;
+  border-radius: 0 0 6px 6px;
+  box-shadow: none;
+}
+
+.table-wrap.compact table {
+  min-width: 760px;
+}
+
 table {
   width: 100%;
   min-width: 980px;
@@ -227,6 +333,10 @@ th {
 tr:hover { background: #f8faf6; }
 tr:last-child td { border-bottom: 0; }
 td:last-child { max-width: 360px; }
+
+.clients-table td {
+  white-space: nowrap;
+}
 
 .copy-actions {
   display: flex;
@@ -379,5 +489,14 @@ td:last-child { max-width: 360px; }
 
   .settings-form fieldset {
     grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .traffic-chart {
+    padding: 12px;
   }
 }

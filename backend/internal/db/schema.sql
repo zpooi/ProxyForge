@@ -94,6 +94,19 @@ CREATE TABLE IF NOT EXISTS ip_pool (
   last_seen_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS proxy_clients (
+  client_ip TEXT PRIMARY KEY,
+  username TEXT NOT NULL DEFAULT '',
+  account_tag TEXT NOT NULL DEFAULT '',
+  total_up INTEGER NOT NULL DEFAULT 0,
+  total_down INTEGER NOT NULL DEFAULT 0,
+  hit_count INTEGER NOT NULL DEFAULT 0,
+  first_seen_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_proxy_clients_last_seen ON proxy_clients(last_seen_at);
+
 CREATE TABLE IF NOT EXISTS schedule_runs (
   id INTEGER PRIMARY KEY,
   started_at TEXT NOT NULL,

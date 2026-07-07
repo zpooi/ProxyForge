@@ -660,6 +660,51 @@ func (d *DB) AddIPPoolTraffic(ip string, upDelta, downDelta int64) error {
 	return err
 }
 
+func (d *DB) AddClientUsage(clientIP, username, accountTag string, upDelta, downDelta int64) error {
+	clientIP = strings.TrimSpace(clientIP)
+	if clientIP == "" {
+		return nil
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	_, err := d.conn.Exec(`INSERT INTO proxy_clients(client_ip, username, account_tag, total_up, total_down, hit_count, first_seen_at, last_seen_at)
+		VALUES(?, ?, ?, ?, ?, 1, ?, ?)
+		ON CONFLICT(client_ip) DO UPDATE SET
+			username = excluded.username,
+			account_tag = excluded.account_tag,
+			total_up = total_up + excluded.total_up,
+			total_down = total_down + excluded.total_down,
+			hit_count = hit_count + 1,
+			last_seen_at = excluded.last_seen_at`,
+		clientIP, strings.TrimSpace(username), strings.TrimSpace(accountTag), upDelta, downDelta, now, now)
+	return err
+}
+
+func (d *DB) ListClientUsage(limit int) ([]*models.ProxyClientUsage, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	rows, err := d.conn.Query(`SELECT client_ip, username, account_tag, total_up, total_down, hit_count, first_seen_at, last_seen_at
+		FROM proxy_clients ORDER BY last_seen_at DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*models.ProxyClientUsage
+	for rows.Next() {
+		var item models.ProxyClientUsage
+		var firstSeen, lastSeen string
+		if err := rows.Scan(&item.ClientIP, &item.Username, &item.AccountTag, &item.TotalUp, &item.TotalDown,
+			&item.HitCount, &firstSeen, &lastSeen); err != nil {
+			return nil, err
+		}
+		item.FirstSeen, _ = time.Parse(time.RFC3339, firstSeen)
+		item.LastSeen, _ = time.Parse(time.RFC3339, lastSeen)
+		out = append(out, &item)
+	}
+	return out, rows.Err()
+}
+
 func (d *DB) SetIPKeeper(ip string, accountID int64) error {
 	_, err := d.conn.Exec(`INSERT INTO ip_pool(public_ip, keeper_account_id, last_seen_at)
 		VALUES(?, ?, ?)

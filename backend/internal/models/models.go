@@ -71,6 +71,17 @@ type IPPoolEntry struct {
 	LastSeenAt      *time.Time
 }
 
+type ProxyClientUsage struct {
+	ClientIP   string
+	Username   string
+	AccountTag string
+	TotalUp    int64
+	TotalDown  int64
+	HitCount   int64
+	FirstSeen  time.Time
+	LastSeen   time.Time
+}
+
 type ProxySlot struct {
 	ID              int64
 	Username        string

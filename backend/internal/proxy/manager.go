@@ -392,7 +392,7 @@ func (m *Manager) reconcileServerLocked() {
 		if bindAddr == "" {
 			bindAddr = "0.0.0.0"
 		}
-		srv, err := startProxy(bindAddr, m.proxyPort, m.resolve)
+		srv, err := startProxy(bindAddr, m.proxyPort, m.resolve, m.recordUsage)
 		if err != nil {
 			log.Printf("[proxy] start proxy on :%d failed: %v", m.proxyPort, err)
 			return
@@ -400,6 +400,17 @@ func (m *Manager) reconcileServerLocked() {
 		m.server = srv
 		log.Printf("[proxy] proxy listening on :%d (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
 	}
+}
+
+func (m *Manager) recordUsage(usage ProxyUsage) {
+	if usage.ClientIP == "" || (usage.UpBytes <= 0 && usage.DownBytes <= 0) {
+		return
+	}
+	go func() {
+		if err := m.db.AddClientUsage(usage.ClientIP, usage.Username, usage.AccountTag, usage.UpBytes, usage.DownBytes); err != nil {
+			log.Printf("[proxy] record client usage %s failed: %v", usage.ClientIP, err)
+		}
+	}()
 }
 
 func (m *Manager) Stop() {

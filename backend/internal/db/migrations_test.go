@@ -268,6 +268,39 @@ func TestEnsureProxySlotsCreatesActiveSlotsWithoutAutoBinding(t *testing.T) {
 	}
 }
 
+func TestClientUsageAccumulatesByClientIP(t *testing.T) {
+	database, err := Open(filepath.Join(t.TempDir(), "data.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	if err := database.Migrate(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := database.AddClientUsage("192.0.2.10", "pf-001", "warp-001", 100, 200); err != nil {
+		t.Fatal(err)
+	}
+	if err := database.AddClientUsage("192.0.2.10", "pf-002", "warp-002", 50, 70); err != nil {
+		t.Fatal(err)
+	}
+
+	clients, err := database.ListClientUsage(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(clients) != 1 {
+		t.Fatalf("expected one client usage row, got %d", len(clients))
+	}
+	got := clients[0]
+	if got.ClientIP != "192.0.2.10" || got.Username != "pf-002" || got.AccountTag != "warp-002" {
+		t.Fatalf("latest client identity not recorded: %#v", got)
+	}
+	if got.TotalUp != 150 || got.TotalDown != 270 || got.HitCount != 2 {
+		t.Fatalf("traffic not accumulated: %#v", got)
+	}
+}
+
 func databaseMustNextTag(t *testing.T, database *DB) string {
 	t.Helper()
 	tag, err := database.NextTag()

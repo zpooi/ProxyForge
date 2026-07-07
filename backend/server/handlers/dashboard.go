@@ -14,6 +14,7 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) DashboardJSON(w http.ResponseWriter, r *http.Request) {
 	accounts, _ := h.DB.ListAccounts()
+	clients, _ := h.DB.ListClientUsage(30)
 	total := len(accounts)
 	active := 0
 	disabled := 0
@@ -66,6 +67,30 @@ func (h *Handlers) DashboardJSON(w http.ResponseWriter, r *http.Request) {
 		nextRun = time.Now().Add(30 * time.Second)
 	}
 
+	type dashboardClient struct {
+		ClientIP   string    `json:"client_ip"`
+		Username   string    `json:"username"`
+		AccountTag string    `json:"account_tag"`
+		TotalUp    int64     `json:"total_up"`
+		TotalDown  int64     `json:"total_down"`
+		HitCount   int64     `json:"hit_count"`
+		FirstSeen  time.Time `json:"first_seen_at"`
+		LastSeen   time.Time `json:"last_seen_at"`
+	}
+	clientStats := make([]dashboardClient, 0, len(clients))
+	for _, c := range clients {
+		clientStats = append(clientStats, dashboardClient{
+			ClientIP:   c.ClientIP,
+			Username:   c.Username,
+			AccountTag: c.AccountTag,
+			TotalUp:    c.TotalUp,
+			TotalDown:  c.TotalDown,
+			HitCount:   c.HitCount,
+			FirstSeen:  c.FirstSeen,
+			LastSeen:   c.LastSeen,
+		})
+	}
+
 	resp := map[string]any{
 		"total":           total,
 		"active":          active,
@@ -83,6 +108,7 @@ func (h *Handlers) DashboardJSON(w http.ResponseWriter, r *http.Request) {
 		"last_run_at":     h.Scheduler.LastRunAt(),
 		"next_run_at":     nextRun,
 		"now":             time.Now(),
+		"clients":         clientStats,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
