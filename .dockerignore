@@ -1,0 +1,10 @@
+data.db
+*.db-wal
+*.db-shm
+*.db-journal
+node_modules
+frontend/.deps
+bin
+logs
+*.exe
+proxyforge-linux-*
