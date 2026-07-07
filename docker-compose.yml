@@ -1,0 +1,21 @@
+services:
+  proxyforge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: proxyforge:latest
+    container_name: proxyforge
+    restart: unless-stopped
+    environment:
+      DB_PATH: /data/data.db
+      PROJECT_ROOT: /app
+      LISTEN_ADDR: :7800
+      TZ: Asia/Shanghai
+    ports:
+      - "7800:7800"
+      - "7843:7843"
+    volumes:
+      - proxyforge-data:/data
+
+volumes:
+  proxyforge-data:

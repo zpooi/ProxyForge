@@ -36,6 +36,12 @@ The management UI is written in Svelte. Its source lives in `frontend`, and its 
 
 ## Docker
 
+Docker Compose:
+
+```bash
+docker compose up -d --build
+```
+
 Single-platform local image:
 
 ```bash
