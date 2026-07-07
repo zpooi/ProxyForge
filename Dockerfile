@@ -3,8 +3,8 @@
 ARG GO_VERSION=1.25
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS build
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+ARG TARGETOS
+ARG TARGETARCH
 WORKDIR /src
 RUN apk add --no-cache nodejs
 COPY go.mod go.sum ./
