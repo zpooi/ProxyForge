@@ -770,6 +770,43 @@ func (d *DB) ListIPPool() ([]*models.IPPoolEntry, error) {
 	return out, rows.Err()
 }
 
+// AddTrafficSample 记录一条整体吞吐采样点（字节/秒）。由 trafficLoop 定期调用，
+// 作为仪表盘吞吐时间序列的服务端数据源，刷新页面或重启进程都不丢。
+func (d *DB) AddTrafficSample(upBps, downBps int64) error {
+	_, err := d.conn.Exec(`INSERT INTO traffic_samples(sampled_at, up_bps, down_bps) VALUES(?, ?, ?)`,
+		time.Now().UTC().Format(time.RFC3339), upBps, downBps)
+	return err
+}
+
+// PruneTrafficSamples 删除早于 maxAge 的采样，控制表大小。
+func (d *DB) PruneTrafficSamples(maxAge time.Duration) error {
+	cutoff := time.Now().UTC().Add(-maxAge).Format(time.RFC3339)
+	_, err := d.conn.Exec(`DELETE FROM traffic_samples WHERE sampled_at < ?`, cutoff)
+	return err
+}
+
+// ListTrafficSamples 返回近 since 时间内的吞吐采样，按时间升序，供前端画图。
+func (d *DB) ListTrafficSamples(since time.Duration) ([]*models.TrafficSample, error) {
+	cutoff := time.Now().UTC().Add(-since).Format(time.RFC3339)
+	rows, err := d.conn.Query(`SELECT sampled_at, up_bps, down_bps FROM traffic_samples
+		WHERE sampled_at >= ? ORDER BY sampled_at ASC`, cutoff)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*models.TrafficSample
+	for rows.Next() {
+		var s models.TrafficSample
+		var at string
+		if err := rows.Scan(&at, &s.UpBps, &s.DownBps); err != nil {
+			return nil, err
+		}
+		s.SampledAt, _ = time.Parse(time.RFC3339, at)
+		out = append(out, &s)
+	}
+	return out, rows.Err()
+}
+
 func (d *DB) DeleteAccount(id int64) error {
 	tx, err := d.conn.Begin()
 	if err != nil {

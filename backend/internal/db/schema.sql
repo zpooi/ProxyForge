@@ -107,6 +107,15 @@ CREATE TABLE IF NOT EXISTS proxy_clients (
 
 CREATE INDEX IF NOT EXISTS idx_proxy_clients_last_seen ON proxy_clients(last_seen_at);
 
+CREATE TABLE IF NOT EXISTS traffic_samples (
+  id INTEGER PRIMARY KEY,
+  sampled_at TEXT NOT NULL,
+  up_bps INTEGER NOT NULL DEFAULT 0,
+  down_bps INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_traffic_samples_at ON traffic_samples(sampled_at);
+
 CREATE TABLE IF NOT EXISTS schedule_runs (
   id INTEGER PRIMARY KEY,
   started_at TEXT NOT NULL,

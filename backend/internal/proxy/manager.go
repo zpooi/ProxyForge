@@ -440,6 +440,54 @@ func (m *Manager) StopTunnel(tag string) bool {
 	return true
 }
 
+// HealthCheck 原地重建持续拨号失败的隧道。相比慢速的换绑账号路径，
+// 这里重跑 auto 回退（MASQUE→WireGuard）把同一个账号的隧道拉起来，
+// 既能快速自愈，又不会改变用户看到的出口 IP。返回重建成功的隧道数。
+func (m *Manager) HealthCheck() int {
+	m.mu.Lock()
+	type candidate struct {
+		tag string
+		cfg Config
+	}
+	var stale []candidate
+	for tag, t := range m.tunnels {
+		if t == nil {
+			continue
+		}
+		if t.dialFailures.Load() >= tunnelRebuildAfterFailures {
+			stale = append(stale, candidate{tag: tag, cfg: t.cfg})
+		}
+	}
+	m.mu.Unlock()
+
+	if len(stale) == 0 {
+		return 0
+	}
+
+	rebuilt := 0
+	for _, c := range stale {
+		fresh, err := newTunnel(c.cfg)
+		if err != nil {
+			log.Printf("[proxy] health rebuild tunnel %s failed: %v", c.tag, err)
+			continue
+		}
+		m.mu.Lock()
+		old := m.tunnels[c.tag]
+		// 期间账号可能已被 reconcile 换掉，确认还是同一份配置再替换。
+		if old == nil || old.cfg != c.cfg {
+			m.mu.Unlock()
+			fresh.Close()
+			continue
+		}
+		m.tunnels[c.tag] = fresh
+		m.mu.Unlock()
+		old.Close()
+		rebuilt++
+		log.Printf("[proxy] health rebuilt tunnel %s (%s endpoint %s)", c.tag, fresh.transport, fresh.endpoint)
+	}
+	return rebuilt
+}
+
 func (m *Manager) ProxyPort() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()

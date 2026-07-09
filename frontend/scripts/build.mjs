@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const svelteVersion = '3.59.2';
+const echartsVersion = '5.5.1';
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const frontendDir = resolve(scriptDir, '..');
 const repoRoot = resolve(frontendDir, '..');
@@ -80,6 +81,29 @@ async function ensureSveltePackage() {
   return compilerPath;
 }
 
+// ensureECharts 把 echarts UMD 构建放进 assets/echarts.min.js，随二进制内嵌，
+// 运行时不依赖 CDN。这里直接下载单个 UMD 文件（走 fetch，不碰 tar——Git Bash
+// 的 tar 在 Windows 上会把 D: 误判成远程主机名而解压失败），缓存到 .deps 复用。
+async function ensureECharts() {
+  const destination = join(assetsDir, 'echarts.min.js');
+  const cached = join(depsDir, `echarts-${echartsVersion}.min.js`);
+
+  if (!existsSync(cached)) {
+    ensureDir(depsDir);
+    await download(
+      `https://cdn.jsdelivr.net/npm/echarts@${echartsVersion}/dist/echarts.min.js`,
+      cached,
+    );
+  }
+  const size = statSync(cached).size;
+  if (size < 200_000) {
+    // UMD 构建约 1MB，太小说明下载不完整，删缓存下次重下。
+    rmSync(cached, { force: true });
+    throw new Error(`echarts download looks truncated (${size} bytes)`);
+  }
+  copyFileSync(cached, destination);
+}
+
 function rewriteSvelteImports(code) {
   return code
     .replace(/from\s+(['"])([^'"]+)\.svelte\1/g, 'from $1$2.js$1')
@@ -111,6 +135,7 @@ function writeIndex() {
       }
     }
   </script>
+  <script src="/assets/echarts.min.js"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -159,6 +184,7 @@ async function main() {
   ensureDir(assetsDir);
   writeIndex();
   writeRuntimeFiles(packageDir);
+  await ensureECharts();
   compileSourceFiles(compiler);
 
   console.log(`Svelte built to ${webDir}`);

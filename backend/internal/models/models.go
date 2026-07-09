@@ -120,3 +120,9 @@ type Setting struct {
 	Key   string
 	Value string
 }
+
+type TrafficSample struct {
+	SampledAt time.Time
+	UpBps     int64
+	DownBps   int64
+}

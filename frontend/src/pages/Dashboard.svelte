@@ -3,59 +3,21 @@
   import StatCard from '../components/StatCard.svelte';
   import { fetchJSON } from '../lib/api.js';
   import { fmtBps, fmtBytes, fmtTime } from '../lib/format.js';
+  import { chart } from '../lib/chart.js';
 
   let dashboard = null;
   let error = '';
-  let samples = [];
-
-  const chartWidth = 640;
-  const chartHeight = 180;
-  const chartPad = 18;
-  const maxSamples = 36;
+  let egress = [];
 
   async function loadDashboard() {
     try {
       const data = await fetchJSON('/api/dashboard/json');
       dashboard = data;
-      appendTrafficSample(data);
+      egress = Array.isArray(data.egress_ips) ? data.egress_ips : [];
       error = '';
     } catch (err) {
       error = err.message;
     }
-  }
-
-  function appendTrafficSample(data) {
-    const at = new Date(data.now || Date.now()).getTime();
-    if (!Number.isFinite(at)) return;
-
-    const next = {
-      at,
-      totalUp: Number(data.total_up || 0),
-      totalDown: Number(data.total_down || 0),
-      upBps: 0,
-      downBps: 0,
-    };
-    const prev = samples[samples.length - 1];
-    if (prev && at <= prev.at) return;
-    if (prev) {
-      const seconds = Math.max(1, (at - prev.at) / 1000);
-      next.upBps = Math.max(0, (next.totalUp - prev.totalUp) / seconds);
-      next.downBps = Math.max(0, (next.totalDown - prev.totalDown) / seconds);
-    }
-    samples = [...samples, next].slice(-maxSamples);
-  }
-
-  function chartPath(key, maxValue) {
-    if (samples.length < 2) return '';
-    const usableWidth = chartWidth - chartPad * 2;
-    const usableHeight = chartHeight - chartPad * 2;
-    return samples
-      .map((item, index) => {
-        const x = chartPad + (usableWidth * index) / Math.max(1, samples.length - 1);
-        const y = chartHeight - chartPad - (Math.min(item[key], maxValue) / maxValue) * usableHeight;
-        return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-      })
-      .join(' ');
   }
 
   onMount(() => {
@@ -66,11 +28,63 @@
 
   $: lastRun = dashboard ? fmtTime(dashboard.last_run_at, '从未') : '';
   $: nextRun = dashboard ? fmtTime(dashboard.next_run_at, '-') : '';
-  $: latestSample = samples[samples.length - 1] || { upBps: 0, downBps: 0 };
-  $: maxBps = Math.max(1, ...samples.map((item) => Math.max(item.upBps, item.downBps)));
-  $: upPath = chartPath('upBps', maxBps);
-  $: downPath = chartPath('downBps', maxBps);
   $: clients = dashboard?.clients || [];
+  $: activeEgress = egress.filter((e) => (e.current_up_bps || 0) + (e.current_down_bps || 0) > 0).length;
+
+  $: egressOption = buildEgressOption(egress);
+
+  const splitLine = { lineStyle: { color: '#f1f5f9' } };
+
+  // 出口 IP 统计：按累计流量排序的出口 IP 上下行堆叠横向柱状图。
+  function buildEgressOption(list) {
+    const top = list.slice(0, 12).reverse();
+    return {
+      grid: { left: 120, right: 24, top: 28, bottom: 24 },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        valueFormatter: (v) => fmtBytes(v),
+      },
+      legend: {
+        data: ['下行', '上行'],
+        right: 8,
+        top: 0,
+        icon: 'roundRect',
+        itemWidth: 12,
+        itemHeight: 12,
+        textStyle: { color: '#64748b', fontSize: 12 },
+      },
+      xAxis: {
+        type: 'value',
+        axisLabel: { color: '#94a3b8', fontSize: 11, formatter: (v) => fmtBytes(v) },
+        splitLine,
+      },
+      yAxis: {
+        type: 'category',
+        data: top.map((e) => e.ip),
+        axisLine: { lineStyle: { color: '#e2e8f0' } },
+        axisLabel: { color: '#64748b', fontSize: 11 },
+      },
+      series: [
+        {
+          name: '下行',
+          type: 'bar',
+          stack: 'traffic',
+          data: top.map((e) => Number(e.total_down || 0)),
+          itemStyle: { color: '#2563eb', borderRadius: [0, 4, 4, 0] },
+          barMaxWidth: 18,
+        },
+        {
+          name: '上行',
+          type: 'bar',
+          stack: 'traffic',
+          data: top.map((e) => Number(e.total_up || 0)),
+          itemStyle: { color: '#0ea5e9', borderRadius: [0, 4, 4, 0] },
+          barMaxWidth: 18,
+        },
+      ],
+    };
+  }
 </script>
 
 <h2>仪表盘</h2>
@@ -78,38 +92,100 @@
   <div class="alert">加载失败：{error}</div>
 {:else if dashboard}
   <div class="dashboard-grid">
-    <StatCard label="代理 IP 数" value={dashboard.proxy_slots || 0} />
-    <StatCard label="可用 WARP" value={dashboard.active || 0} sub={'目标池：' + (dashboard.target_pool || 0)} />
-    <StatCard label="唯一出口 IP" value={dashboard.unique_ips || 0} />
-    <StatCard label="运行隧道" value={dashboard.running_tunnels || 0} />
-    <StatCard label="代理端口" value={dashboard.proxy_port || '-'} />
-    <StatCard label="WARP 总数" value={dashboard.total || 0} sub={'停用：' + (dashboard.disabled || 0) + ' / 错误：' + (dashboard.error || 0)} />
-    <StatCard label="总上行" value={fmtBytes(dashboard.total_up || 0)} />
-    <StatCard label="总下行" value={fmtBytes(dashboard.total_down || 0)} />
-    <StatCard label="后台状态" value={dashboard.running ? '运行中' : '空闲'} sub={'上次：' + lastRun} />
-    <StatCard label="下次自动检测" value={nextRun} />
+    <StatCard
+      label="可用出口 IP"
+      value={dashboard.unique_ips || 0}
+      sub={'代理槽位：' + (dashboard.proxy_slots || 0)}
+    />
+    <StatCard
+      label="运行隧道"
+      value={dashboard.running_tunnels || 0}
+      sub={'目标池：' + (dashboard.target_pool || 0)}
+    />
+    <StatCard
+      label="活跃出口 IP"
+      value={activeEgress}
+      sub={'共 ' + egress.length + ' 个出口'}
+    />
+    <StatCard
+      label="累计流量"
+      value={fmtBytes(dashboard.total_down || 0)}
+      sub={'上行 ' + fmtBytes(dashboard.total_up || 0)}
+    />
+  </div>
+
+  <div class="dashboard-columns">
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h3>出口 IP 流量</h3>
+        <span class="section-sub">Top 12 · 按累计流量</span>
+      </div>
+      <div class="chart-box">
+        {#if egress.length}
+          <div class="echart" use:chart={egressOption}></div>
+        {:else}
+          <div class="chart-empty">暂无出口 IP 流量</div>
+        {/if}
+      </div>
+    </section>
+
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h3>后台状态</h3>
+        <span class="section-sub">{dashboard.running ? '运行中' : '空闲'}</span>
+      </div>
+      <div class="status-list">
+        <div class="status-row"><span>代理端口</span><b>{dashboard.proxy_port || '-'}</b></div>
+        <div class="status-row"><span>WARP 总数</span><b>{dashboard.total || 0}</b></div>
+        <div class="status-row"><span>停用 / 错误</span><b>{dashboard.disabled || 0} / {dashboard.error || 0}</b></div>
+        <div class="status-row"><span>上次检测</span><b>{lastRun}</b></div>
+        <div class="status-row"><span>下次检测</span><b>{nextRun}</b></div>
+      </div>
+    </section>
   </div>
 
   <section class="dashboard-section">
     <div class="section-header">
-      <h3>实时流量</h3>
-      <div class="traffic-summary">
-        <span><i class="dot up"></i>上行 {fmtBps(latestSample.upBps)}</span>
-        <span><i class="dot down"></i>下行 {fmtBps(latestSample.downBps)}</span>
-      </div>
+      <h3>出口 IP 明细</h3>
+      <span class="section-sub">按累计流量排序</span>
     </div>
-    <div class="traffic-chart">
-      {#if samples.length > 1}
-        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label="实时流量统计图">
-          <line x1={chartPad} y1={chartPad} x2={chartPad} y2={chartHeight - chartPad} />
-          <line x1={chartPad} y1={chartHeight - chartPad} x2={chartWidth - chartPad} y2={chartHeight - chartPad} />
-          <path class="area down" d={`${downPath} L ${chartWidth - chartPad} ${chartHeight - chartPad} L ${chartPad} ${chartHeight - chartPad} Z`} />
-          <path class="line down" d={downPath} />
-          <path class="line up" d={upPath} />
-        </svg>
-      {:else}
-        <div class="chart-empty">等待下一次统计采样</div>
-      {/if}
+    <div class="table-wrap compact">
+      <table class="clients-table">
+        <thead>
+          <tr>
+            <th>出口 IP</th>
+            <th>地区 / 机房</th>
+            <th>绑定账号</th>
+            <th>延迟</th>
+            <th>槽位</th>
+            <th>实时 ↓/↑</th>
+            <th>累计 ↓</th>
+            <th>累计 ↑</th>
+            <th>最近活跃</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#if egress.length === 0}
+            <tr>
+              <td colspan="9">暂无出口 IP 记录</td>
+            </tr>
+          {:else}
+            {#each egress as e}
+              <tr>
+                <td><code>{e.ip || '-'}</code></td>
+                <td>{(e.country || '??') + (e.colo ? ' / ' + e.colo : '')}</td>
+                <td>{e.account_tag || '-'}</td>
+                <td>{e.latency_ms ? e.latency_ms + ' ms' : '-'}</td>
+                <td>{e.slot_count || 0}</td>
+                <td>{fmtBps(e.current_down_bps || 0)} / {fmtBps(e.current_up_bps || 0)}</td>
+                <td>{fmtBytes(e.total_down || 0)}</td>
+                <td>{fmtBytes(e.total_up || 0)}</td>
+                <td>{fmtTime(e.last_seen_at, '-')}</td>
+              </tr>
+            {/each}
+          {/if}
+        </tbody>
+      </table>
     </div>
   </section>
 

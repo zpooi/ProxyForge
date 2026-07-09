@@ -65,6 +65,10 @@ type Tunnel struct {
 const (
 	tunnelProbeURL     = "https://www.cloudflare.com/cdn-cgi/trace"
 	tunnelProbeTimeout = 4 * time.Second
+
+	// 连续拨号失败达到该阈值后，健康监控会原地重建隧道。取值偏高以避免
+	// 偶发抖动触发重建，但仍远快于慢速换绑路径。
+	tunnelRebuildAfterFailures = 4
 )
 
 var endpointPreference = struct {
@@ -79,14 +83,23 @@ func newTunnel(cfg Config) (*Tunnel, error) {
 		return newMasqueTunnel(cfg)
 	}
 	if mode == "auto" {
-		if !cfg.hasMasqueConfig() {
-			return nil, fmt.Errorf("tunnel %s: MASQUE config is missing; WireGuard UDP fallback is disabled in auto mode", cfg.Tag)
+		// 先试 MASQUE（QUIC/UDP 443，最稳、最不易被墙），失败再降级到
+		// WireGuard UDP。任一条通路能建起来，节点就不会死。
+		if cfg.hasMasqueConfig() {
+			t, err := newMasqueTunnel(cfg)
+			if err == nil {
+				return t, nil
+			}
+			log.Printf("[proxy] tunnel %s: MASQUE failed, falling back to WireGuard: %v", cfg.Tag, err)
+			wg, wgErr := newWireGuardTunnel(cfg)
+			if wgErr == nil {
+				return wg, nil
+			}
+			return nil, fmt.Errorf("tunnel %s: MASQUE failed (%v) and WireGuard fallback failed (%w)", cfg.Tag, err, wgErr)
 		}
-		t, err := newMasqueTunnel(cfg)
-		if err == nil {
-			return t, nil
-		}
-		return nil, fmt.Errorf("tunnel %s: MASQUE failed: %w", cfg.Tag, err)
+		// 没有 MASQUE 凭据时直接走 WireGuard，而不是让节点起不来。
+		log.Printf("[proxy] tunnel %s: MASQUE config missing, using WireGuard", cfg.Tag)
+		return newWireGuardTunnel(cfg)
 	}
 	if mode == "wireguard" {
 		return newWireGuardTunnel(cfg)

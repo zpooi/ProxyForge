@@ -23,12 +23,18 @@ const (
 	maxHealthyLatencyMs    = 700
 	maxHealthyPacketLoss   = 0.50
 	untestedAccountGrace   = 3 * time.Minute
-	slotProbeInterval      = 30 * time.Second
-	slotProbeTimeout       = 12 * time.Second
-	slotProbeFailure       = "实时探测失败: "
-	slotProbeRebindAfter   = 5
-	slotIPDriftFailure     = "出口 IP 漂移: "
-	slotIPDriftRebindAfter = 5
+	// 探测间隔拉长到 60s，配合更高的重绑阈值降低抖动。免费 WARP 出口 IP
+	// 本来就会自然漂移，频繁探测 + 低阈值会让 IP 一直变、节点被反复换掉。
+	slotProbeInterval  = 60 * time.Second
+	slotProbeTimeout   = 12 * time.Second
+	slotProbeFailure   = "实时探测失败: "
+	slotIPDriftFailure = "出口 IP 漂移: "
+	// 重绑/漂移阈值从 5 提到 8，给"原地重启隧道"更多机会先恢复，
+	// 换绑到新账号（会改变出口 IP）成为最后手段。
+	slotProbeRebindAfter   = 8
+	slotIPDriftRebindAfter = 8
+	// 隧道健康检查间隔：持续拨号失败的隧道由 HealthCheck 原地重建。
+	healthCheckInterval = 20 * time.Second
 )
 
 type Scheduler struct {
@@ -57,6 +63,7 @@ func (s *Scheduler) Run(ctx context.Context) {
 	go s.trafficLoop(ctx)
 	go s.autoRefillLoop(ctx)
 	go s.slotProbeLoop(ctx)
+	go s.healthCheckLoop(ctx)
 
 	for {
 		interval := s.dedupInterval()
@@ -88,10 +95,33 @@ func (s *Scheduler) autoRefillLoop(ctx context.Context) {
 	case <-time.After(45 * time.Second):
 	}
 
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(90 * time.Second)
 	defer ticker.Stop()
 	for {
 		s.autoRefill(ctx)
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
+// healthCheckLoop 定期让 Manager 原地重建持续拨号失败的隧道。这是节点自愈
+// 的快速通路：不换账号、不改出口 IP，只把断掉的隧道重新拉起来。
+func (s *Scheduler) healthCheckLoop(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(20 * time.Second):
+	}
+
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for {
+		if rebuilt := s.manager.HealthCheck(); rebuilt > 0 {
+			log.Printf("[scheduler] health check rebuilt %d tunnel(s)", rebuilt)
+		}
 		select {
 		case <-ctx.Done():
 			return
@@ -1371,6 +1401,18 @@ func (s *Scheduler) trafficLoop(ctx context.Context) {
 	lastTag := map[string]sample{}
 	lastIP := map[string]sample{}
 
+	// 整体吞吐采样：每 ~15s 落一条 traffic_samples，作为仪表盘时间序列的
+	// 服务端数据源；每 ~1h 清理早于 24h 的采样，控制表大小。
+	const (
+		sampleEvery = 15 * time.Second
+		samplePrune = 24 * time.Hour
+		pruneEvery  = time.Hour
+	)
+	var lastTotalTx, lastTotalRx int64
+	haveTotal := false
+	lastSampleAt := time.Now()
+	lastPruneAt := time.Now()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -1435,6 +1477,31 @@ func (s *Scheduler) trafficLoop(ctx context.Context) {
 				_ = s.db.SetIPPoolCurrent(ip, 0, 0)
 				delete(lastIP, ip)
 			}
+		}
+
+		// 累计当前所有隧道的 tx/rx 总量，按采样间隔差分成 bps 落库。
+		var totalTx, totalRx int64
+		for _, sn := range snaps {
+			totalTx += sn.Tx
+			totalRx += sn.Rx
+		}
+		if now.Sub(lastSampleAt) >= sampleEvery {
+			if haveTotal {
+				elapsed := now.Sub(lastSampleAt).Seconds()
+				var upBps, downBps int64
+				if elapsed > 0 {
+					upBps = int64(float64(deltaBytes(totalTx, lastTotalTx)) / elapsed)
+					downBps = int64(float64(deltaBytes(totalRx, lastTotalRx)) / elapsed)
+				}
+				_ = s.db.AddTrafficSample(upBps, downBps)
+			}
+			lastTotalTx, lastTotalRx = totalTx, totalRx
+			haveTotal = true
+			lastSampleAt = now
+		}
+		if now.Sub(lastPruneAt) >= pruneEvery {
+			_ = s.db.PruneTrafficSamples(samplePrune)
+			lastPruneAt = now
 		}
 	}
 }
