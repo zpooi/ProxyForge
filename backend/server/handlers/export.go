@@ -49,6 +49,9 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 	if host == "" {
 		host = requestHost(r)
 	}
+	// TLS 默认开启（opportunistic）。开启时导出的 Clash 节点带 tls + skip-cert-verify，
+	// 让客户端把 CONNECT 主机名藏进加密流，避开审查中间盒基于主机名的连接重置。
+	proxyTLS := settings[SettingProxyTLS] != "off"
 	var active []*proxyExport
 	running := tagSet(h.Scheduler.RunningTags())
 	for _, s := range slots {
@@ -70,6 +73,7 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 			LastSlotError: s.LastError,
 			ProxyHost:     host,
 			ProxyPort:     proxyPort,
+			TLS:           proxyTLS,
 		})
 	}
 	return active, nil
@@ -90,6 +94,7 @@ type proxyExport struct {
 	LastSlotError string
 	ProxyHost     string
 	ProxyPort     int
+	TLS           bool
 }
 
 func writePlain(w http.ResponseWriter, list []*proxyExport) {
@@ -140,6 +145,16 @@ func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	fmt.Fprintf(w, "    port: %d\n", p.ProxyPort)
 	fmt.Fprintf(w, "    username: %s\n", p.Username)
 	fmt.Fprintf(w, "    password: %s\n", p.Password)
+	// TLS 开启时，客户端对「客户端↔代理」这一跳套 TLS，把明文 CONNECT 主机名藏进
+	// 加密流。证书是内存自签，故 skip-cert-verify；威胁模型是审查中间盒被动读主机名，
+	// 而非定向 MITM，账号密码仍然鉴权。
+	if p.TLS {
+		fmt.Fprintf(w, "    tls: true\n")
+		fmt.Fprintf(w, "    skip-cert-verify: true\n")
+		if p.ProxyHost != "" {
+			fmt.Fprintf(w, "    sni: %s\n", p.ProxyHost)
+		}
+	}
 }
 
 // SubscriptionToken 返回（首次调用时生成）免登录订阅所用的 token。

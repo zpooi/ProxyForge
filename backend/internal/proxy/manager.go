@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"math"
@@ -20,13 +21,16 @@ type Manager struct {
 	tunnels   map[string]*Tunnel
 	meta      map[string]selectionMeta
 	slots     map[string]slotBinding
-	bindAddr  string
-	password  string
-	proxyPort int
-	transport string
-	ipFamily  string
-	dnsMode   string
-	server    *mixedServer
+	bindAddr      string
+	password      string
+	proxyPort     int
+	transport     string
+	ipFamily      string
+	dnsMode       string
+	proxyTLS      bool
+	tlsServerName string
+	server        *mixedServer
+	serverTLS     bool
 
 	lastPicked   map[string]time.Time
 	lastPickedIP map[string]time.Time
@@ -97,6 +101,13 @@ func (m *Manager) SetIPFamily(family string) {
 func (m *Manager) SetDNSMode(mode string) {
 	m.mu.Lock()
 	m.dnsMode = mode
+	m.mu.Unlock()
+}
+
+func (m *Manager) SetProxyTLS(enabled bool, serverName string) {
+	m.mu.Lock()
+	m.proxyTLS = enabled
+	m.tlsServerName = serverName
 	m.mu.Unlock()
 }
 
@@ -381,7 +392,8 @@ func (m *Manager) startTunnels(toStart map[string]Config, desired map[string]Con
 
 func (m *Manager) reconcileServerLocked() {
 	if m.server != nil {
-		if m.proxyPort <= 0 || m.server.port() != m.proxyPort {
+		// 端口变化或 TLS 开关变化都需要重启监听（TLS 配置在监听建立时固化）。
+		if m.proxyPort <= 0 || m.server.port() != m.proxyPort || m.serverTLS != m.proxyTLS {
 			log.Printf("[proxy] stopping proxy on :%d", m.server.port())
 			m.server.Close()
 			m.server = nil
@@ -392,13 +404,27 @@ func (m *Manager) reconcileServerLocked() {
 		if bindAddr == "" {
 			bindAddr = "0.0.0.0"
 		}
-		srv, err := startProxy(bindAddr, m.proxyPort, m.resolve, m.recordUsage)
+		var tlsConfig *tls.Config
+		if m.proxyTLS {
+			cfg, err := newSelfSignedTLSConfig(m.tlsServerName)
+			if err != nil {
+				log.Printf("[proxy] build TLS config failed, falling back to plaintext: %v", err)
+			} else {
+				tlsConfig = cfg
+			}
+		}
+		srv, err := startProxy(bindAddr, m.proxyPort, m.resolve, m.recordUsage, tlsConfig)
 		if err != nil {
 			log.Printf("[proxy] start proxy on :%d failed: %v", m.proxyPort, err)
 			return
 		}
 		m.server = srv
-		log.Printf("[proxy] proxy listening on :%d (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
+		m.serverTLS = tlsConfig != nil
+		if m.serverTLS {
+			log.Printf("[proxy] proxy listening on :%d with opportunistic TLS (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
+		} else {
+			log.Printf("[proxy] proxy listening on :%d (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
+		}
 	}
 }
 

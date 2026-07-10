@@ -22,6 +22,8 @@ const (
 	SettingWarpTransport        = "warp_transport"
 	SettingTunnelIPFamily       = "tunnel_ip_family"
 	SettingProxyDNSMode         = "proxy_dns_mode"
+	SettingProxyTLS             = "proxy_tls"
+	SettingProxyPublicHost      = "proxy_public_host"
 )
 
 func (d *DB) SeedDefaultsIfEmpty(projectRoot string) error {
@@ -35,6 +37,7 @@ func (d *DB) SeedDefaultsIfEmpty(projectRoot string) error {
 		SettingWarpTransport:        "auto",
 		SettingTunnelIPFamily:       "ipv4",
 		SettingProxyDNSMode:         "system",
+		SettingProxyTLS:             "on",
 	}
 	for k, v := range defaults {
 		_, ok, err := d.GetSetting(k)

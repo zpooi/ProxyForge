@@ -3,6 +3,7 @@ package proxy
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -20,6 +21,8 @@ import (
 type mixedServer struct {
 	resolve func(username, password string) []*Tunnel
 	onUsage func(ProxyUsage)
+
+	tlsConfig *tls.Config
 
 	ln     net.Listener
 	closed chan struct{}
@@ -39,7 +42,7 @@ type ProxyUsage struct {
 	DownBytes  int64
 }
 
-func startProxy(bindAddr string, port int, resolve func(string, string) []*Tunnel, onUsage func(ProxyUsage)) (*mixedServer, error) {
+func startProxy(bindAddr string, port int, resolve func(string, string) []*Tunnel, onUsage func(ProxyUsage), tlsConfig *tls.Config) (*mixedServer, error) {
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0"
 	}
@@ -49,10 +52,11 @@ func startProxy(bindAddr string, port int, resolve func(string, string) []*Tunne
 		return nil, fmt.Errorf("listen %s: %w", addr, err)
 	}
 	s := &mixedServer{
-		resolve: resolve,
-		onUsage: onUsage,
-		ln:      ln,
-		closed:  make(chan struct{}),
+		resolve:   resolve,
+		onUsage:   onUsage,
+		tlsConfig: tlsConfig,
+		ln:        ln,
+		closed:    make(chan struct{}),
 	}
 	s.wg.Add(1)
 	go s.acceptLoop()
@@ -111,11 +115,42 @@ func (s *mixedServer) handle(client net.Conn) {
 		return
 	}
 
+	// TLS 握手记录以 0x16 开头，和 SOCKS5(0x05)、HTTP(ASCII 字母)都不冲突。
+	// 客户端用 https 代理连接时，先在这一跳套一层 TLS，把明文的 CONNECT 主机名
+	// 藏进加密流里，避开审查中间盒基于主机名的连接重置。解密后按同样的方式
+	// 重新分发下层的 SOCKS5 / HTTP 代理协议。
+	if first[0] == 0x16 && s.tlsConfig != nil {
+		tlsConn := tls.Server(&peekedConn{Conn: client, br: br}, s.tlsConfig)
+		_ = tlsConn.SetDeadline(time.Now().Add(30 * time.Second))
+		if err := tlsConn.Handshake(); err != nil {
+			return
+		}
+		_ = tlsConn.SetDeadline(time.Time{})
+		inner := bufio.NewReader(tlsConn)
+		if peek, err := inner.Peek(1); err == nil && peek[0] == 0x05 {
+			s.handleSOCKS5(tlsConn, inner, clientIP)
+			return
+		}
+		s.handleHTTP(tlsConn, inner, clientIP)
+		return
+	}
+
 	if first[0] == 0x05 {
 		s.handleSOCKS5(client, br, clientIP)
 		return
 	}
 	s.handleHTTP(client, br, clientIP)
+}
+
+// peekedConn 把已经 Peek 出首字节的 bufio.Reader 还原成 net.Conn，交给
+// tls.Server 从头读取握手记录。写入方向仍直接走底层连接。
+type peekedConn struct {
+	net.Conn
+	br *bufio.Reader
+}
+
+func (c *peekedConn) Read(p []byte) (int, error) {
+	return c.br.Read(p)
 }
 
 // ---------- SOCKS5 ----------

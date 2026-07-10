@@ -1274,6 +1274,12 @@ func (s *Scheduler) reconcileManager() error {
 		dnsMode = "system"
 	}
 	s.manager.SetDNSMode(dnsMode)
+	tlsSetting, _, _ := s.db.GetSetting(db.SettingProxyTLS)
+	tlsEnabled := tlsSetting != "off"
+	// TLS 证书的 SAN 用「代理对外地址」，方便按主机名校验的客户端；留空也没关系，
+	// 客户端用 skip-cert-verify 连接。IP 形式会写成 IP SAN。
+	tlsServerName, _, _ := s.db.GetSetting(db.SettingProxyPublicHost)
+	s.manager.SetProxyTLS(tlsEnabled, strings.TrimSpace(tlsServerName))
 	return s.manager.Reconcile()
 }
 

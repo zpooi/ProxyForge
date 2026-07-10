@@ -49,6 +49,7 @@ func (h *Handlers) saveSettings(r *http.Request) error {
 		SettingWarpTransport,
 		SettingTunnelIPFamily,
 		SettingProxyDNSMode,
+		SettingProxyTLS,
 		SettingDedupIntervalSeconds,
 	}
 	// 这些是文本设置，允许保存空值（用于清空回退到默认行为）。

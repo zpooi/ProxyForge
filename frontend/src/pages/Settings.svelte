@@ -9,6 +9,7 @@
     'proxy_listen_addr',
     'proxy_public_host',
     'proxy_password',
+    'proxy_tls',
     'dedup_interval_seconds',
   ];
 
@@ -84,6 +85,13 @@
       <input type="text" placeholder="留空则用当前访问域名" bind:value={settings.proxy_public_host}>
     </label>
     <p class="hint">导出订阅 / 复制代理链接时用的主机地址。填服务器真实 IP 或能直连代理端口的域名（如灰云子域名）。面板域名若经 Cloudflare / nginx 只反代了面板端口，请勿留空，否则客户端连不上代理端口。</p>
+    <label>传输加密（TLS）
+      <select bind:value={settings.proxy_tls}>
+        <option value="on">开启（推荐）</option>
+        <option value="off">关闭</option>
+      </select>
+    </label>
+    <p class="hint">开启后，客户端↔代理这一跳套一层 TLS，把明文的 CONNECT 目标主机名藏进加密流，避开审查中间盒基于主机名的连接重置（表现为延迟能测出但访问被封域名时连接被重置）。同一端口同时兼容明文与 TLS，导出的 Clash 订阅会自动带上 tls 配置，无需额外部署。</p>
   </fieldset>
   <fieldset>
     <legend>自动检测</legend>
