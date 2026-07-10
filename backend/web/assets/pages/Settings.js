@@ -43,7 +43,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (53:0) {#if error}
+// (54:0) {#if error}
 function create_if_block(ctx) {
 	let div;
 	let t0;
@@ -108,20 +108,26 @@ function create_fragment(ctx) {
 	let t22;
 	let input2;
 	let t23;
+	let label5;
+	let t24;
+	let input3;
+	let t25;
+	let p1;
+	let t27;
 	let fieldset2;
 	let legend2;
-	let t25;
-	let label5;
-	let t26;
-	let input3;
-	let t27;
-	let p1;
 	let t29;
+	let label6;
+	let t30;
+	let input4;
+	let t31;
+	let p2;
+	let t33;
 	let div;
 	let button;
-	let t30_value = (/*saving*/ ctx[3] ? '保存中...' : '保存设置') + "";
-	let t30;
-	let t31;
+	let t34_value = (/*saving*/ ctx[3] ? '保存中...' : '保存设置') + "";
+	let t34;
+	let t35;
 	let a;
 	let mounted;
 	let dispose;
@@ -177,21 +183,28 @@ function create_fragment(ctx) {
 			t22 = text("全局密码\n      ");
 			input2 = element("input");
 			t23 = space();
+			label5 = element("label");
+			t24 = text("代理对外地址\n      ");
+			input3 = element("input");
+			t25 = space();
+			p1 = element("p");
+			p1.textContent = "导出订阅 / 复制代理链接时用的主机地址。填服务器真实 IP 或能直连代理端口的域名（如灰云子域名）。面板域名若经 Cloudflare / nginx 只反代了面板端口，请勿留空，否则客户端连不上代理端口。";
+			t27 = space();
 			fieldset2 = element("fieldset");
 			legend2 = element("legend");
 			legend2.textContent = "自动检测";
-			t25 = space();
-			label5 = element("label");
-			t26 = text("检测和修复间隔（秒）\n      ");
-			input3 = element("input");
-			t27 = space();
-			p1 = element("p");
-			p1.textContent = "节点生成、测试、去重、失败重绑由后台自动处理，通常只需要调整代理 IP 数。";
 			t29 = space();
+			label6 = element("label");
+			t30 = text("检测和修复间隔（秒）\n      ");
+			input4 = element("input");
+			t31 = space();
+			p2 = element("p");
+			p2.textContent = "节点生成、测试、去重、失败重绑由后台自动处理，通常只需要调整代理 IP 数。";
+			t33 = space();
 			div = element("div");
 			button = element("button");
-			t30 = text(t30_value);
-			t31 = space();
+			t34 = text(t34_value);
+			t35 = space();
 			a = element("a");
 			a.textContent = "修改后台账号";
 			attr(input0, "type", "number");
@@ -209,8 +222,11 @@ function create_fragment(ctx) {
 			option3.value = option3.__value;
 			if (/*settings*/ ctx[0].proxy_listen_addr === void 0) add_render_callback(() => /*select1_change_handler*/ ctx[8].call(select1));
 			attr(input2, "type", "text");
-			attr(input3, "type", "number");
+			attr(input3, "type", "text");
+			attr(input3, "placeholder", "留空则用当前访问域名");
 			attr(p1, "class", "hint");
+			attr(input4, "type", "number");
+			attr(p2, "class", "hint");
 			attr(button, "type", "submit");
 			button.disabled = /*saving*/ ctx[3];
 			attr(a, "class", "secondary-link");
@@ -262,21 +278,28 @@ function create_fragment(ctx) {
 			append(label4, t22);
 			append(label4, input2);
 			set_input_value(input2, /*settings*/ ctx[0].proxy_password);
-			append(form, t23);
+			append(fieldset1, t23);
+			append(fieldset1, label5);
+			append(label5, t24);
+			append(label5, input3);
+			set_input_value(input3, /*settings*/ ctx[0].proxy_public_host);
+			append(fieldset1, t25);
+			append(fieldset1, p1);
+			append(form, t27);
 			append(form, fieldset2);
 			append(fieldset2, legend2);
-			append(fieldset2, t25);
-			append(fieldset2, label5);
-			append(label5, t26);
-			append(label5, input3);
-			set_input_value(input3, /*settings*/ ctx[0].dedup_interval_seconds);
-			append(fieldset2, t27);
-			append(fieldset2, p1);
-			append(form, t29);
+			append(fieldset2, t29);
+			append(fieldset2, label6);
+			append(label6, t30);
+			append(label6, input4);
+			set_input_value(input4, /*settings*/ ctx[0].dedup_interval_seconds);
+			append(fieldset2, t31);
+			append(fieldset2, p2);
+			append(form, t33);
 			append(form, div);
 			append(div, button);
-			append(button, t30);
-			append(div, t31);
+			append(button, t34);
+			append(div, t35);
 			append(div, a);
 
 			if (!mounted) {
@@ -287,6 +310,7 @@ function create_fragment(ctx) {
 					listen(select1, "change", /*select1_change_handler*/ ctx[8]),
 					listen(input2, "input", /*input2_input_handler*/ ctx[9]),
 					listen(input3, "input", /*input3_input_handler*/ ctx[10]),
+					listen(input4, "input", /*input4_input_handler*/ ctx[11]),
 					listen(form, "submit", prevent_default(/*saveSettings*/ ctx[4]))
 				];
 
@@ -340,11 +364,15 @@ function create_fragment(ctx) {
 				set_input_value(input2, /*settings*/ ctx[0].proxy_password);
 			}
 
-			if (dirty & /*settings*/ 1 && to_number(input3.value) !== /*settings*/ ctx[0].dedup_interval_seconds) {
-				set_input_value(input3, /*settings*/ ctx[0].dedup_interval_seconds);
+			if (dirty & /*settings*/ 1 && input3.value !== /*settings*/ ctx[0].proxy_public_host) {
+				set_input_value(input3, /*settings*/ ctx[0].proxy_public_host);
 			}
 
-			if (dirty & /*saving*/ 8 && t30_value !== (t30_value = (/*saving*/ ctx[3] ? '保存中...' : '保存设置') + "")) set_data(t30, t30_value);
+			if (dirty & /*settings*/ 1 && to_number(input4.value) !== /*settings*/ ctx[0].dedup_interval_seconds) {
+				set_input_value(input4, /*settings*/ ctx[0].dedup_interval_seconds);
+			}
+
+			if (dirty & /*saving*/ 8 && t34_value !== (t34_value = (/*saving*/ ctx[3] ? '保存中...' : '保存设置') + "")) set_data(t34, t34_value);
 
 			if (dirty & /*saving*/ 8) {
 				button.disabled = /*saving*/ ctx[3];
@@ -372,6 +400,7 @@ function instance($$self, $$props, $$invalidate) {
 		'auto_generation',
 		'proxy_port',
 		'proxy_listen_addr',
+		'proxy_public_host',
 		'proxy_password',
 		'dedup_interval_seconds'
 	];
@@ -441,6 +470,11 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	function input3_input_handler() {
+		settings.proxy_public_host = this.value;
+		$$invalidate(0, settings);
+	}
+
+	function input4_input_handler() {
 		settings.dedup_interval_seconds = to_number(this.value);
 		$$invalidate(0, settings);
 	}
@@ -456,7 +490,8 @@ function instance($$self, $$props, $$invalidate) {
 		input1_input_handler,
 		select1_change_handler,
 		input2_input_handler,
-		input3_input_handler
+		input3_input_handler,
+		input4_input_handler
 	];
 }
 

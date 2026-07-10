@@ -14,6 +14,7 @@ const (
 	SettingProxyDNSMode         = "proxy_dns_mode"
 	SettingDedupIntervalSeconds = "dedup_interval_seconds"
 	SettingSubscriptionToken    = "subscription_token"
+	SettingProxyPublicHost      = "proxy_public_host"
 )
 
 func parseInt(s string, dst *int) (int, error) {

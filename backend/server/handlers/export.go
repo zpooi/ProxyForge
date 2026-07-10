@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 )
 
 func (h *Handlers) ExportProxies(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +43,12 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 		fmt.Sscanf(v, "%d", &proxyPort)
 	}
 
-	host := requestHost(r)
+	// 优先用设置里的「代理对外地址」（服务器真实 IP 或灰云域名）。面板域名常经
+	// Cloudflare / nginx 只反代面板端口，套上代理端口会连不通，所以不能直接用它。
+	host := strings.TrimSpace(settings[SettingProxyPublicHost])
+	if host == "" {
+		host = requestHost(r)
+	}
 	var active []*proxyExport
 	running := tagSet(h.Scheduler.RunningTags())
 	for _, s := range slots {

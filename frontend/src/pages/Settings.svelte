@@ -7,6 +7,7 @@
     'auto_generation',
     'proxy_port',
     'proxy_listen_addr',
+    'proxy_public_host',
     'proxy_password',
     'dedup_interval_seconds',
   ];
@@ -79,6 +80,10 @@
     <label>全局密码
       <input type="text" bind:value={settings.proxy_password}>
     </label>
+    <label>代理对外地址
+      <input type="text" placeholder="留空则用当前访问域名" bind:value={settings.proxy_public_host}>
+    </label>
+    <p class="hint">导出订阅 / 复制代理链接时用的主机地址。填服务器真实 IP 或能直连代理端口的域名（如灰云子域名）。面板域名若经 Cloudflare / nginx 只反代了面板端口，请勿留空，否则客户端连不上代理端口。</p>
   </fieldset>
   <fieldset>
     <legend>自动检测</legend>

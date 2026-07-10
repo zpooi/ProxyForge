@@ -45,14 +45,20 @@ func (h *Handlers) saveSettings(r *http.Request) error {
 		SettingProxyPassword,
 		SettingProxyListenAddr,
 		SettingProxyPort,
+		SettingProxyPublicHost,
 		SettingWarpTransport,
 		SettingTunnelIPFamily,
 		SettingProxyDNSMode,
 		SettingDedupIntervalSeconds,
 	}
+	// 这些是文本设置，允许保存空值（用于清空回退到默认行为）。
+	allowEmpty := map[string]bool{
+		SettingProxyPassword:   true,
+		SettingProxyPublicHost: true,
+	}
 	for _, k := range keys {
 		v := r.FormValue(k)
-		if v == "" && k != SettingProxyPassword {
+		if v == "" && !allowEmpty[k] {
 			continue
 		}
 		_ = h.DB.SetSetting(k, v)
