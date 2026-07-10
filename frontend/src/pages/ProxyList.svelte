@@ -1,15 +1,24 @@
 <script>
   import { onMount } from 'svelte';
   import StatusTag from '../components/StatusTag.svelte';
+  import Icon from '../components/Icon.svelte';
   import { fetchJSON } from '../lib/api.js';
   import { fmtBps, metric } from '../lib/format.js';
   import { slotState } from '../lib/status.js';
+
+  const SCHEMES = [
+    { id: 'http', label: 'HTTP' },
+    { id: 'socks5', label: 'SOCKS5' },
+  ];
 
   let slots = [];
   let proxyHost = window.location.hostname;
   let proxyPort = 7843;
   let error = '';
   let copied = '';
+  let subUrl = '';
+  // 打开中的复制菜单：{ username, x, y }，用 fixed 定位避开表格 overflow 裁剪。
+  let menu = null;
 
   async function loadAccounts() {
     try {
@@ -23,10 +32,43 @@
     }
   }
 
+  async function loadSubscription() {
+    try {
+      const data = await fetchJSON('/api/subscription');
+      if (data.token) {
+        subUrl = `${window.location.origin}${data.path}?token=${data.token}`;
+      }
+    } catch (err) {
+      error = err.message;
+    }
+  }
+
+  function toggleMenu(event, slot) {
+    if (menu && menu.username === slot.username) {
+      menu = null;
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    // 右对齐到按钮右边缘，用 right 偏移避免菜单往右溢出视口。
+    menu = { username: slot.username, right: window.innerWidth - rect.right, y: rect.bottom + 4 };
+  }
+
+  function closeMenu() {
+    menu = null;
+  }
+
   onMount(() => {
     loadAccounts();
+    loadSubscription();
     const timer = setInterval(loadAccounts, 5000);
-    return () => clearInterval(timer);
+    // 菜单靠 fixed 定位，滚动或改变尺寸后位置会失效，直接关掉。
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('scroll', closeMenu, true);
+      window.removeEventListener('resize', closeMenu);
+    };
   });
 
   function countryLabel(code) {
@@ -46,22 +88,27 @@
     return value;
   }
 
+  async function writeClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const input = document.createElement('textarea');
+    input.value = text;
+    input.setAttribute('readonly', '');
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+  }
+
   async function copyProxy(slot, scheme) {
     const text = proxyAddress(slot, scheme);
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const input = document.createElement('textarea');
-        input.value = text;
-        input.setAttribute('readonly', '');
-        input.style.position = 'fixed';
-        input.style.left = '-9999px';
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand('copy');
-        document.body.removeChild(input);
-      }
+      await writeClipboard(text);
+      menu = null;
       copied = `${slot.username}-${scheme}`;
       setTimeout(() => {
         if (copied === `${slot.username}-${scheme}`) copied = '';
@@ -70,12 +117,31 @@
       error = '复制失败：' + err.message;
     }
   }
+
+  async function copySubscription() {
+    if (!subUrl) return;
+    try {
+      await writeClipboard(subUrl);
+      copied = 'subscription';
+      setTimeout(() => {
+        if (copied === 'subscription') copied = '';
+      }, 1600);
+    } catch (err) {
+      error = '复制失败：' + err.message;
+    }
+  }
 </script>
 
 <h2>代理列表</h2>
-<div class="page-actions">
-  <a class="export-link" href="/api/export?format=plain" target="_blank" rel="noreferrer">导出代理列表</a>
-  <a class="export-link" href="/api/export?format=clash" target="_blank" rel="noreferrer">导出 Clash 配置</a>
+<div class="sub-bar">
+  <div class="sub-row">
+    <button type="button" class="export-link" on:click={copySubscription} disabled={!subUrl}>复制 Clash 订阅链接</button>
+    {#if copied === 'subscription'}<span class="copy-feedback">已复制</span>{/if}
+  </div>
+  {#if subUrl}
+    <code class="sub-url">{subUrl}</code>
+    <p class="sub-hint">在 Clash / Mihomo 里添加为订阅（Profile），节点会随后台自动同步。链接含免登录 token，请勿外泄。</p>
+  {/if}
 </div>
 {#if error}
   <div class="alert">加载失败：{error}</div>
@@ -101,13 +167,18 @@
             <td>{slot.packet_loss ? (slot.packet_loss * 100).toFixed(0) + '%' : '0%'}</td>
             <td><StatusTag status={slotState(slot)} /></td>
             <td>
-              <div class="copy-actions">
-                <button type="button" class="copy-button" on:click={() => copyProxy(slot, 'http')}>HTTP</button>
-                <button type="button" class="copy-button secondary" on:click={() => copyProxy(slot, 'socks5')}>SOCKS5</button>
-                {#if copied === `${slot.username}-http` || copied === `${slot.username}-socks5`}
-                  <span class="copy-feedback">已复制</span>
-                {/if}
-              </div>
+              <button
+                type="button"
+                class="icon-button copy-trigger"
+                class:done={copied === `${slot.username}-http` || copied === `${slot.username}-socks5`}
+                class:open={menu && menu.username === slot.username}
+                title="复制代理链接"
+                aria-label="复制代理链接"
+                on:click={(e) => toggleMenu(e, slot)}
+              >
+                <Icon name={copied === `${slot.username}-http` || copied === `${slot.username}-socks5` ? 'check' : 'copy'} size={18} />
+                <Icon name="expand_more" size={16} />
+              </button>
             </td>
           </tr>
         {/each}
@@ -117,3 +188,17 @@
     </tbody>
   </table>
 </div>
+
+{#if menu}
+  {@const slot = slots.find((s) => s.username === menu.username)}
+  <div class="menu-backdrop" on:click={closeMenu} on:contextmenu|preventDefault={closeMenu}></div>
+  <div class="copy-menu" style="right: {menu.right}px; top: {menu.y}px;">
+    <div class="copy-menu-title">复制为</div>
+    {#each SCHEMES as scheme}
+      <button type="button" class="copy-menu-item" on:click={() => copyProxy(slot, scheme.id)}>
+        <Icon name="copy" size={16} />
+        <span>{scheme.label}</span>
+      </button>
+    {/each}
+  </div>
+{/if}

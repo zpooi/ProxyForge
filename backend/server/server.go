@@ -40,6 +40,9 @@ func (s *Server) Router() http.Handler {
 	r.Post("/login", h.LoginSubmit)
 	r.Get("/logout", h.Logout)
 
+	// 免登录订阅端点，靠 URL token 鉴权，供 Clash 客户端定时同步。
+	r.Get("/sub/clash", h.ClashSubscription)
+
 	// 所有受保护路由走 auth middleware
 	r.Group(func(r chi.Router) {
 		r.Use(s.Auth.Middleware)
@@ -64,6 +67,7 @@ func (s *Server) Router() http.Handler {
 		r.Get("/api/settings/json", h.SettingsJSON)
 		r.Post("/api/settings", h.SettingsSaveJSON)
 		r.Get("/api/export", h.ExportProxies)
+		r.Get("/api/subscription", h.SubscriptionToken)
 
 		// Actions
 		r.Post("/api/accounts/generate", h.AccountsGenerate)

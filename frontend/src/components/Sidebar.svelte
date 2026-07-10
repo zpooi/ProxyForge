@@ -1,4 +1,6 @@
 <script>
+  import Icon from './Icon.svelte';
+
   export let activePath = '/';
   export let onNavigate;
 
@@ -10,7 +12,7 @@
 </script>
 
 <aside class="sidebar">
-  <div class="nav-brand">ProxyForge</div>
+  <div class="nav-brand"><span class="nav-brand-logo"><Icon name="bolt" size={18} /></span>ProxyForge</div>
   <nav class="sidebar-nav">
     {#each navItems as item}
       <a

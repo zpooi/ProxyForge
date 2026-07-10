@@ -64,11 +64,14 @@ body {
   letter-spacing: -0.01em;
 }
 
-.nav-brand::before {
-  content: "";
+.nav-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
   border-radius: 7px;
+  color: #fff;
   background: linear-gradient(135deg, var(--accent), #6d8ffb);
   box-shadow: 0 2px 6px rgba(59, 108, 246, 0.35);
 }
@@ -467,30 +470,105 @@ tr:last-child td { border-bottom: 0; }
   flex-wrap: wrap;
 }
 
-.copy-button {
-  min-height: 30px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
+.icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* 复制触发按钮：复制图标 + 下拉箭头，点开后弹出协议菜单。 */
+.copy-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+  padding: 6px 8px;
+  border-radius: 7px;
   background: var(--accent-soft);
   color: var(--accent);
 }
 
-.copy-button:hover { background: #dbe6fd; }
+.copy-trigger:hover { background: #dbe6fd; }
+.copy-trigger.open { background: #dbe6fd; }
+.copy-trigger.done { background: #e6f6ee; color: var(--ok); }
 
-.copy-button.secondary {
-  background: var(--surface);
-  color: var(--text-2);
-  border: 1px solid var(--border-strong);
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
 }
 
-.copy-button.secondary:hover { background: var(--surface-2); }
+.copy-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 132px;
+  padding: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.copy-menu-title {
+  padding: 4px 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.copy-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  background: transparent;
+  color: var(--text);
+  justify-content: flex-start;
+}
+
+.copy-menu-item:hover { background: var(--accent-soft); color: var(--accent); }
 
 .copy-feedback {
   color: var(--ok);
   font-size: 12px;
   white-space: nowrap;
   font-weight: 600;
+}
+
+.sub-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.sub-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sub-url {
+  display: block;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--text-2);
+}
+
+.sub-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 /* ---------- settings form ---------- */

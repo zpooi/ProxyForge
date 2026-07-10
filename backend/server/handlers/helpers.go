@@ -13,6 +13,7 @@ const (
 	SettingTunnelIPFamily       = "tunnel_ip_family"
 	SettingProxyDNSMode         = "proxy_dns_mode"
 	SettingDedupIntervalSeconds = "dedup_interval_seconds"
+	SettingSubscriptionToken    = "subscription_token"
 )
 
 func parseInt(s string, dst *int) (int, error) {

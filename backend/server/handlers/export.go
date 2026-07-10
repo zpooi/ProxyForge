@@ -1,16 +1,40 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 )
 
 func (h *Handlers) ExportProxies(w http.ResponseWriter, r *http.Request) {
-	slots, err := h.DB.ListProxySlots()
+	active, err := h.collectActiveExports(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	format := r.URL.Query().Get("format")
+	if format == "clash" {
+		w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
+		w.Header().Set("Content-Disposition", "attachment; filename=proxyforge-clash.yaml")
+		writeClash(w, active)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	writePlain(w, active)
+}
+
+// collectActiveExports 汇总当前可用（隧道在跑、有出口 IP）的固定代理槽位，
+// 供导出接口和免登录订阅接口共用。
+func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error) {
+	slots, err := h.DB.ListProxySlots()
+	if err != nil {
+		return nil, err
 	}
 	settings, _ := h.DB.AllSettings()
 	proxyPort := 7843
@@ -42,17 +66,7 @@ func (h *Handlers) ExportProxies(w http.ResponseWriter, r *http.Request) {
 			ProxyPort:     proxyPort,
 		})
 	}
-
-	format := r.URL.Query().Get("format")
-	if format == "clash" {
-		w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
-		w.Header().Set("Content-Disposition", "attachment; filename=proxyforge-clash.yaml")
-		writeClash(w, active)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	writePlain(w, active)
+	return active, nil
 }
 
 type proxyExport struct {
@@ -120,6 +134,64 @@ func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	fmt.Fprintf(w, "    port: %d\n", p.ProxyPort)
 	fmt.Fprintf(w, "    username: %s\n", p.Username)
 	fmt.Fprintf(w, "    password: %s\n", p.Password)
+}
+
+// SubscriptionToken 返回（首次调用时生成）免登录订阅所用的 token。
+// 需要登录，前端用它拼出完整的 Clash 订阅链接。
+func (h *Handlers) SubscriptionToken(w http.ResponseWriter, r *http.Request) {
+	token, err := h.ensureSubscriptionToken()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"token": token,
+		"path":  "/sub/clash",
+	})
+}
+
+// ClashSubscription 是免登录的 Clash 订阅端点，靠 URL 里的 token 鉴权，
+// 让 Clash 客户端可以直接添加订阅并定时同步节点。
+func (h *Handlers) ClashSubscription(w http.ResponseWriter, r *http.Request) {
+	want, _, err := h.DB.GetSetting(SettingSubscriptionToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	got := r.URL.Query().Get("token")
+	if want == "" || got == "" || subtle.ConstantTimeCompare([]byte(want), []byte(got)) != 1 {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	active, err := h.collectActiveExports(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
+	w.Header().Set("Content-Disposition", "attachment; filename=proxyforge-clash.yaml")
+	writeClash(w, active)
+}
+
+func (h *Handlers) ensureSubscriptionToken() (string, error) {
+	token, ok, err := h.DB.GetSetting(SettingSubscriptionToken)
+	if err != nil {
+		return "", err
+	}
+	if ok && token != "" {
+		return token, nil
+	}
+	b := make([]byte, 24)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	token = hex.EncodeToString(b)
+	if err := h.DB.SetSetting(SettingSubscriptionToken, token); err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 func requestHost(r *http.Request) string {
