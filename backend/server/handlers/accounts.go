@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"strconv"
 
 	"github.com/zpooi/ProxyForge/backend/internal/auth"
@@ -106,11 +107,19 @@ func (h *Handlers) AccountsJSON(w http.ResponseWriter, r *http.Request) {
 	if v, ok, _ := h.DB.GetSetting(SettingProxyPort); ok {
 		fmt.Sscanf(v, "%d", &proxyPort)
 	}
+	// 复制单个代理链接的主机名，和导出订阅保持一致：优先用设置里的「代理对外地址」，
+	// 没填才回退到访问域名。面板域名常经反代只暴露面板端口，套代理端口会连不通。
+	proxyHost := requestHost(r)
+	if v, ok, _ := h.DB.GetSetting(SettingProxyPublicHost); ok {
+		if v = strings.TrimSpace(v); v != "" {
+			proxyHost = v
+		}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"accounts":   views,
 		"slots":      slotViews,
-		"proxy_host": requestHost(r),
+		"proxy_host": proxyHost,
 		"proxy_port": proxyPort,
 	})
 }
