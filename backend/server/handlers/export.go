@@ -136,6 +136,29 @@ func writeClash(w http.ResponseWriter, list []*proxyExport) {
 	for _, p := range list {
 		fmt.Fprintf(w, "      - %s\n", p.Username)
 	}
+
+	writeClashRules(w)
+}
+
+// writeClashRules 输出规则段。没有 rules 时 Clash 规则模式下所有连接都无处匹配、
+// fallthrough 成直连，代理形同虚设（全局模式绕过规则所以照常工作）。这里让
+// 内网/回环直连，其余全部经 PROXYFORGE，并以 MATCH 兜底保证规则模式可用。
+func writeClashRules(w http.ResponseWriter) {
+	rules := []string{
+		"IP-CIDR,127.0.0.0/8,DIRECT,no-resolve",
+		"IP-CIDR,10.0.0.0/8,DIRECT,no-resolve",
+		"IP-CIDR,172.16.0.0/12,DIRECT,no-resolve",
+		"IP-CIDR,192.168.0.0/16,DIRECT,no-resolve",
+		"IP-CIDR,169.254.0.0/16,DIRECT,no-resolve",
+		"IP-CIDR6,::1/128,DIRECT,no-resolve",
+		"IP-CIDR6,fc00::/7,DIRECT,no-resolve",
+		"IP-CIDR6,fe80::/10,DIRECT,no-resolve",
+		"MATCH,PROXYFORGE",
+	}
+	fmt.Fprintf(w, "\nrules:\n")
+	for _, r := range rules {
+		fmt.Fprintf(w, "  - %s\n", r)
+	}
 }
 
 func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
