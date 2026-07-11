@@ -9,6 +9,8 @@ import (
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 )
 
 func (h *Handlers) ExportProxies(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +61,7 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 			continue
 		}
 		active = append(active, &proxyExport{
+			Name:          s.Username,
 			Username:      s.Username,
 			Password:      s.Password,
 			AccountTag:    s.AccountTag,
@@ -76,11 +79,65 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 			TLS:           proxyTLS,
 		})
 	}
+
+	// 追加在线的远程 agent 节点，作为独立地区节点。它们共用同一个代理端口，
+	// 靠 node-<id> 用户名在 resolve 里被解析成对应 agent 出口；代理密码是全局
+	// 共享密码（与 stable/random 一致）。地区节点没有跨地区兜底——离线即从订阅
+	// 消失，由客户端的自动选择/故障转移组切到别的地区。
+	active = append(active, h.collectAgentExports(host, proxyPort, proxyTLS, settings[SettingProxyPassword])...)
 	return active, nil
 }
 
+// collectAgentExports 把当前在线且启用的远程 agent 转成导出节点。名字按地区取，
+// 同地区多个节点追加短后缀去重，保证 Clash proxy-group 成员引用不冲突。
+func (h *Handlers) collectAgentExports(host string, proxyPort int, proxyTLS bool, proxyPassword string) []*proxyExport {
+	if h.Hub == nil {
+		return nil
+	}
+	online := map[string]bool{}
+	for _, o := range h.Hub.Snapshot() {
+		online[o.NodeID] = true
+	}
+	nodes, err := h.DB.ListAgentNodes()
+	if err != nil {
+		return nil
+	}
+
+	usedNames := map[string]int{}
+	var out []*proxyExport
+	for _, n := range nodes {
+		if !n.Enabled || !online[n.NodeID] {
+			continue
+		}
+		label := agentDisplayName(n.Name, n.Country, n.NodeID)
+		// 同名去重：第二个及以后追加 nodeID 短前缀，避免 Clash 节点名冲突。
+		if usedNames[label] > 0 {
+			short := n.NodeID
+			if len(short) > 4 {
+				short = short[:4]
+			}
+			label = fmt.Sprintf("%s-%s", label, short)
+		}
+		usedNames[label]++
+
+		out = append(out, &proxyExport{
+			Name:      label,
+			Username:  proxy.AgentUsername(n.NodeID),
+			Password:  proxyPassword,
+			PublicIP:  n.PublicIP,
+			Country:   n.Country,
+			ProxyHost: host,
+			ProxyPort: proxyPort,
+			TLS:       proxyTLS,
+			IsAgent:   true,
+		})
+	}
+	return out
+}
+
 type proxyExport struct {
-	Username      string
+	Name          string // Clash 节点显示名：固定槽位用用户名，agent 用地区标签
+	Username      string // 代理鉴权用户名：固定槽位用槽位名，agent 用 node-<id>
 	Password      string
 	AccountTag    string
 	AccountStatus string
@@ -95,6 +152,24 @@ type proxyExport struct {
 	ProxyHost     string
 	ProxyPort     int
 	TLS           bool
+	IsAgent       bool
+}
+
+// NodeName 返回 Clash 里的节点显示名。优先用 Name，兜底回退到 Username，
+// 避免空名字生成非法 YAML。
+func (p *proxyExport) NodeName() string {
+	if strings.TrimSpace(p.Name) != "" {
+		return p.Name
+	}
+	return p.Username
+}
+
+// clashScalar 把节点名安全地序列化成 YAML 标量。agent 节点名含空格 / CJK / emoji，
+// 直接裸写在部分 Clash 实现里会解析出错，统一用双引号包裹并转义内部引号与反斜杠。
+func clashScalar(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	return `"` + s + `"`
 }
 
 func writePlain(w http.ResponseWriter, list []*proxyExport) {
@@ -129,15 +204,61 @@ func writeClash(w http.ResponseWriter, list []*proxyExport) {
 	for _, p := range list {
 		writeClashProxy(w, p)
 	}
+
+	writeClashGroups(w, list)
+	writeClashRules(w)
+}
+
+// writeClashGroups 输出代理组。除了让用户手动挑节点的 PROXYFORGE 外，还提供两个自动组：
+//   - 「♻️ 自动选择」(url-test)：定时对所有节点测速，自动选中延迟最低的一个；
+//   - 「🔀 故障转移」(fallback)：按顺序使用节点，当前节点健康检查失败时自动切到下一个。
+//
+// PROXYFORGE 的第一个成员就是「自动选择」，Clash 里 select 组默认选中首项，
+// 所以订阅装上开箱即用就是「自动挑最快 + 出故障自动转移」。用户想手动锁某个节点
+// 或改用严格故障转移，也能在 PROXYFORGE 里切换。
+func writeClashGroups(w http.ResponseWriter, list []*proxyExport) {
 	fmt.Fprintf(w, "\nproxy-groups:\n")
+
+	// 没有可用节点时写一个指向 DIRECT 的最小组：Clash 不接受成员为空的 proxy-group，
+	// 空组会导致整份订阅加载失败，这里退化成直连保证 YAML 合法。
+	if len(list) == 0 {
+		fmt.Fprintf(w, "  - name: PROXYFORGE\n")
+		fmt.Fprintf(w, "    type: select\n")
+		fmt.Fprintf(w, "    proxies:\n")
+		fmt.Fprintf(w, "      - DIRECT\n")
+		return
+	}
+
+	// gstatic 的 generate_204 是各家 Clash 通用的连通性探测地址，返回 204 且体积极小。
+	const healthURL = "http://www.gstatic.com/generate_204"
+
+	fmt.Fprintf(w, "  - name: ♻️ 自动选择\n")
+	fmt.Fprintf(w, "    type: url-test\n")
+	fmt.Fprintf(w, "    url: %s\n", healthURL)
+	fmt.Fprintf(w, "    interval: 300\n")
+	fmt.Fprintf(w, "    tolerance: 50\n")
+	fmt.Fprintf(w, "    proxies:\n")
+	for _, p := range list {
+		fmt.Fprintf(w, "      - %s\n", clashScalar(p.NodeName()))
+	}
+
+	fmt.Fprintf(w, "  - name: 🔀 故障转移\n")
+	fmt.Fprintf(w, "    type: fallback\n")
+	fmt.Fprintf(w, "    url: %s\n", healthURL)
+	fmt.Fprintf(w, "    interval: 300\n")
+	fmt.Fprintf(w, "    proxies:\n")
+	for _, p := range list {
+		fmt.Fprintf(w, "      - %s\n", clashScalar(p.NodeName()))
+	}
+
 	fmt.Fprintf(w, "  - name: PROXYFORGE\n")
 	fmt.Fprintf(w, "    type: select\n")
 	fmt.Fprintf(w, "    proxies:\n")
+	fmt.Fprintf(w, "      - ♻️ 自动选择\n")
+	fmt.Fprintf(w, "      - 🔀 故障转移\n")
 	for _, p := range list {
-		fmt.Fprintf(w, "      - %s\n", p.Username)
+		fmt.Fprintf(w, "      - %s\n", clashScalar(p.NodeName()))
 	}
-
-	writeClashRules(w)
 }
 
 // writeClashRules 输出规则段。没有 rules 时 Clash 规则模式下所有连接都无处匹配、
@@ -162,7 +283,7 @@ func writeClashRules(w http.ResponseWriter) {
 }
 
 func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
-	fmt.Fprintf(w, "  - name: %s\n", p.Username)
+	fmt.Fprintf(w, "  - name: %s\n", clashScalar(p.NodeName()))
 	fmt.Fprintf(w, "    type: http\n")
 	fmt.Fprintf(w, "    server: %s\n", p.ProxyHost)
 	fmt.Fprintf(w, "    port: %d\n", p.ProxyPort)

@@ -134,3 +134,17 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_id INTEGER NOT NULL REFERENCES users(id),
   expires_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS agent_nodes (
+  id INTEGER PRIMARY KEY,
+  node_id TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  public_ip TEXT NOT NULL DEFAULT '',
+  country TEXT NOT NULL DEFAULT '',
+  colo TEXT NOT NULL DEFAULT '',
+  enabled INTEGER NOT NULL DEFAULT 1,
+  last_seen_at TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_nodes_last_seen ON agent_nodes(last_seen_at);

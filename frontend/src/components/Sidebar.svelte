@@ -7,6 +7,7 @@
   const navItems = [
     { href: '/', label: '仪表盘' },
     { href: '/accounts', label: '代理列表' },
+    { href: '/nodes', label: '节点' },
     { href: '/settings', label: '代理设置' },
   ];
 </script>

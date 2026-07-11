@@ -19,7 +19,7 @@ import (
 // mixedServer is the single inbound proxy listener. It supports HTTP proxy
 // requests, CONNECT, and SOCKS5 username/password auth on the same TCP port.
 type mixedServer struct {
-	resolve func(username, password string) []*Tunnel
+	resolve func(username, password string) []Egress
 	onUsage func(ProxyUsage)
 
 	tlsConfig *tls.Config
@@ -31,7 +31,7 @@ type mixedServer struct {
 
 type proxySession struct {
 	username string
-	tunnels  []*Tunnel
+	egresses []Egress
 }
 
 type ProxyUsage struct {
@@ -42,7 +42,7 @@ type ProxyUsage struct {
 	DownBytes  int64
 }
 
-func startProxy(bindAddr string, port int, resolve func(string, string) []*Tunnel, onUsage func(ProxyUsage), tlsConfig *tls.Config) (*mixedServer, error) {
+func startProxy(bindAddr string, port int, resolve func(string, string) []Egress, onUsage func(ProxyUsage), tlsConfig *tls.Config) (*mixedServer, error) {
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0"
 	}
@@ -177,7 +177,7 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader, clientIP s
 		return
 	}
 	session := s.socks5Auth(client, br)
-	if session == nil || len(session.tunnels) == 0 {
+	if session == nil || len(session.egresses) == 0 {
 		return
 	}
 
@@ -232,7 +232,7 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader, clientIP s
 	}
 
 	target := net.JoinHostPort(host, strconv.Itoa(port))
-	remote, tun, err := s.dialVia(session.tunnels, target)
+	remote, eg, err := s.dialVia(session.egresses, target)
 	if err != nil {
 		s.socks5Reply(client, 0x05)
 		return
@@ -244,7 +244,7 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader, clientIP s
 	}
 
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, tun, session, clientIP)
+	s.relay(client, br, remote, eg, session, clientIP)
 }
 
 func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader) *proxySession {
@@ -270,13 +270,13 @@ func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader) *proxySessio
 	}
 
 	username := string(uname)
-	tunnels := s.resolve(username, string(passwd))
-	if len(tunnels) == 0 {
+	egresses := s.resolve(username, string(passwd))
+	if len(egresses) == 0 {
 		_, _ = client.Write([]byte{0x01, 0x01})
 		return nil
 	}
 	_, _ = client.Write([]byte{0x01, 0x00})
-	return &proxySession{username: username, tunnels: tunnels}
+	return &proxySession{username: username, egresses: egresses}
 }
 
 func (s *mixedServer) socks5Reply(client net.Conn, code byte) {
@@ -301,7 +301,7 @@ func (s *mixedServer) handleHTTP(client net.Conn, br *bufio.Reader, clientIP str
 	}
 
 	session := s.httpAuthSession(req)
-	if session == nil || len(session.tunnels) == 0 {
+	if session == nil || len(session.egresses) == 0 {
 		resp := "HTTP/1.1 407 Proxy Authentication Required\r\n" +
 			"Proxy-Authenticate: Basic realm=\"proxyforge\"\r\n" +
 			"Content-Length: 0\r\n\r\n"
@@ -330,18 +330,18 @@ func (s *mixedServer) httpAuthSession(req *http.Request) *proxySession {
 	if !ok {
 		return nil
 	}
-	tunnels := s.resolve(user, pass)
-	if len(tunnels) == 0 {
+	egresses := s.resolve(user, pass)
+	if len(egresses) == 0 {
 		return nil
 	}
-	return &proxySession{username: user, tunnels: tunnels}
+	return &proxySession{username: user, egresses: egresses}
 }
 
 func (s *mixedServer) httpConnect(client net.Conn, br *bufio.Reader, hostport string, session *proxySession, clientIP string) {
 	if !strings.Contains(hostport, ":") {
 		hostport = hostport + ":443"
 	}
-	remote, tun, err := s.dialVia(session.tunnels, hostport)
+	remote, eg, err := s.dialVia(session.egresses, hostport)
 	if err != nil {
 		_, _ = client.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
 		return
@@ -352,7 +352,7 @@ func (s *mixedServer) httpConnect(client net.Conn, br *bufio.Reader, hostport st
 		return
 	}
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, tun, session, clientIP)
+	s.relay(client, br, remote, eg, session, clientIP)
 }
 
 func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.Request, session *proxySession, clientIP string) {
@@ -363,7 +363,7 @@ func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.R
 	if !strings.Contains(host, ":") {
 		host = host + ":80"
 	}
-	remote, tun, err := s.dialVia(session.tunnels, host)
+	remote, eg, err := s.dialVia(session.egresses, host)
 	if err != nil {
 		_, _ = client.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
 		return
@@ -378,45 +378,45 @@ func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.R
 		return
 	}
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, tun, session, clientIP)
+	s.relay(client, br, remote, eg, session, clientIP)
 }
 
 // ---------- shared ----------
 
-func (s *mixedServer) dialVia(tunnels []*Tunnel, target string) (net.Conn, *Tunnel, error) {
-	if len(tunnels) == 0 {
-		return nil, nil, fmt.Errorf("no tunnel")
+func (s *mixedServer) dialVia(egresses []Egress, target string) (net.Conn, Egress, error) {
+	if len(egresses) == 0 {
+		return nil, nil, fmt.Errorf("no egress")
 	}
 	var lastErr error
-	for _, tun := range tunnels {
-		if tun == nil {
+	for _, eg := range egresses {
+		if eg == nil {
 			continue
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 		start := time.Now()
-		conn, err := tun.DialContext(ctx, "tcp", target)
+		conn, err := eg.DialContext(ctx, "tcp", target)
 		cancel()
-		tun.noteDial(time.Since(start), err)
+		eg.NoteDial(time.Since(start), err)
 		if err == nil {
-			return conn, tun, nil
+			return conn, eg, nil
 		}
 		lastErr = err
-		log.Printf("[proxy] dial %s via %s/%s failed: %v", target, tun.cfg.Tag, tun.transport, err)
+		log.Printf("[proxy] dial %s via %s/%s failed: %v", target, eg.Tag(), eg.Kind(), err)
 	}
 	if lastErr == nil {
-		lastErr = fmt.Errorf("no usable tunnel")
+		lastErr = fmt.Errorf("no usable egress")
 	}
 	return nil, nil, lastErr
 }
 
-func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, tun *Tunnel, session *proxySession, clientIP string) {
+func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, eg Egress, session *proxySession, clientIP string) {
 	done := make(chan struct{}, 2)
 	var upBytes int64
 	var downBytes int64
 
 	go func() {
 		n, _ := io.Copy(remote, br)
-		tun.txBytes.Add(n)
+		eg.AddTx(n)
 		upBytes = n
 		if tc, ok := remote.(interface{ CloseWrite() error }); ok {
 			_ = tc.CloseWrite()
@@ -426,7 +426,7 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 
 	go func() {
 		n, _ := io.Copy(client, remote)
-		tun.rxBytes.Add(n)
+		eg.AddRx(n)
 		downBytes = n
 		if tc, ok := client.(interface{ CloseWrite() error }); ok {
 			_ = tc.CloseWrite()
@@ -437,7 +437,7 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 	<-done
 	<-done
 
-	if s.onUsage != nil && tun != nil && (upBytes > 0 || downBytes > 0) {
+	if s.onUsage != nil && eg != nil && (upBytes > 0 || downBytes > 0) {
 		username := ""
 		if session != nil {
 			username = session.username
@@ -445,7 +445,7 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 		s.onUsage(ProxyUsage{
 			ClientIP:   clientIP,
 			Username:   username,
-			AccountTag: tun.cfg.Tag,
+			AccountTag: eg.Tag(),
 			UpBytes:    upBytes,
 			DownBytes:  downBytes,
 		})

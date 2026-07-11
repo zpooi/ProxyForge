@@ -36,6 +36,17 @@ type Manager struct {
 	lastPickedIP map[string]time.Time
 	pickCount    map[string]int64
 	ipPickCount  map[string]int64
+
+	// agentResolver 把 node-<id> 用户名解析成远程 agent 出口。由 agenthub 注入，
+	// 未接入时为 nil。放在 Manager 上是为了让代理监听器的 resolve 能统一分发
+	// 本机 WARP 出口和远程 agent 出口。
+	agentResolver AgentResolver
+}
+
+// AgentResolver 把固定的 agent 节点用户名解析成一个可拨号出口。
+// 由 agenthub.Hub 实现并通过 SetAgentResolver 注入，避免 proxy 包反向依赖 agenthub。
+type AgentResolver interface {
+	ResolveEgress(username string) Egress
 }
 
 type slotBinding struct {
@@ -111,43 +122,96 @@ func (m *Manager) SetProxyTLS(enabled bool, serverName string) {
 	m.mu.Unlock()
 }
 
-func (m *Manager) resolve(username, password string) []*Tunnel {
+// SetAgentResolver 注入远程 agent 节点的解析器。agenthub 启动后调用一次。
+func (m *Manager) SetAgentResolver(r AgentResolver) {
+	m.mu.Lock()
+	m.agentResolver = r
+	m.mu.Unlock()
+}
+
+func (m *Manager) resolve(username, password string) []Egress {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	username = strings.TrimSpace(username)
 	password = strings.TrimSpace(password)
+
+	// node-<id> 是远程 agent 节点，出口固定在那台 VPS 上（拿它所在地区的 IP），
+	// 所以不接入 WARP 池排序，也不做跨地区兜底——离线就返回空，交给客户端的
+	// 自动选择/故障转移组切到别的地区节点。鉴权仍走统一的代理密码。
+	if strings.HasPrefix(username, NodeUsernamePrefix) {
+		if m.password != "" && password != m.password {
+			return nil
+		}
+		if m.agentResolver == nil {
+			return nil
+		}
+		if eg := m.agentResolver.ResolveEgress(username); eg != nil {
+			return []Egress{eg}
+		}
+		return nil
+	}
+
 	if username == "" || strings.EqualFold(username, "random") || strings.EqualFold(username, "stable") {
 		if m.password != "" && password != m.password {
 			return nil
 		}
-		return m.stableCandidatesLocked()
+		return tunnelsAsEgress(m.stableCandidatesLocked())
 	}
 	if slot, ok := m.slots[username]; ok {
 		if password != slot.Password {
 			return nil
 		}
-		t := m.tunnels[slot.AccountTag]
-		if t != nil {
-			m.notePickLocked(slot.AccountTag)
-			return []*Tunnel{t}
-		}
-		return nil
+		return tunnelsAsEgress(m.slotCandidatesLocked(slot.AccountTag))
 	}
 	if t, ok := m.tunnels[username]; ok {
 		if m.password != "" && password != m.password {
 			return nil
 		}
 		m.notePickLocked(username)
-		return []*Tunnel{t}
+		return []Egress{t}
 	}
 	return nil
+}
+
+// tunnelsAsEgress 把 WARP 隧道候选链转成 []Egress。分开保留 *Tunnel 的内部
+// 排序/健康逻辑，只在交给代理监听器的边界处做一次类型提升。
+func tunnelsAsEgress(tunnels []*Tunnel) []Egress {
+	if len(tunnels) == 0 {
+		return nil
+	}
+	out := make([]Egress, 0, len(tunnels))
+	for _, t := range tunnels {
+		if t != nil {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 func (m *Manager) stableCandidatesLocked() []*Tunnel {
 	pool := m.rankedStableCandidatesLocked()
 	if len(pool) > 0 {
 		m.notePickLocked(pool[0].cfg.Tag)
+	}
+	return pool
+}
+
+// slotCandidatesLocked 为固定槽位返回一条带故障转移的拨号候选链：绑定的隧道
+// 排在最前（保住用户期望的出口 IP），后面跟上其余健康隧道按分数排序作为兜底。
+// dialVia 会依次尝试，绑定隧道断掉时自动切到最快的可用隧道，而不是直接失败。
+func (m *Manager) slotCandidatesLocked(tag string) []*Tunnel {
+	primary := m.tunnels[tag]
+	pool := make([]*Tunnel, 0, len(m.tunnels))
+	if primary != nil {
+		m.notePickLocked(tag)
+		pool = append(pool, primary)
+	}
+	for _, t := range m.rankedStableCandidatesLocked() {
+		if t == nil || t.cfg.Tag == tag {
+			continue
+		}
+		pool = append(pool, t)
 	}
 	return pool
 }

@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
 	"github.com/zpooi/ProxyForge/backend/internal/auth"
 	"github.com/zpooi/ProxyForge/backend/internal/db"
 	"github.com/zpooi/ProxyForge/backend/internal/proxy"
@@ -44,6 +45,11 @@ func main() {
 
 	sched := scheduler.New(database, manager, warpClient)
 
+	// agentHub 管理远程出口 agent 的反向连接。注入到 manager 后，node-<id>
+	// 用户名会被解析成对应 agent 出口，与本机 WARP 出口在同一个代理监听器上分发。
+	agentHub := agenthub.New(database)
+	manager.SetAgentResolver(agentHub)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -60,6 +66,7 @@ func main() {
 		DB:        database,
 		Auth:      authService,
 		Scheduler: sched,
+		Hub:       agentHub,
 	}
 
 	httpServer := &http.Server{

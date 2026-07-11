@@ -16,6 +16,10 @@ const (
 	SettingSubscriptionToken    = "subscription_token"
 	SettingProxyPublicHost      = "proxy_public_host"
 	SettingProxyTLS             = "proxy_tls"
+	// SettingAgentToken 是远程 agent 注册的准入 token；SettingPanelPublicHost
+	// 是主控对外可访问的地址（agent 反连、下载安装脚本用），为空时回退到请求 Host。
+	SettingAgentToken      = "agent_token"
+	SettingPanelPublicHost = "panel_public_host"
 )
 
 func parseInt(s string, dst *int) (int, error) {

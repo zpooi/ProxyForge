@@ -8,3 +8,7 @@ bin
 logs
 *.exe
 proxyforge-linux-*
+
+# agent 构建产物：由 Dockerfile / scripts/build-agent.* 生成并内嵌，不入库。
+# 保留 README.md 让 dist/ 目录存在，go:embed 才能在未构建时也编译通过。
+backend/internal/agentdist/dist/pfagent-*

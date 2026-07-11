@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/zpooi/ProxyForge/backend"
+	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
 	"github.com/zpooi/ProxyForge/backend/internal/auth"
 	"github.com/zpooi/ProxyForge/backend/internal/db"
 	"github.com/zpooi/ProxyForge/backend/internal/scheduler"
@@ -17,6 +18,7 @@ type Server struct {
 	DB        *db.DB
 	Auth      *auth.Service
 	Scheduler *scheduler.Scheduler
+	Hub       *agenthub.Hub
 }
 
 func (s *Server) Router() http.Handler {
@@ -26,6 +28,7 @@ func (s *Server) Router() http.Handler {
 		DB:        s.DB,
 		Auth:      s.Auth,
 		Scheduler: s.Scheduler,
+		Hub:       s.Hub,
 	}
 	if err := h.Init(backend.Web()); err != nil {
 		log.Fatalf("init handlers: %v", err)
@@ -43,6 +46,12 @@ func (s *Server) Router() http.Handler {
 	// 免登录订阅端点，靠 URL token 鉴权，供 Clash 客户端定时同步。
 	r.Get("/sub/clash", h.ClashSubscription)
 
+	// 免登录 agent 端点，靠 URL token 鉴权：反向连接、安装脚本、二进制下载。
+	// agent 从 VPS 主动连回，无浏览器会话，故不走登录中间件。
+	r.Get("/agent/link", h.AgentLink)
+	r.Get("/agent/install.sh", h.AgentInstallScript)
+	r.Get("/agent/download", h.AgentDownload)
+
 	// 所有受保护路由走 auth middleware
 	r.Group(func(r chi.Router) {
 		r.Use(s.Auth.Middleware)
@@ -53,6 +62,7 @@ func (s *Server) Router() http.Handler {
 		r.Post("/settings", h.SettingsSave)
 		r.Get("/settings/password", h.PasswordPage)
 		r.Post("/settings/password", h.PasswordSave)
+		r.Get("/nodes", h.NodesPage)
 		r.Get("/ippool", redirectHome)
 		r.Get("/traffic", redirectHome)
 		r.Get("/logs", redirectHome)
@@ -68,6 +78,12 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/settings", h.SettingsSaveJSON)
 		r.Get("/api/export", h.ExportProxies)
 		r.Get("/api/subscription", h.SubscriptionToken)
+
+		// 节点（本机 + 远程 agent）
+		r.Get("/api/nodes/json", h.NodesJSON)
+		r.Post("/api/nodes/enroll", h.NodeEnroll)
+		r.Post("/api/nodes/delete", h.NodeDelete)
+		r.Post("/api/nodes/token/rotate", h.NodeTokenRotate)
 
 		// Actions
 		r.Post("/api/accounts/generate", h.AccountsGenerate)

@@ -4,6 +4,7 @@
   import Dashboard from './pages/Dashboard.svelte';
   import ProxyList from './pages/ProxyList.svelte';
   import Settings from './pages/Settings.svelte';
+  import Nodes from './pages/Nodes.svelte';
   import Login from './pages/Login.svelte';
   import Setup from './pages/Setup.svelte';
   import Password from './pages/Password.svelte';
@@ -29,7 +30,7 @@
     return () => window.removeEventListener('popstate', syncLocation);
   });
 
-  $: route = path === '/accounts' || path === '/settings' || path === '/settings/password' || path === '/login' || path === '/setup' ? path : '/';
+  $: route = path === '/accounts' || path === '/settings' || path === '/settings/password' || path === '/nodes' || path === '/login' || path === '/setup' ? path : '/';
   $: authPage = route === '/login' || route === '/setup';
 </script>
 
@@ -49,6 +50,8 @@
         <Settings />
       {:else if route === '/settings/password'}
         <Password {search} />
+      {:else if route === '/nodes'}
+        <Nodes />
       {:else}
         <Dashboard />
       {/if}

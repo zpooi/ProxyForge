@@ -928,6 +928,79 @@ func (d *DB) ListAccountTests(accountID int64, limit int) ([]*models.AccountTest
 	return out, rows.Err()
 }
 
+// ---------- agent nodes ----------
+
+// UpsertAgentNode 记录/更新一个远程 agent 节点的最近上报信息。node_id 稳定，
+// agent 每次重连都带同一个，靠它幂等 upsert；enabled 与 created_at 首次写入后保留。
+func (d *DB) UpsertAgentNode(nodeID, name, publicIP, country, colo string) error {
+	now := time.Now().UTC().Format(time.RFC3339)
+	_, err := d.conn.Exec(`INSERT INTO agent_nodes
+		(node_id, name, public_ip, country, colo, enabled, last_seen_at, created_at)
+		VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+		ON CONFLICT(node_id) DO UPDATE SET
+			name = excluded.name,
+			public_ip = excluded.public_ip,
+			country = excluded.country,
+			colo = excluded.colo,
+			last_seen_at = excluded.last_seen_at`,
+		nodeID, name, publicIP, country, colo, now, now)
+	return err
+}
+
+// TouchAgentNode 只刷新 last_seen_at，用于心跳保活，避免频繁重写全部字段。
+func (d *DB) TouchAgentNode(nodeID string) error {
+	_, err := d.conn.Exec(`UPDATE agent_nodes SET last_seen_at = ? WHERE node_id = ?`,
+		time.Now().UTC().Format(time.RFC3339), nodeID)
+	return err
+}
+
+func (d *DB) ListAgentNodes() ([]*models.AgentNode, error) {
+	rows, err := d.conn.Query(`SELECT id, node_id, name, public_ip, country, colo, enabled, last_seen_at, created_at
+		FROM agent_nodes ORDER BY country, node_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*models.AgentNode
+	for rows.Next() {
+		var n models.AgentNode
+		var name, publicIP, country, colo, lastSeen, createdAt sql.NullString
+		var enabled int
+		if err := rows.Scan(&n.ID, &n.NodeID, &name, &publicIP, &country, &colo, &enabled, &lastSeen, &createdAt); err != nil {
+			return nil, err
+		}
+		n.Name = name.String
+		n.PublicIP = publicIP.String
+		n.Country = country.String
+		n.Colo = colo.String
+		n.Enabled = enabled == 1
+		if lastSeen.Valid && lastSeen.String != "" {
+			if t, err := time.Parse(time.RFC3339, lastSeen.String); err == nil {
+				n.LastSeenAt = &t
+			}
+		}
+		if createdAt.Valid {
+			n.CreatedAt, _ = time.Parse(time.RFC3339, createdAt.String)
+		}
+		out = append(out, &n)
+	}
+	return out, rows.Err()
+}
+
+func (d *DB) SetAgentNodeEnabled(nodeID string, enabled bool) error {
+	v := 0
+	if enabled {
+		v = 1
+	}
+	_, err := d.conn.Exec(`UPDATE agent_nodes SET enabled = ? WHERE node_id = ?`, v, nodeID)
+	return err
+}
+
+func (d *DB) DeleteAgentNode(nodeID string) error {
+	_, err := d.conn.Exec(`DELETE FROM agent_nodes WHERE node_id = ?`, nodeID)
+	return err
+}
+
 // ---------- helpers ----------
 
 func scanAccount(rows *sql.Rows) (*models.Account, error) {

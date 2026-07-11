@@ -121,6 +121,25 @@ type Setting struct {
 	Value string
 }
 
+// AgentNode 是一台注册进来的远程 agent（部署在其他地区 VPS 上）。它主动反连
+// 主控，出口用那台 VPS 的原生 IP，从而给订阅提供不同地区的节点。这里持久化的
+// 是「见过哪些 agent」及其最近一次上报的地理信息；实时在线状态由 agenthub 在
+// 内存里维护，查询时叠加上来。
+type AgentNode struct {
+	ID         int64
+	NodeID     string // 稳定标识，agent 首次注册时生成并写进它的本地配置，重连复用
+	Name       string // 展示名，默认取地区，可为空
+	PublicIP   string
+	Country    string
+	Colo       string
+	Enabled    bool
+	LastSeenAt *time.Time
+	CreatedAt  time.Time
+	// 以下字段不落库，由 agenthub 内存态在查询时填充。
+	Online    bool
+	LatencyMs int
+}
+
 type TrafficSample struct {
 	SampledAt time.Time
 	UpBps     int64
