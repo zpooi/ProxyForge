@@ -1,6 +1,7 @@
 export function tagLabel(status) {
   return {
     active: '可用',
+    inactive: '离线',
     disabled: '停用',
     error: '错误',
     running: '运行中',

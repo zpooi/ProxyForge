@@ -51,11 +51,31 @@
   });
   onDestroy(() => clearInterval(timer));
 
-  function copyInstall() {
+  async function writeClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const input = document.createElement('textarea');
+    input.value = text;
+    input.setAttribute('readonly', '');
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+  }
+
+  async function copyInstall() {
     if (!installCommand) return;
-    navigator.clipboard?.writeText(installCommand);
-    copied = true;
-    setTimeout(() => (copied = false), 1500);
+    try {
+      await writeClipboard(installCommand);
+      copied = true;
+      setTimeout(() => (copied = false), 1500);
+    } catch (err) {
+      enrollError = '复制失败：' + err.message;
+    }
   }
 
   // 轮换 token 后，旧命令和已安装 agent 的后续重连都会失效。
@@ -118,28 +138,38 @@
 </div>
 
 <div class="enroll-card">
-  <div class="enroll-head">
-    <strong>接入新节点</strong><span class="muted">在目标 VPS 执行命令即可接入</span>
-  </div>
-  {#if enrollError}
-    <div class="banner error">{enrollError}</div>
-  {/if}
-  {#if !hasBinary}
-    <div class="banner warn">
-      未找到 agent 二进制，请先完成构建。
+  <div class="enroll-toolbar">
+    <div class="enroll-head">
+      <strong>接入节点</strong><span>在目标 VPS 执行</span>
     </div>
-  {/if}
-  <div class="cmd-row">
-    <code class="cmd">{installCommand || '生成中…'}</code>
-    <button class="btn-primary" on:click={copyInstall} disabled={!installCommand}>
-      {copied ? '已复制' : '复制'}
-    </button>
-  </div>
-  <div class="enroll-foot">
-    <span class="muted">主控地址：{server || '—'}</span>
     <button class="link-btn" on:click={rotateToken} disabled={rotating}>
       {rotating ? '重置中…' : '重置接入码'}
     </button>
+  </div>
+  <div class="enroll-body">
+    {#if enrollError}
+      <div class="banner error">{enrollError}</div>
+    {/if}
+    {#if !hasBinary}
+      <div class="banner warn">未找到 agent 二进制，请先完成构建。</div>
+    {/if}
+    <div class="cmd-row">
+      <code class="cmd">{installCommand || '生成中…'}</code>
+      <button
+        class="copy-trigger command-copy"
+        class:done={copied}
+        title={copied ? '已复制' : '复制命令'}
+        aria-label={copied ? '已复制' : '复制命令'}
+        on:click={copyInstall}
+        disabled={!installCommand}
+      >
+        <Icon name={copied ? 'check' : 'copy'} size={18} />
+      </button>
+    </div>
+    <div class="enroll-server">
+      <span>主控</span>
+      <code>{server || '—'}</code>
+    </div>
   </div>
 </div>
 
@@ -201,23 +231,39 @@
     background: var(--surface, #fff);
     border: 1px solid var(--border, #e5e7eb);
     border-radius: 10px;
-    padding: 14px 16px;
     margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .enroll-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
   }
   .enroll-head {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: 10px;
+    align-items: baseline;
+    gap: 9px;
+    min-width: 0;
+  }
+  .enroll-head span {
+    color: var(--text-3);
+    font-size: 12px;
+  }
+  .enroll-body {
+    padding: 14px 16px;
   }
   .cmd-row {
-    display: flex;
-    gap: 10px;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    gap: 8px;
+    align-items: center;
   }
   .cmd {
-    flex: 1;
     display: block;
+    min-width: 0;
     padding: 9px 11px;
     background: var(--code-bg, #0f172a);
     color: var(--code-fg, #e2e8f0);
@@ -227,13 +273,28 @@
     overflow-x: auto;
     white-space: nowrap;
   }
-  .enroll-foot {
+  .command-copy {
+    width: 40px;
+    min-height: 38px;
+    padding: 8px;
+  }
+  .enroll-server {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-top: 8px;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+    margin-top: 9px;
+    color: var(--text-3);
+    font-size: 11px;
+  }
+  .enroll-server code {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: transparent;
+    padding: 0;
+    color: var(--text-2);
   }
   .link-btn {
     background: none;
@@ -290,6 +351,13 @@
     border-radius: 8px;
     margin-bottom: 12px;
   }
+  .banner.error {
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #fdeaea;
+    color: var(--danger-hover);
+  }
   :global(.table-wrap) {
     border-radius: 10px;
   }
@@ -310,15 +378,13 @@
     width: 48px;
   }
   @media (max-width: 760px) {
-    .cmd-row {
-      flex-direction: column;
+    .enroll-toolbar {
+      align-items: flex-start;
     }
-    .cmd-row button {
-      width: 100%;
-    }
-    .enroll-foot {
+    .enroll-head {
       align-items: flex-start;
       flex-direction: column;
+      gap: 1px;
     }
   }
 </style>

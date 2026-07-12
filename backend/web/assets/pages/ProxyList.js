@@ -32,7 +32,7 @@ import { onMount } from 'svelte';
 import StatusTag from '../components/StatusTag.js';
 import Icon from '../components/Icon.js';
 import { fetchJSON } from '../lib/api.js';
-import { fmtBps, metric } from '../lib/format.js';
+import { fmtBps, metric, prettyError } from '../lib/format.js';
 import { slotState } from '../lib/status.js';
 
 function get_each_context_1(ctx, list, i) {
@@ -141,20 +141,20 @@ function create_if_block_4(ctx) {
 		c() {
 			div1 = element("div");
 			div0 = element("div");
-			div0.innerHTML = `<strong class="svelte-6v8i8">统一轮换</strong><span class="svelte-6v8i8">3 分钟粘滞 · 故障切换</span>`;
+			div0.innerHTML = `<strong class="svelte-dkq0er">统一轮换</strong><span class="svelte-dkq0er">3 分钟粘滞 · 故障切换</span>`;
 			t2 = space();
 			button = element("button");
 			create_component(icon0.$$.fragment);
 			t3 = space();
 			create_component(icon1.$$.fragment);
-			attr(div0, "class", "rotate-summary svelte-6v8i8");
+			attr(div0, "class", "rotate-summary svelte-dkq0er");
 			attr(button, "type", "button");
-			attr(button, "class", "copy-trigger rotate-trigger svelte-6v8i8");
+			attr(button, "class", "copy-trigger rotate-trigger svelte-dkq0er");
 			attr(button, "title", "复制轮换链接");
 			attr(button, "aria-label", "复制轮换链接");
 			toggle_class(button, "done", /*copied*/ ctx[2] === 'rotate-http' || /*copied*/ ctx[2] === 'rotate-socks5');
 			toggle_class(button, "open", /*menu*/ ctx[5] && /*menu*/ ctx[5].kind === 'rotate');
-			attr(div1, "class", "rotate-block svelte-6v8i8");
+			attr(div1, "class", "rotate-block svelte-dkq0er");
 		},
 		m(target, anchor) {
 			insert(target, div1, anchor);
@@ -236,7 +236,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (294:6) {:else}
+// (296:6) {:else}
 function create_else_block_1(ctx) {
 	let tr;
 
@@ -257,7 +257,7 @@ function create_else_block_1(ctx) {
 	};
 }
 
-// (267:6) {#if slots.length}
+// (269:6) {#if slots.length}
 function create_if_block_2(ctx) {
 	let each_1_anchor;
 	let current;
@@ -291,7 +291,7 @@ function create_if_block_2(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty & /*copied, slots, menu, toggleMenu, slotState, fmtBps, metric, countryLabel*/ 165) {
+			if (dirty & /*copied, slots, menu, toggleMenu, prettyError, slotState, fmtBps, metric, countryLabel*/ 165) {
 				each_value_2 = /*slots*/ ctx[0];
 				let i;
 
@@ -343,7 +343,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (268:8) {#each slots as slot}
+// (270:8) {#each slots as slot}
 function create_each_block_2(ctx) {
 	let tr;
 	let td0;
@@ -389,6 +389,7 @@ function create_each_block_2(ctx) {
 	let t13;
 	let td7;
 	let statustag;
+	let td7_title_value;
 	let t14;
 	let td8;
 	let button;
@@ -453,6 +454,7 @@ function create_each_block_2(ctx) {
 			t15 = space();
 			create_component(icon1.$$.fragment);
 			t16 = space();
+			attr(td7, "title", td7_title_value = prettyError(/*slot*/ ctx[26].last_error));
 			attr(button, "type", "button");
 			attr(button, "class", "icon-button copy-trigger");
 			attr(button, "title", "复制代理链接");
@@ -522,6 +524,11 @@ function create_each_block_2(ctx) {
 			const statustag_changes = {};
 			if (dirty & /*slots*/ 1) statustag_changes.status = slotState(/*slot*/ ctx[26]);
 			statustag.$set(statustag_changes);
+
+			if (!current || dirty & /*slots*/ 1 && td7_title_value !== (td7_title_value = prettyError(/*slot*/ ctx[26].last_error))) {
+				attr(td7, "title", td7_title_value);
+			}
+
 			const icon0_changes = {};
 
 			if (dirty & /*copied, slots*/ 5) icon0_changes.name = /*copied*/ ctx[2] === `${/*slot*/ ctx[26].username}-http` || /*copied*/ ctx[2] === `${/*slot*/ ctx[26].username}-socks5`
@@ -562,7 +569,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (301:0) {#if menu}
+// (303:0) {#if menu}
 function create_if_block(ctx) {
 	let div0;
 	let t0;
@@ -678,7 +685,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (312:4) {:else}
+// (314:4) {:else}
 function create_else_block(ctx) {
 	let each_1_anchor;
 	let current;
@@ -764,7 +771,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (305:4) {#if menu.kind === 'rotate'}
+// (307:4) {#if menu.kind === 'rotate'}
 function create_if_block_1(ctx) {
 	let each_1_anchor;
 	let current;
@@ -850,7 +857,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (314:6) {#each SCHEMES as scheme}
+// (316:6) {#each SCHEMES as scheme}
 function create_each_block_1(ctx) {
 	let button;
 	let icon;
@@ -914,7 +921,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (306:6) {#each SCHEMES as scheme}
+// (308:6) {#each SCHEMES as scheme}
 function create_each_block(ctx) {
 	let button;
 	let icon;

@@ -3,7 +3,7 @@
   import StatusTag from '../components/StatusTag.svelte';
   import Icon from '../components/Icon.svelte';
   import { fetchJSON } from '../lib/api.js';
-  import { fmtBps, metric } from '../lib/format.js';
+  import { fmtBps, metric, prettyError } from '../lib/format.js';
   import { slotState } from '../lib/status.js';
 
   const SCHEMES = [
@@ -219,6 +219,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
     gap: 16px;
     margin-top: 6px;
     padding: 12px 14px;
@@ -245,6 +246,7 @@
   .rotate-trigger {
     min-width: 42px;
     min-height: 34px;
+    margin-left: auto;
     flex-shrink: 0;
   }
   @media (max-width: 620px) {
@@ -274,7 +276,7 @@
             <td>{slot.account_tag ? metric(slot.latency_ms, ' ms') : '-'}</td>
             <td>{slot.speed_bps ? fmtBps(slot.speed_bps) : '-'}</td>
             <td>{slot.packet_loss ? (slot.packet_loss * 100).toFixed(0) + '%' : '0%'}</td>
-            <td><StatusTag status={slotState(slot)} /></td>
+            <td title={prettyError(slot.last_error)}><StatusTag status={slotState(slot)} /></td>
             <td>
               <button
                 type="button"

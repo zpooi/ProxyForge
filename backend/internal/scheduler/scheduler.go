@@ -17,12 +17,12 @@ import (
 )
 
 const (
-	minWarpPoolReserve     = 3
-	maxAutoRegisterBatch   = 50
-	minHealthySpeedBps     = 120 * 1024
-	maxHealthyLatencyMs    = 700
-	maxHealthyPacketLoss   = 0.50
-	untestedAccountGrace   = 3 * time.Minute
+	minWarpPoolReserve   = 3
+	maxAutoRegisterBatch = 50
+	minHealthySpeedBps   = 120 * 1024
+	maxHealthyLatencyMs  = 700
+	maxHealthyPacketLoss = 0.50
+	untestedAccountGrace = 3 * time.Minute
 	// 探测间隔拉长到 60s，配合更高的重绑阈值降低抖动。免费 WARP 出口 IP
 	// 本来就会自然漂移，频繁探测 + 低阈值会让 IP 一直变、节点被反复换掉。
 	slotProbeInterval  = 60 * time.Second
@@ -300,12 +300,13 @@ func (s *Scheduler) autoRefill(ctx context.Context) {
 		return
 	}
 	healthy := healthyAccountCount(active)
+	uniqueHealthy := healthyUniqueIPCount(active)
 	if len(active) > 0 && healthy == 0 && s.manager.RunningCount() == 0 {
 		log.Printf("[scheduler] auto-refill skipped: active WARP accounts exist but no healthy tunnel is running; waiting for WARP connectivity to recover")
 		return
 	}
 	target := s.targetWarpPoolSize(slotCount)
-	need := target - healthy
+	need := requiredAccountRegistrations(slotCount, target, active)
 	if need <= 0 {
 		if _, err := s.healProxySlots(ctx, true); err != nil {
 			log.Printf("[scheduler] auto-refill heal slots: %v", err)
@@ -316,7 +317,7 @@ func (s *Scheduler) autoRefill(ctx context.Context) {
 		need = maxAutoRegisterBatch
 	}
 
-	log.Printf("[scheduler] auto-refill: active=%d healthy=%d target_pool=%d, registering %d account(s)", len(active), healthy, target, need)
+	log.Printf("[scheduler] auto-refill: active=%d healthy=%d unique_ips=%d target_pool=%d, registering %d account(s)", len(active), healthy, uniqueHealthy, target, need)
 	runID, _ := s.db.StartRun("auto-generate")
 	inserted, err := s.GenerateAccounts(ctx, need)
 	if err != nil {
@@ -714,7 +715,7 @@ func (s *Scheduler) healProxySlots(ctx context.Context, allowRegister bool) (int
 	if err != nil {
 		return changed, err
 	}
-	need := s.targetWarpPoolSize(slotCount) - healthyAccountCount(active)
+	need := requiredAccountRegistrations(slotCount, s.targetWarpPoolSize(slotCount), active)
 	if need < missing {
 		need = missing
 	}
@@ -799,6 +800,13 @@ func (s *Scheduler) rebindProxySlots() (changed, missing int, err error) {
 		if candidate == nil {
 			missing++
 			if current != nil {
+				if currentBindingConflicts(current, slot, usedAccount, usedIP) {
+					if err := s.db.UnassignProxySlot(slot.ID, "等待唯一出口 IP"); err != nil {
+						return changed, missing, err
+					}
+					changed++
+					continue
+				}
 				usedAccount[current.ID] = true
 				if ip := slotEffectiveIP(slot, current); ip != "" {
 					usedIP[ip] = true
@@ -952,6 +960,42 @@ func healthyAccountCount(accounts []*models.Account) int {
 		}
 	}
 	return count
+}
+
+func healthyUniqueIPCount(accounts []*models.Account) int {
+	ips := make(map[string]struct{}, len(accounts))
+	for _, a := range accounts {
+		if !accountUsable(a) {
+			continue
+		}
+		ip := strings.TrimSpace(a.LastPublicIP)
+		if ip != "" {
+			ips[ip] = struct{}{}
+		}
+	}
+	return len(ips)
+}
+
+func requiredAccountRegistrations(slotCount, targetPool int, accounts []*models.Account) int {
+	need := targetPool - healthyAccountCount(accounts)
+	if uniqueGap := slotCount - healthyUniqueIPCount(accounts); uniqueGap > need {
+		need = uniqueGap
+	}
+	if need < 0 {
+		return 0
+	}
+	return need
+}
+
+func currentBindingConflicts(current *models.Account, slot *models.ProxySlot, usedAccount map[int64]bool, usedIP map[string]bool) bool {
+	if current == nil {
+		return false
+	}
+	if usedAccount[current.ID] {
+		return true
+	}
+	ip := slotEffectiveIP(slot, current)
+	return ip != "" && usedIP[ip]
 }
 
 func accountUsable(a *models.Account) bool {
