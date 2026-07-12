@@ -27,6 +27,7 @@ import {
 
 import { onMount, onDestroy } from 'svelte';
 import StatusTag from '../components/StatusTag.js';
+import Icon from '../components/Icon.js';
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
@@ -34,8 +35,8 @@ function get_each_context(ctx, list, i) {
 	return child_ctx;
 }
 
-// (127:2) {#if enrollError}
-function create_if_block_4(ctx) {
+// (124:2) {#if enrollError}
+function create_if_block_6(ctx) {
 	let div;
 	let t;
 
@@ -58,15 +59,15 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (130:2) {#if !hasBinary}
-function create_if_block_3(ctx) {
+// (127:2) {#if !hasBinary}
+function create_if_block_5(ctx) {
 	let div;
 
 	return {
 		c() {
 			div = element("div");
-			div.textContent = "当前主控未内嵌 agent 二进制，下载会失败。请在构建时先交叉编译（见 scripts/build-agent.sh），Docker 部署会自动处理。";
-			attr(div, "class", "banner warn svelte-7gi6c9");
+			div.textContent = "未找到 agent 二进制，请先完成构建。";
+			attr(div, "class", "banner warn svelte-defy6m");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -77,8 +78,8 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (149:0) {#if error}
-function create_if_block_2(ctx) {
+// (146:0) {#if error}
+function create_if_block_4(ctx) {
 	let div;
 	let t;
 
@@ -101,13 +102,136 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (155:0) {:else}
+// (152:0) {:else}
 function create_else_block(ctx) {
 	let div;
 	let table;
 	let thead;
-	let t16;
+	let t6;
 	let tbody;
+	let current_block_type_index;
+	let if_block;
+	let current;
+	const if_block_creators = [create_if_block_1, create_else_block_1];
+	const if_blocks = [];
+
+	function select_block_type_1(ctx, dirty) {
+		if (/*nodes*/ ctx[0].length) return 0;
+		return 1;
+	}
+
+	current_block_type_index = select_block_type_1(ctx, -1);
+	if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+
+	return {
+		c() {
+			div = element("div");
+			table = element("table");
+			thead = element("thead");
+			thead.innerHTML = `<tr><th>节点</th><th>出口 IP</th><th>地区</th><th>延迟</th><th>流量 ↑ / ↓</th><th>状态</th><th></th></tr>`;
+			t6 = space();
+			tbody = element("tbody");
+			if_block.c();
+			attr(div, "class", "table-wrap");
+		},
+		m(target, anchor) {
+			insert(target, div, anchor);
+			append(div, table);
+			append(table, thead);
+			append(table, t6);
+			append(table, tbody);
+			if_blocks[current_block_type_index].m(tbody, null);
+			current = true;
+		},
+		p(ctx, dirty) {
+			let previous_block_index = current_block_type_index;
+			current_block_type_index = select_block_type_1(ctx, dirty);
+
+			if (current_block_type_index === previous_block_index) {
+				if_blocks[current_block_type_index].p(ctx, dirty);
+			} else {
+				group_outros();
+
+				transition_out(if_blocks[previous_block_index], 1, 1, () => {
+					if_blocks[previous_block_index] = null;
+				});
+
+				check_outros();
+				if_block = if_blocks[current_block_type_index];
+
+				if (!if_block) {
+					if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+					if_block.c();
+				} else {
+					if_block.p(ctx, dirty);
+				}
+
+				transition_in(if_block, 1);
+				if_block.m(tbody, null);
+			}
+		},
+		i(local) {
+			if (current) return;
+			transition_in(if_block);
+			current = true;
+		},
+		o(local) {
+			transition_out(if_block);
+			current = false;
+		},
+		d(detaching) {
+			if (detaching) detach(div);
+			if_blocks[current_block_type_index].d();
+		}
+	};
+}
+
+// (150:0) {#if loading}
+function create_if_block(ctx) {
+	let div;
+
+	return {
+		c() {
+			div = element("div");
+			div.textContent = "加载中…";
+			attr(div, "class", "loading");
+		},
+		m(target, anchor) {
+			insert(target, div, anchor);
+		},
+		p: noop,
+		i: noop,
+		o: noop,
+		d(detaching) {
+			if (detaching) detach(div);
+		}
+	};
+}
+
+// (185:8) {:else}
+function create_else_block_1(ctx) {
+	let tr;
+
+	return {
+		c() {
+			tr = element("tr");
+			tr.innerHTML = `<td class="empty-state svelte-defy6m" colspan="7">暂无节点</td>`;
+		},
+		m(target, anchor) {
+			insert(target, tr, anchor);
+		},
+		p: noop,
+		i: noop,
+		o: noop,
+		d(detaching) {
+			if (detaching) detach(tr);
+		}
+	};
+}
+
+// (159:8) {#if nodes.length}
+function create_if_block_1(ctx) {
+	let each_1_anchor;
 	let current;
 	let each_value = /*nodes*/ ctx[0];
 	let each_blocks = [];
@@ -122,42 +246,20 @@ function create_else_block(ctx) {
 
 	return {
 		c() {
-			div = element("div");
-			table = element("table");
-			thead = element("thead");
-
-			thead.innerHTML = `<tr><th>节点</th> 
-          <th>类型</th> 
-          <th>出口 IP</th> 
-          <th>地区</th> 
-          <th>延迟</th> 
-          <th>流量 (↑/↓)</th> 
-          <th>状态</th> 
-          <th>最近在线</th> 
-          <th></th></tr>`;
-
-			t16 = space();
-			tbody = element("tbody");
-
 			for (let i = 0; i < each_blocks.length; i += 1) {
 				each_blocks[i].c();
 			}
 
-			attr(div, "class", "table-wrap");
+			each_1_anchor = empty();
 		},
 		m(target, anchor) {
-			insert(target, div, anchor);
-			append(div, table);
-			append(table, thead);
-			append(table, t16);
-			append(table, tbody);
-
 			for (let i = 0; i < each_blocks.length; i += 1) {
 				if (each_blocks[i]) {
-					each_blocks[i].m(tbody, null);
+					each_blocks[i].m(target, anchor);
 				}
 			}
 
+			insert(target, each_1_anchor, anchor);
 			current = true;
 		},
 		p(ctx, dirty) {
@@ -175,7 +277,7 @@ function create_else_block(ctx) {
 						each_blocks[i] = create_each_block(child_ctx);
 						each_blocks[i].c();
 						transition_in(each_blocks[i], 1);
-						each_blocks[i].m(tbody, null);
+						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
 					}
 				}
 
@@ -207,39 +309,44 @@ function create_else_block(ctx) {
 			current = false;
 		},
 		d(detaching) {
-			if (detaching) detach(div);
 			destroy_each(each_blocks, detaching);
+			if (detaching) detach(each_1_anchor);
 		}
 	};
 }
 
-// (153:0) {#if loading}
-function create_if_block(ctx) {
-	let div;
+// (173:18) {#if !node.online}
+function create_if_block_3(ctx) {
+	let span;
+	let t_value = fmtSeen(/*node*/ ctx[16].last_seen) + "";
+	let t;
 
 	return {
 		c() {
-			div = element("div");
-			div.textContent = "加载中…";
-			attr(div, "class", "loading");
+			span = element("span");
+			t = text(t_value);
 		},
 		m(target, anchor) {
-			insert(target, div, anchor);
+			insert(target, span, anchor);
+			append(span, t);
 		},
-		p: noop,
-		i: noop,
-		o: noop,
+		p(ctx, dirty) {
+			if (dirty & /*nodes*/ 1 && t_value !== (t_value = fmtSeen(/*node*/ ctx[16].last_seen) + "")) set_data(t, t_value);
+		},
 		d(detaching) {
-			if (detaching) detach(div);
+			if (detaching) detach(span);
 		}
 	};
 }
 
-// (183:14) {#if node.kind !== 'local'}
-function create_if_block_1(ctx) {
+// (177:16) {#if node.kind !== 'local'}
+function create_if_block_2(ctx) {
 	let button;
+	let icon;
+	let current;
 	let mounted;
 	let dispose;
+	icon = new Icon({ props: { name: "delete", size: 17 } });
 
 	function click_handler() {
 		return /*click_handler*/ ctx[12](/*node*/ ctx[16]);
@@ -248,12 +355,15 @@ function create_if_block_1(ctx) {
 	return {
 		c() {
 			button = element("button");
-			button.textContent = "删除";
-			attr(button, "class", "icon-btn danger svelte-7gi6c9");
+			create_component(icon.$$.fragment);
+			attr(button, "class", "icon-btn danger node-delete svelte-defy6m");
 			attr(button, "title", "删除节点");
+			attr(button, "aria-label", "删除节点");
 		},
 		m(target, anchor) {
 			insert(target, button, anchor);
+			mount_component(icon, button, null);
+			current = true;
 
 			if (!mounted) {
 				dispose = listen(button, "click", click_handler);
@@ -263,30 +373,41 @@ function create_if_block_1(ctx) {
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
 		},
+		i(local) {
+			if (current) return;
+			transition_in(icon.$$.fragment, local);
+			current = true;
+		},
+		o(local) {
+			transition_out(icon.$$.fragment, local);
+			current = false;
+		},
 		d(detaching) {
 			if (detaching) detach(button);
+			destroy_component(icon);
 			mounted = false;
 			dispose();
 		}
 	};
 }
 
-// (172:8) {#each nodes as node}
+// (160:10) {#each nodes as node}
 function create_each_block(ctx) {
 	let tr;
 	let td0;
+	let div0;
 	let t0_value = /*node*/ ctx[16].name + "";
 	let t0;
 	let t1;
-	let td1;
-	let t2_value = (/*node*/ ctx[16].kind === 'local' ? '本机' : 'agent') + "";
+	let div1;
+	let t2_value = (/*node*/ ctx[16].kind === 'local' ? '本机' : 'Agent') + "";
 	let t2;
 	let t3;
-	let td2;
+	let td1;
 	let t4_value = (/*node*/ ctx[16].public_ip || '—') + "";
 	let t4;
 	let t5;
-	let td3;
+	let td2;
 	let t6_value = (/*node*/ ctx[16].country || '—') + "";
 	let t6;
 
@@ -296,7 +417,7 @@ function create_each_block(ctx) {
 
 	let t7;
 	let t8;
-	let td4;
+	let td3;
 
 	let t9_value = (/*node*/ ctx[16].latency_ms
 	? /*node*/ ctx[16].latency_ms + ' ms'
@@ -304,26 +425,20 @@ function create_each_block(ctx) {
 
 	let t9;
 	let t10;
-	let td5;
+	let td4;
 	let t11_value = fmtBytes(/*node*/ ctx[16].tx_bytes) + "";
 	let t11;
 	let t12;
 	let t13_value = fmtBytes(/*node*/ ctx[16].rx_bytes) + "";
 	let t13;
 	let t14;
-	let td6;
+	let td5;
+	let div2;
 	let statustag;
 	let t15;
-	let td7;
-
-	let t16_value = (/*node*/ ctx[16].online
-	? '在线'
-	: fmtSeen(/*node*/ ctx[16].last_seen)) + "";
-
 	let t16;
+	let td6;
 	let t17;
-	let td8;
-	let t18;
 	let current;
 
 	statustag = new StatusTag({
@@ -332,82 +447,87 @@ function create_each_block(ctx) {
 			}
 		});
 
-	let if_block = /*node*/ ctx[16].kind !== 'local' && create_if_block_1(ctx);
+	let if_block0 = !/*node*/ ctx[16].online && create_if_block_3(ctx);
+	let if_block1 = /*node*/ ctx[16].kind !== 'local' && create_if_block_2(ctx);
 
 	return {
 		c() {
 			tr = element("tr");
 			td0 = element("td");
+			div0 = element("div");
 			t0 = text(t0_value);
 			t1 = space();
-			td1 = element("td");
+			div1 = element("div");
 			t2 = text(t2_value);
 			t3 = space();
-			td2 = element("td");
+			td1 = element("td");
 			t4 = text(t4_value);
 			t5 = space();
-			td3 = element("td");
+			td2 = element("td");
 			t6 = text(t6_value);
 			t7 = text(t7_value);
 			t8 = space();
-			td4 = element("td");
+			td3 = element("td");
 			t9 = text(t9_value);
 			t10 = space();
-			td5 = element("td");
+			td4 = element("td");
 			t11 = text(t11_value);
 			t12 = text(" / ");
 			t13 = text(t13_value);
 			t14 = space();
-			td6 = element("td");
+			td5 = element("td");
+			div2 = element("div");
 			create_component(statustag.$$.fragment);
 			t15 = space();
-			td7 = element("td");
-			t16 = text(t16_value);
+			if (if_block0) if_block0.c();
+			t16 = space();
+			td6 = element("td");
+			if (if_block1) if_block1.c();
 			t17 = space();
-			td8 = element("td");
-			if (if_block) if_block.c();
-			t18 = space();
-			attr(td2, "class", "mono");
-			attr(td5, "class", "mono");
-			attr(td7, "class", "muted");
+			attr(div0, "class", "node-name svelte-defy6m");
+			attr(div1, "class", "node-kind svelte-defy6m");
+			attr(td1, "class", "mono");
+			attr(td4, "class", "mono");
+			attr(div2, "class", "node-status svelte-defy6m");
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
 			append(tr, td0);
-			append(td0, t0);
-			append(tr, t1);
-			append(tr, td1);
-			append(td1, t2);
+			append(td0, div0);
+			append(div0, t0);
+			append(td0, t1);
+			append(td0, div1);
+			append(div1, t2);
 			append(tr, t3);
-			append(tr, td2);
-			append(td2, t4);
+			append(tr, td1);
+			append(td1, t4);
 			append(tr, t5);
-			append(tr, td3);
-			append(td3, t6);
-			append(td3, t7);
+			append(tr, td2);
+			append(td2, t6);
+			append(td2, t7);
 			append(tr, t8);
-			append(tr, td4);
-			append(td4, t9);
+			append(tr, td3);
+			append(td3, t9);
 			append(tr, t10);
-			append(tr, td5);
-			append(td5, t11);
-			append(td5, t12);
-			append(td5, t13);
+			append(tr, td4);
+			append(td4, t11);
+			append(td4, t12);
+			append(td4, t13);
 			append(tr, t14);
+			append(tr, td5);
+			append(td5, div2);
+			mount_component(statustag, div2, null);
+			append(div2, t15);
+			if (if_block0) if_block0.m(div2, null);
+			append(tr, t16);
 			append(tr, td6);
-			mount_component(statustag, td6, null);
-			append(tr, t15);
-			append(tr, td7);
-			append(td7, t16);
+			if (if_block1) if_block1.m(td6, null);
 			append(tr, t17);
-			append(tr, td8);
-			if (if_block) if_block.m(td8, null);
-			append(tr, t18);
 			current = true;
 		},
 		p(ctx, dirty) {
 			if ((!current || dirty & /*nodes*/ 1) && t0_value !== (t0_value = /*node*/ ctx[16].name + "")) set_data(t0, t0_value);
-			if ((!current || dirty & /*nodes*/ 1) && t2_value !== (t2_value = (/*node*/ ctx[16].kind === 'local' ? '本机' : 'agent') + "")) set_data(t2, t2_value);
+			if ((!current || dirty & /*nodes*/ 1) && t2_value !== (t2_value = (/*node*/ ctx[16].kind === 'local' ? '本机' : 'Agent') + "")) set_data(t2, t2_value);
 			if ((!current || dirty & /*nodes*/ 1) && t4_value !== (t4_value = (/*node*/ ctx[16].public_ip || '—') + "")) set_data(t4, t4_value);
 			if ((!current || dirty & /*nodes*/ 1) && t6_value !== (t6_value = (/*node*/ ctx[16].country || '—') + "")) set_data(t6, t6_value);
 
@@ -425,78 +545,100 @@ function create_each_block(ctx) {
 			if (dirty & /*nodes*/ 1) statustag_changes.status = /*node*/ ctx[16].online ? 'active' : 'inactive';
 			statustag.$set(statustag_changes);
 
-			if ((!current || dirty & /*nodes*/ 1) && t16_value !== (t16_value = (/*node*/ ctx[16].online
-			? '在线'
-			: fmtSeen(/*node*/ ctx[16].last_seen)) + "")) set_data(t16, t16_value);
+			if (!/*node*/ ctx[16].online) {
+				if (if_block0) {
+					if_block0.p(ctx, dirty);
+				} else {
+					if_block0 = create_if_block_3(ctx);
+					if_block0.c();
+					if_block0.m(div2, null);
+				}
+			} else if (if_block0) {
+				if_block0.d(1);
+				if_block0 = null;
+			}
 
 			if (/*node*/ ctx[16].kind !== 'local') {
-				if (if_block) {
-					if_block.p(ctx, dirty);
+				if (if_block1) {
+					if_block1.p(ctx, dirty);
+
+					if (dirty & /*nodes*/ 1) {
+						transition_in(if_block1, 1);
+					}
 				} else {
-					if_block = create_if_block_1(ctx);
-					if_block.c();
-					if_block.m(td8, null);
+					if_block1 = create_if_block_2(ctx);
+					if_block1.c();
+					transition_in(if_block1, 1);
+					if_block1.m(td6, null);
 				}
-			} else if (if_block) {
-				if_block.d(1);
-				if_block = null;
+			} else if (if_block1) {
+				group_outros();
+
+				transition_out(if_block1, 1, 1, () => {
+					if_block1 = null;
+				});
+
+				check_outros();
 			}
 		},
 		i(local) {
 			if (current) return;
 			transition_in(statustag.$$.fragment, local);
+			transition_in(if_block1);
 			current = true;
 		},
 		o(local) {
 			transition_out(statustag.$$.fragment, local);
+			transition_out(if_block1);
 			current = false;
 		},
 		d(detaching) {
 			if (detaching) detach(tr);
 			destroy_component(statustag);
-			if (if_block) if_block.d();
+			if (if_block0) if_block0.d();
+			if (if_block1) if_block1.d();
 		}
 	};
 }
 
 function create_fragment(ctx) {
+	let div0;
+	let t1;
+	let div4;
 	let div1;
-	let t3;
-	let div5;
+	let t4;
+	let t5;
+	let t6;
 	let div2;
+	let code;
+	let t7_value = (/*installCommand*/ ctx[3] || '生成中…') + "";
 	let t7;
 	let t8;
-	let t9;
-	let div3;
-	let code;
-	let t10_value = (/*installCommand*/ ctx[3] || '生成中…') + "";
-	let t10;
-	let t11;
 	let button0;
-	let t12_value = (/*copied*/ ctx[7] ? '已复制' : '复制') + "";
-	let t12;
+	let t9_value = (/*copied*/ ctx[7] ? '已复制' : '复制') + "";
+	let t9;
 	let button0_disabled_value;
-	let t13;
-	let div4;
+	let t10;
+	let div3;
 	let span1;
+	let t11;
+	let t12_value = (/*server*/ ctx[4] || '—') + "";
+	let t12;
+	let t13;
+	let button1;
+	let t14_value = (/*rotating*/ ctx[8] ? '重置中…' : '重置接入码') + "";
 	let t14;
-	let t15_value = (/*server*/ ctx[4] || '—') + "";
 	let t15;
 	let t16;
-	let button1;
-	let t17_value = (/*rotating*/ ctx[8] ? '轮换中…' : '轮换 token（撤销旧命令）') + "";
-	let t17;
-	let t18;
-	let t19;
 	let current_block_type_index;
 	let if_block3;
 	let if_block3_anchor;
 	let current;
 	let mounted;
 	let dispose;
-	let if_block0 = /*enrollError*/ ctx[6] && create_if_block_4(ctx);
-	let if_block1 = !/*hasBinary*/ ctx[5] && create_if_block_3(ctx);
-	let if_block2 = /*error*/ ctx[2] && create_if_block_2(ctx);
+	let if_block0 = /*enrollError*/ ctx[6] && create_if_block_6(ctx);
+	let if_block1 = !/*hasBinary*/ ctx[5] && create_if_block_5(ctx);
+	let if_block2 = /*error*/ ctx[2] && create_if_block_4(ctx);
 	const if_block_creators = [create_if_block, create_else_block];
 	const if_blocks = [];
 
@@ -510,81 +652,75 @@ function create_fragment(ctx) {
 
 	return {
 		c() {
+			div0 = element("div");
+			div0.innerHTML = `<h2 class="svelte-defy6m">节点</h2>`;
+			t1 = space();
+			div4 = element("div");
 			div1 = element("div");
-
-			div1.innerHTML = `<div><h1>节点</h1> 
-    <p class="muted">本机 WARP 出口 + 各地区远程 agent 出口。在其他 VPS 一行命令即可接入，用它本机 IP 作为出口。</p></div>`;
-
-			t3 = space();
-			div5 = element("div");
-			div2 = element("div");
-
-			div2.innerHTML = `<strong>接入新节点</strong> 
-    <span class="muted">在目标 VPS（root）上执行下面这行，它会装成 systemd 服务常驻自启</span>`;
-
-			t7 = space();
+			div1.innerHTML = `<strong>接入新节点</strong><span class="muted">在目标 VPS 执行命令即可接入</span>`;
+			t4 = space();
 			if (if_block0) if_block0.c();
-			t8 = space();
+			t5 = space();
 			if (if_block1) if_block1.c();
-			t9 = space();
-			div3 = element("div");
+			t6 = space();
+			div2 = element("div");
 			code = element("code");
-			t10 = text(t10_value);
-			t11 = space();
+			t7 = text(t7_value);
+			t8 = space();
 			button0 = element("button");
+			t9 = text(t9_value);
+			t10 = space();
+			div3 = element("div");
+			span1 = element("span");
+			t11 = text("主控地址：");
 			t12 = text(t12_value);
 			t13 = space();
-			div4 = element("div");
-			span1 = element("span");
-			t14 = text("主控地址：");
-			t15 = text(t15_value);
-			t16 = space();
 			button1 = element("button");
-			t17 = text(t17_value);
-			t18 = space();
+			t14 = text(t14_value);
+			t15 = space();
 			if (if_block2) if_block2.c();
-			t19 = space();
+			t16 = space();
 			if_block3.c();
 			if_block3_anchor = empty();
-			attr(div1, "class", "page-header");
-			attr(div2, "class", "enroll-head svelte-7gi6c9");
-			attr(code, "class", "cmd svelte-7gi6c9");
-			attr(button0, "class", "btn-primary");
+			attr(div0, "class", "page-header compact-header svelte-defy6m");
+			attr(div1, "class", "enroll-head svelte-defy6m");
+			attr(code, "class", "cmd svelte-defy6m");
+			attr(button0, "class", "btn-primary svelte-defy6m");
 			button0.disabled = button0_disabled_value = !/*installCommand*/ ctx[3];
-			attr(div3, "class", "cmd-row svelte-7gi6c9");
+			attr(div2, "class", "cmd-row svelte-defy6m");
 			attr(span1, "class", "muted");
-			attr(button1, "class", "link-btn svelte-7gi6c9");
+			attr(button1, "class", "link-btn svelte-defy6m");
 			button1.disabled = /*rotating*/ ctx[8];
-			attr(div4, "class", "enroll-foot svelte-7gi6c9");
-			attr(div5, "class", "enroll-card svelte-7gi6c9");
+			attr(div3, "class", "enroll-foot svelte-defy6m");
+			attr(div4, "class", "enroll-card svelte-defy6m");
 		},
 		m(target, anchor) {
-			insert(target, div1, anchor);
-			insert(target, t3, anchor);
-			insert(target, div5, anchor);
-			append(div5, div2);
-			append(div5, t7);
-			if (if_block0) if_block0.m(div5, null);
-			append(div5, t8);
-			if (if_block1) if_block1.m(div5, null);
-			append(div5, t9);
-			append(div5, div3);
-			append(div3, code);
-			append(code, t10);
-			append(div3, t11);
-			append(div3, button0);
-			append(button0, t12);
-			append(div5, t13);
-			append(div5, div4);
-			append(div4, span1);
-			append(span1, t14);
-			append(span1, t15);
-			append(div4, t16);
-			append(div4, button1);
-			append(button1, t17);
-			insert(target, t18, anchor);
+			insert(target, div0, anchor);
+			insert(target, t1, anchor);
+			insert(target, div4, anchor);
+			append(div4, div1);
+			append(div4, t4);
+			if (if_block0) if_block0.m(div4, null);
+			append(div4, t5);
+			if (if_block1) if_block1.m(div4, null);
+			append(div4, t6);
+			append(div4, div2);
+			append(div2, code);
+			append(code, t7);
+			append(div2, t8);
+			append(div2, button0);
+			append(button0, t9);
+			append(div4, t10);
+			append(div4, div3);
+			append(div3, span1);
+			append(span1, t11);
+			append(span1, t12);
+			append(div3, t13);
+			append(div3, button1);
+			append(button1, t14);
+			insert(target, t15, anchor);
 			if (if_block2) if_block2.m(target, anchor);
-			insert(target, t19, anchor);
+			insert(target, t16, anchor);
 			if_blocks[current_block_type_index].m(target, anchor);
 			insert(target, if_block3_anchor, anchor);
 			current = true;
@@ -603,9 +739,9 @@ function create_fragment(ctx) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
-					if_block0 = create_if_block_4(ctx);
+					if_block0 = create_if_block_6(ctx);
 					if_block0.c();
-					if_block0.m(div5, t8);
+					if_block0.m(div4, t5);
 				}
 			} else if (if_block0) {
 				if_block0.d(1);
@@ -616,24 +752,24 @@ function create_fragment(ctx) {
 				if (if_block1) {
 					
 				} else {
-					if_block1 = create_if_block_3(ctx);
+					if_block1 = create_if_block_5(ctx);
 					if_block1.c();
-					if_block1.m(div5, t9);
+					if_block1.m(div4, t6);
 				}
 			} else if (if_block1) {
 				if_block1.d(1);
 				if_block1 = null;
 			}
 
-			if ((!current || dirty & /*installCommand*/ 8) && t10_value !== (t10_value = (/*installCommand*/ ctx[3] || '生成中…') + "")) set_data(t10, t10_value);
-			if ((!current || dirty & /*copied*/ 128) && t12_value !== (t12_value = (/*copied*/ ctx[7] ? '已复制' : '复制') + "")) set_data(t12, t12_value);
+			if ((!current || dirty & /*installCommand*/ 8) && t7_value !== (t7_value = (/*installCommand*/ ctx[3] || '生成中…') + "")) set_data(t7, t7_value);
+			if ((!current || dirty & /*copied*/ 128) && t9_value !== (t9_value = (/*copied*/ ctx[7] ? '已复制' : '复制') + "")) set_data(t9, t9_value);
 
 			if (!current || dirty & /*installCommand*/ 8 && button0_disabled_value !== (button0_disabled_value = !/*installCommand*/ ctx[3])) {
 				button0.disabled = button0_disabled_value;
 			}
 
-			if ((!current || dirty & /*server*/ 16) && t15_value !== (t15_value = (/*server*/ ctx[4] || '—') + "")) set_data(t15, t15_value);
-			if ((!current || dirty & /*rotating*/ 256) && t17_value !== (t17_value = (/*rotating*/ ctx[8] ? '轮换中…' : '轮换 token（撤销旧命令）') + "")) set_data(t17, t17_value);
+			if ((!current || dirty & /*server*/ 16) && t12_value !== (t12_value = (/*server*/ ctx[4] || '—') + "")) set_data(t12, t12_value);
+			if ((!current || dirty & /*rotating*/ 256) && t14_value !== (t14_value = (/*rotating*/ ctx[8] ? '重置中…' : '重置接入码') + "")) set_data(t14, t14_value);
 
 			if (!current || dirty & /*rotating*/ 256) {
 				button1.disabled = /*rotating*/ ctx[8];
@@ -643,9 +779,9 @@ function create_fragment(ctx) {
 				if (if_block2) {
 					if_block2.p(ctx, dirty);
 				} else {
-					if_block2 = create_if_block_2(ctx);
+					if_block2 = create_if_block_4(ctx);
 					if_block2.c();
-					if_block2.m(t19.parentNode, t19);
+					if_block2.m(t16.parentNode, t16);
 				}
 			} else if (if_block2) {
 				if_block2.d(1);
@@ -688,14 +824,14 @@ function create_fragment(ctx) {
 			current = false;
 		},
 		d(detaching) {
-			if (detaching) detach(div1);
-			if (detaching) detach(t3);
-			if (detaching) detach(div5);
+			if (detaching) detach(div0);
+			if (detaching) detach(t1);
+			if (detaching) detach(div4);
 			if (if_block0) if_block0.d();
 			if (if_block1) if_block1.d();
-			if (detaching) detach(t18);
+			if (detaching) detach(t15);
 			if (if_block2) if_block2.d(detaching);
-			if (detaching) detach(t19);
+			if (detaching) detach(t16);
 			if_blocks[current_block_type_index].d(detaching);
 			if (detaching) detach(if_block3_anchor);
 			mounted = false;
@@ -786,9 +922,9 @@ function instance($$self, $$props, $$invalidate) {
 		setTimeout(() => $$invalidate(7, copied = false), 1500);
 	}
 
-	// 轮换 token：撤销旧安装命令（已在线的 agent 不受影响）。轮换后刷新命令。
+	// 轮换 token 后，旧命令和已安装 agent 的后续重连都会失效。
 	async function rotateToken() {
-		if (!confirm('轮换 token 会让旧的安装命令失效（已在线的节点不受影响）。继续？')) return;
+		if (!confirm('重置后，已有节点重连前需重新安装。继续？')) return;
 		$$invalidate(8, rotating = true);
 
 		try {

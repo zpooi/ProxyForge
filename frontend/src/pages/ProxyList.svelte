@@ -19,7 +19,7 @@
   let subUrl = '';
   // 统一轮换凭据：一条连接串，服务端在所有节点（本机 + 各地区 agent）间自动粘滞轮换。
   let rotate = null;
-  // 打开中的复制菜单：{ username, x, y }，用 fixed 定位避开表格 overflow 裁剪。
+  // 打开中的复制菜单，用 fixed 定位避开表格 overflow 裁剪。
   let menu = null;
 
   async function loadAccounts() {
@@ -55,13 +55,22 @@
   }
 
   function toggleMenu(event, slot) {
-    if (menu && menu.username === slot.username) {
+    if (menu && menu.kind === 'slot' && menu.username === slot.username) {
       menu = null;
       return;
     }
     const rect = event.currentTarget.getBoundingClientRect();
     // 右对齐到按钮右边缘，用 right 偏移避免菜单往右溢出视口。
-    menu = { username: slot.username, right: window.innerWidth - rect.right, y: rect.bottom + 4 };
+    menu = { kind: 'slot', username: slot.username, right: window.innerWidth - rect.right, y: rect.bottom + 4 };
+  }
+
+  function toggleRotateMenu(event) {
+    if (menu && menu.kind === 'rotate') {
+      menu = null;
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    menu = { kind: 'rotate', right: window.innerWidth - rect.right, y: rect.bottom + 4 };
   }
 
   function closeMenu() {
@@ -183,21 +192,69 @@
   {/if}
   {#if rotate && rotate.host}
     <div class="rotate-block">
-      <div class="sub-row">
-        <span class="rotate-label">🔄 统一轮换链接</span>
-        <button type="button" class="export-link" on:click={() => copyRotate('http')}>复制 HTTP</button>
-        <button type="button" class="export-link" on:click={() => copyRotate('socks5')}>复制 SOCKS5</button>
-        {#if copied === 'rotate-http'}<span class="copy-feedback">已复制 HTTP</span>{/if}
-        {#if copied === 'rotate-socks5'}<span class="copy-feedback">已复制 SOCKS5</span>{/if}
+      <div class="rotate-summary">
+        <strong>统一轮换</strong><span>3 分钟粘滞 · 故障切换</span>
       </div>
-      <code class="sub-url">{rotateAddress('http')}</code>
-      <p class="sub-hint">一条链接服务端自动在所有节点（本机 + 各地区 agent）间轮换出口，不用一个个复制。同一来源约 3 分钟窗口内出口稳定，整体均匀轮转，选中节点故障自动转移。</p>
+      <button
+        type="button"
+        class="copy-trigger rotate-trigger"
+        class:done={copied === 'rotate-http' || copied === 'rotate-socks5'}
+        class:open={menu && menu.kind === 'rotate'}
+        title="复制轮换链接"
+        aria-label="复制轮换链接"
+        on:click={toggleRotateMenu}
+      >
+        <Icon name={copied === 'rotate-http' || copied === 'rotate-socks5' ? 'check' : 'copy'} size={18} />
+        <Icon name="expand_more" size={16} />
+      </button>
     </div>
   {/if}
 </div>
 {#if error}
   <div class="alert">加载失败：{error}</div>
 {/if}
+
+<style>
+  .rotate-block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 6px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+  }
+  .rotate-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+  }
+  .rotate-summary strong {
+    color: var(--text);
+    font-size: 14px;
+  }
+  .rotate-summary span {
+    color: var(--text-3);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .rotate-trigger {
+    min-width: 42px;
+    min-height: 34px;
+    flex-shrink: 0;
+  }
+  @media (max-width: 620px) {
+    .rotate-summary {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 1px;
+    }
+  }
+</style>
 <div class="table-wrap">
   <table>
     <thead>
@@ -223,7 +280,7 @@
                 type="button"
                 class="icon-button copy-trigger"
                 class:done={copied === `${slot.username}-http` || copied === `${slot.username}-socks5`}
-                class:open={menu && menu.username === slot.username}
+                class:open={menu && menu.kind === 'slot' && menu.username === slot.username}
                 title="复制代理链接"
                 aria-label="复制代理链接"
                 on:click={(e) => toggleMenu(e, slot)}
@@ -242,15 +299,24 @@
 </div>
 
 {#if menu}
-  {@const slot = slots.find((s) => s.username === menu.username)}
   <div class="menu-backdrop" on:click={closeMenu} on:contextmenu|preventDefault={closeMenu}></div>
   <div class="copy-menu" style="right: {menu.right}px; top: {menu.y}px;">
     <div class="copy-menu-title">复制为</div>
-    {#each SCHEMES as scheme}
-      <button type="button" class="copy-menu-item" on:click={() => copyProxy(slot, scheme.id)}>
-        <Icon name="copy" size={16} />
-        <span>{scheme.label}</span>
-      </button>
-    {/each}
+    {#if menu.kind === 'rotate'}
+      {#each SCHEMES as scheme}
+        <button type="button" class="copy-menu-item" on:click={() => copyRotate(scheme.id)}>
+          <Icon name="copy" size={16} />
+          <span>{scheme.label}</span>
+        </button>
+      {/each}
+    {:else}
+      {@const slot = slots.find((s) => s.username === menu.username)}
+      {#each SCHEMES as scheme}
+        <button type="button" class="copy-menu-item" on:click={() => copyProxy(slot, scheme.id)}>
+          <Icon name="copy" size={16} />
+          <span>{scheme.label}</span>
+        </button>
+      {/each}
+    {/if}
   </div>
 {/if}

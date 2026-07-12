@@ -10,6 +10,11 @@ RUN apk add --no-cache nodejs
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+# Embed both Linux agent builds so a fresh checkout can enroll amd64/arm64 VPSs
+# without relying on ignored binaries already present in the build context.
+RUN mkdir -p backend/internal/agentdist/dist \
+    && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o backend/internal/agentdist/dist/pfagent-linux-amd64 ./backend/cmd/pfagent \
+    && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o backend/internal/agentdist/dist/pfagent-linux-arm64 ./backend/cmd/pfagent
 RUN node frontend/scripts/build.mjs
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -trimpath -ldflags="-s -w" -o /out/proxyforge ./backend/cmd/proxyforge
