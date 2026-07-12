@@ -3,7 +3,9 @@ module github.com/zpooi/ProxyForge
 go 1.25.5
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/go-chi/chi/v5 v5.1.0
+	github.com/hashicorp/yamux v0.1.2
 	github.com/inipew/usque v1.3.1
 	golang.org/x/crypto v0.53.0
 	golang.zx2c4.com/wireguard v0.0.0-20260522210424-ecfc5a8d5446
@@ -11,13 +13,11 @@ require (
 )
 
 require (
-	github.com/coder/websocket v1.8.15 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/inipew/connect-ip-go v0.0.0-20260527224357-fa02a9323e27 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
