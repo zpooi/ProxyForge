@@ -1083,10 +1083,11 @@ function instance($$self, $$props, $$invalidate) {
 
 		return {
 			grid: {
-				left: 120,
-				right: 24,
+				left: 12,
+				right: 18,
 				top: 28,
-				bottom: 24
+				bottom: 20,
+				containLabel: true
 			},
 			tooltip: {
 				trigger: 'axis',

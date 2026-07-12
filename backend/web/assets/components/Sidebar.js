@@ -28,7 +28,7 @@ function get_each_context(ctx, list, i) {
 	return child_ctx;
 }
 
-// (18:4) {#each navItems as item}
+// (21:4) {#each navItems as item}
 function create_each_block(ctx) {
 	let a;
 	let t_value = /*item*/ ctx[4].label + "";
@@ -75,12 +75,13 @@ function create_each_block(ctx) {
 function create_fragment(ctx) {
 	let aside;
 	let div0;
-	let span;
+	let span0;
 	let icon;
 	let t0;
-	let t1;
-	let nav;
+	let span1;
 	let t2;
+	let nav;
+	let t3;
 	let div1;
 	let current;
 	icon = new Icon({ props: { name: "bolt", size: 18 } });
@@ -95,20 +96,23 @@ function create_fragment(ctx) {
 		c() {
 			aside = element("aside");
 			div0 = element("div");
-			span = element("span");
+			span0 = element("span");
 			create_component(icon.$$.fragment);
-			t0 = text("ProxyForge");
-			t1 = space();
+			t0 = space();
+			span1 = element("span");
+			span1.textContent = "ProxyForge";
+			t2 = space();
 			nav = element("nav");
 
 			for (let i = 0; i < each_blocks.length; i += 1) {
 				each_blocks[i].c();
 			}
 
-			t2 = space();
+			t3 = space();
 			div1 = element("div");
 			div1.innerHTML = `<a href="/logout">退出登录</a>`;
-			attr(span, "class", "nav-brand-logo");
+			attr(span0, "class", "nav-brand-logo");
+			attr(span1, "class", "nav-brand-text");
 			attr(div0, "class", "nav-brand");
 			attr(nav, "class", "sidebar-nav");
 			attr(div1, "class", "sidebar-footer");
@@ -117,10 +121,11 @@ function create_fragment(ctx) {
 		m(target, anchor) {
 			insert(target, aside, anchor);
 			append(aside, div0);
-			append(div0, span);
-			mount_component(icon, span, null);
+			append(div0, span0);
+			mount_component(icon, span0, null);
 			append(div0, t0);
-			append(aside, t1);
+			append(div0, span1);
+			append(aside, t2);
 			append(aside, nav);
 
 			for (let i = 0; i < each_blocks.length; i += 1) {
@@ -129,7 +134,7 @@ function create_fragment(ctx) {
 				}
 			}
 
-			append(aside, t2);
+			append(aside, t3);
 			append(aside, div1);
 			current = true;
 		},

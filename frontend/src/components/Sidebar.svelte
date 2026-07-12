@@ -13,7 +13,10 @@
 </script>
 
 <aside class="sidebar">
-  <div class="nav-brand"><span class="nav-brand-logo"><Icon name="bolt" size={18} /></span>ProxyForge</div>
+  <div class="nav-brand">
+    <span class="nav-brand-logo"><Icon name="bolt" size={18} /></span>
+    <span class="nav-brand-text">ProxyForge</span>
+  </div>
   <nav class="sidebar-nav">
     {#each navItems as item}
       <a

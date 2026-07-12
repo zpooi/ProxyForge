@@ -39,7 +39,7 @@
   function buildEgressOption(list) {
     const top = list.slice(0, 12).reverse();
     return {
-      grid: { left: 120, right: 24, top: 28, bottom: 24 },
+      grid: { left: 12, right: 18, top: 28, bottom: 20, containLabel: true },
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
