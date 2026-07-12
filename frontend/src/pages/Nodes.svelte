@@ -110,7 +110,8 @@
   }
 
   function fmtBytes(n) {
-    if (!n) return '—';
+    if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+    if (Number(n) <= 0) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     let i = 0;
     let v = n;
@@ -130,6 +131,14 @@
     if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
     if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
     return d.toLocaleString();
+  }
+
+  function displayInstallCommand(value) {
+    if (!value) return '生成中…';
+    return value.replace(/(token=)([^'&\s]+)/, (_, prefix, token) => {
+      if (token.length <= 16) return prefix + token;
+      return `${prefix}${token.slice(0, 8)}…${token.slice(-4)}`;
+    });
   }
 </script>
 
@@ -154,7 +163,7 @@
       <div class="banner warn">未找到 agent 二进制，请先完成构建。</div>
     {/if}
     <div class="cmd-row">
-      <code class="cmd">{installCommand || '生成中…'}</code>
+      <code class="cmd" title={installCommand}>{displayInstallCommand(installCommand)}</code>
       <button
         class="copy-trigger command-copy"
         class:done={copied}
@@ -270,7 +279,8 @@
     border-radius: 8px;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 13px;
-    overflow-x: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
   .command-copy {

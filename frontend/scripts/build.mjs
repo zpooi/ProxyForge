@@ -159,7 +159,7 @@ function compileSourceFiles(compiler) {
       const compiled = compiler.compile(source, {
         filename: sourcePath,
         format: 'esm',
-        css: false,
+        css: 'injected',
         dev: false,
       });
       const outPath = join(assetsDir, rel.replace(/\.svelte$/, '.js'));

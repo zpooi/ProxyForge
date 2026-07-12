@@ -17,6 +17,7 @@ import (
 
 	"github.com/zpooi/ProxyForge/backend/internal/agentdist"
 	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
+	"github.com/zpooi/ProxyForge/backend/internal/models"
 	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 )
 
@@ -83,15 +84,23 @@ func (h *Handlers) NodesJSON(w http.ResponseWriter, r *http.Request) {
 
 	var views []nodeView
 
-	// 本机节点：把新加坡 WARP 出口作为一个恒在线的「本机」节点展示，
-	// 让用户在一个列表里同时看到本机和各远程 agent。
+	// 本机节点：汇总当前实际运行的 WARP 隧道，避免出口、地区、延迟和流量为空。
+	running := tagSet(h.Scheduler.RunningTags())
+	accounts, _ := h.DB.ListAccounts()
+	local := summarizeLocalNode(accounts, running)
 	views = append(views, nodeView{
-		NodeID:   "local",
-		Name:     "本机 (WARP)",
-		Kind:     "local",
-		Online:   h.Scheduler.RunningTunnels() > 0,
-		Enabled:  true,
-		LastSeen: time.Now().UTC().Format(time.RFC3339),
+		NodeID:    "local",
+		Name:      "本机 (WARP)",
+		Kind:      "local",
+		PublicIP:  local.PublicIP,
+		Country:   local.Country,
+		Colo:      local.Colo,
+		Online:    h.Scheduler.RunningTunnels() > 0,
+		Enabled:   true,
+		LatencyMs: local.LatencyMs,
+		TxBytes:   local.TxBytes,
+		RxBytes:   local.RxBytes,
+		LastSeen:  time.Now().UTC().Format(time.RFC3339),
 	})
 
 	// 远程 agent：以 DB 里「见过的节点」为准，叠加 Hub 的实时在线态。
@@ -189,8 +198,8 @@ func (h *Handlers) NodeRotateInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"connection": line,           // 用户名:密码@host:port，一键复制
-		"host":       ep.Host,        // 分字段返回，方便客户端逐项填写
+		"connection": line,    // 用户名:密码@host:port，一键复制
+		"host":       ep.Host, // 分字段返回，方便客户端逐项填写
 		"port":       ep.Port,
 		"username":   proxy.RotateUsername,
 		"password":   ep.Password,
@@ -332,6 +341,85 @@ func agentDisplayName(name, country, nodeID string) string {
 		short = short[:8]
 	}
 	return "节点 " + short
+}
+
+type localNodeStats struct {
+	PublicIP  string
+	Country   string
+	Colo      string
+	LatencyMs int
+	TxBytes   int64
+	RxBytes   int64
+}
+
+func summarizeLocalNode(accounts []*models.Account, running map[string]bool) localNodeStats {
+	ips := map[string]bool{}
+	countries := map[string]bool{}
+	colos := map[string]bool{}
+	firstIP := ""
+	firstCountry := ""
+	firstColo := ""
+	latencyTotal := 0
+	latencyCount := 0
+	var out localNodeStats
+
+	for _, account := range accounts {
+		if account == nil || account.Status != "active" || !running[account.Tag] {
+			continue
+		}
+		if ip := strings.TrimSpace(account.LastPublicIP); ip != "" && !ips[ip] {
+			ips[ip] = true
+			if firstIP == "" {
+				firstIP = ip
+			}
+		}
+		if country := strings.TrimSpace(account.LastCountry); country != "" && !countries[country] {
+			countries[country] = true
+			if firstCountry == "" {
+				firstCountry = country
+			}
+		}
+		if colo := strings.TrimSpace(account.LastColo); colo != "" && !colos[colo] {
+			colos[colo] = true
+			if firstColo == "" {
+				firstColo = colo
+			}
+		}
+		if account.LastLatencyMs > 0 {
+			latencyTotal += account.LastLatencyMs
+			latencyCount++
+		}
+		out.TxBytes += account.TrafficUp
+		out.RxBytes += account.TrafficDown
+	}
+
+	switch len(ips) {
+	case 1:
+		out.PublicIP = firstIP
+	case 0:
+	default:
+		out.PublicIP = fmt.Sprintf("%d 个出口", len(ips))
+	}
+	switch len(countries) {
+	case 1:
+		out.Country = firstCountry
+	case 0:
+	default:
+		out.Country = fmt.Sprintf("%d 个地区", len(countries))
+	}
+	if len(countries) == 1 {
+		switch len(colos) {
+		case 1:
+			out.Colo = firstColo
+		case 0:
+		default:
+			out.Colo = fmt.Sprintf("%d 个机房", len(colos))
+		}
+	}
+	if latencyCount > 0 {
+		out.LatencyMs = latencyTotal / latencyCount
+	}
+	return out
 }
 
 // agentInstallScript 生成 systemd 安装脚本。极简：下载二进制到 /usr/local/bin，

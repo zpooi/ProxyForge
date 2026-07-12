@@ -2,6 +2,7 @@
 import {
 	SvelteComponent,
 	append,
+	append_styles,
 	attr,
 	check_outros,
 	create_component,
@@ -34,6 +35,10 @@ import Icon from '../components/Icon.js';
 import { fetchJSON } from '../lib/api.js';
 import { fmtBps, metric, prettyError } from '../lib/format.js';
 import { slotState } from '../lib/status.js';
+
+function add_css(target) {
+	append_styles(target, "svelte-dkq0er", ".rotate-block.svelte-dkq0er.svelte-dkq0er{display:flex;align-items:center;justify-content:space-between;width:100%;gap:16px;margin-top:6px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-sm)}.rotate-summary.svelte-dkq0er.svelte-dkq0er{display:flex;align-items:baseline;gap:10px;min-width:0}.rotate-summary.svelte-dkq0er strong.svelte-dkq0er{color:var(--text);font-size:14px}.rotate-summary.svelte-dkq0er span.svelte-dkq0er{color:var(--text-3);font-size:12px;white-space:nowrap}.rotate-trigger.svelte-dkq0er.svelte-dkq0er{min-width:42px;min-height:34px;margin-left:auto;flex-shrink:0}@media(max-width: 620px){.rotate-summary.svelte-dkq0er.svelte-dkq0er{align-items:flex-start;flex-direction:column;gap:1px}}");
+}
 
 function get_each_context_1(ctx, list, i) {
 	const child_ctx = ctx.slice();
@@ -1478,7 +1483,7 @@ function instance($$self, $$props, $$invalidate) {
 class ProxyList extends SvelteComponent {
 	constructor(options) {
 		super();
-		init(this, options, instance, create_fragment, safe_not_equal, {});
+		init(this, options, instance, create_fragment, safe_not_equal, {}, add_css);
 	}
 }
 

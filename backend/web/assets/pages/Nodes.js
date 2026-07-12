@@ -2,6 +2,7 @@
 import {
 	SvelteComponent,
 	append,
+	append_styles,
 	attr,
 	check_outros,
 	create_component,
@@ -30,13 +31,17 @@ import { onMount, onDestroy } from 'svelte';
 import StatusTag from '../components/StatusTag.js';
 import Icon from '../components/Icon.js';
 
+function add_css(target) {
+	append_styles(target, "svelte-4gj809", ".compact-header.svelte-4gj809.svelte-4gj809{margin-bottom:16px}.compact-header.svelte-4gj809 h2.svelte-4gj809{margin:0}.enroll-card.svelte-4gj809.svelte-4gj809{background:var(--surface, #fff);border:1px solid var(--border, #e5e7eb);border-radius:10px;margin-bottom:16px;overflow:hidden}.enroll-toolbar.svelte-4gj809.svelte-4gj809{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border)}.enroll-head.svelte-4gj809.svelte-4gj809{display:flex;align-items:baseline;gap:9px;min-width:0}.enroll-head.svelte-4gj809 span.svelte-4gj809{color:var(--text-3);font-size:12px}.enroll-body.svelte-4gj809.svelte-4gj809{padding:14px 16px}.cmd-row.svelte-4gj809.svelte-4gj809{display:grid;grid-template-columns:minmax(0, 1fr) 40px;gap:8px;align-items:center}.cmd.svelte-4gj809.svelte-4gj809{display:block;min-width:0;padding:9px 11px;background:var(--code-bg, #0f172a);color:var(--code-fg, #e2e8f0);border-radius:8px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.command-copy.svelte-4gj809.svelte-4gj809{width:40px;min-height:38px;padding:8px}.enroll-server.svelte-4gj809.svelte-4gj809{display:flex;align-items:center;gap:8px;min-width:0;margin-top:9px;color:var(--text-3);font-size:11px}.enroll-server.svelte-4gj809 code.svelte-4gj809{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:transparent;padding:0;color:var(--text-2)}.link-btn.svelte-4gj809.svelte-4gj809{background:none;border:none;color:var(--accent, #6366f1);cursor:pointer;font-size:13px;padding:0}.link-btn.svelte-4gj809.svelte-4gj809:disabled{opacity:0.6;cursor:default}.icon-btn.danger.svelte-4gj809.svelte-4gj809{color:var(--danger, #ef4444)}.node-delete.svelte-4gj809.svelte-4gj809{min-width:32px;min-height:32px;padding:6px;background:transparent;color:var(--text-3)}.node-delete.svelte-4gj809.svelte-4gj809:hover{background:#fdeaea;color:var(--danger, #ef4444)}.node-name.svelte-4gj809.svelte-4gj809{color:var(--text);font-weight:600}.node-kind.svelte-4gj809.svelte-4gj809{margin-top:1px;color:var(--text-3);font-size:11px}.node-status.svelte-4gj809.svelte-4gj809{display:flex;align-items:center;gap:7px;color:var(--text-3);font-size:11px;white-space:nowrap}.empty-state.svelte-4gj809.svelte-4gj809{height:108px;color:var(--text-3);text-align:center}.banner.warn.svelte-4gj809.svelte-4gj809{background:#fef3c7;color:#92400e;padding:8px 10px;border-radius:8px;margin-bottom:12px}.banner.error.svelte-4gj809.svelte-4gj809{margin-bottom:12px;padding:8px 10px;border-radius:8px;background:#fdeaea;color:var(--danger-hover)}.table-wrap{border-radius:10px}.table-wrap table{min-width:760px}.table-wrap th,.table-wrap td{padding:10px 12px}.table-wrap th:first-child,.table-wrap td:first-child{padding-left:16px}.table-wrap th:last-child,.table-wrap td:last-child{padding-right:16px;width:48px}@media(max-width: 760px){.enroll-toolbar.svelte-4gj809.svelte-4gj809{align-items:flex-start}.enroll-head.svelte-4gj809.svelte-4gj809{align-items:flex-start;flex-direction:column;gap:1px}}");
+}
+
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
 	child_ctx[16] = list[i];
 	return child_ctx;
 }
 
-// (150:4) {#if enrollError}
+// (159:4) {#if enrollError}
 function create_if_block_6(ctx) {
 	let div;
 	let t;
@@ -45,7 +50,7 @@ function create_if_block_6(ctx) {
 		c() {
 			div = element("div");
 			t = text(/*enrollError*/ ctx[6]);
-			attr(div, "class", "banner error svelte-1d5unl");
+			attr(div, "class", "banner error svelte-4gj809");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -60,7 +65,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (153:4) {#if !hasBinary}
+// (162:4) {#if !hasBinary}
 function create_if_block_5(ctx) {
 	let div;
 
@@ -68,7 +73,7 @@ function create_if_block_5(ctx) {
 		c() {
 			div = element("div");
 			div.textContent = "未找到 agent 二进制，请先完成构建。";
-			attr(div, "class", "banner warn svelte-1d5unl");
+			attr(div, "class", "banner warn svelte-4gj809");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -79,7 +84,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (176:0) {#if error}
+// (185:0) {#if error}
 function create_if_block_4(ctx) {
 	let div;
 	let t;
@@ -88,7 +93,7 @@ function create_if_block_4(ctx) {
 		c() {
 			div = element("div");
 			t = text(/*error*/ ctx[2]);
-			attr(div, "class", "banner error svelte-1d5unl");
+			attr(div, "class", "banner error svelte-4gj809");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -103,7 +108,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (182:0) {:else}
+// (191:0) {:else}
 function create_else_block(ctx) {
 	let div;
 	let table;
@@ -187,7 +192,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (180:0) {#if loading}
+// (189:0) {#if loading}
 function create_if_block(ctx) {
 	let div;
 
@@ -209,14 +214,14 @@ function create_if_block(ctx) {
 	};
 }
 
-// (215:8) {:else}
+// (224:8) {:else}
 function create_else_block_1(ctx) {
 	let tr;
 
 	return {
 		c() {
 			tr = element("tr");
-			tr.innerHTML = `<td class="empty-state svelte-1d5unl" colspan="7">暂无节点</td>`;
+			tr.innerHTML = `<td class="empty-state svelte-4gj809" colspan="7">暂无节点</td>`;
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
@@ -230,7 +235,7 @@ function create_else_block_1(ctx) {
 	};
 }
 
-// (189:8) {#if nodes.length}
+// (198:8) {#if nodes.length}
 function create_if_block_1(ctx) {
 	let each_1_anchor;
 	let current;
@@ -316,7 +321,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (203:18) {#if !node.online}
+// (212:18) {#if !node.online}
 function create_if_block_3(ctx) {
 	let span;
 	let t_value = fmtSeen(/*node*/ ctx[16].last_seen) + "";
@@ -340,7 +345,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (207:16) {#if node.kind !== 'local'}
+// (216:16) {#if node.kind !== 'local'}
 function create_if_block_2(ctx) {
 	let button;
 	let icon;
@@ -357,7 +362,7 @@ function create_if_block_2(ctx) {
 		c() {
 			button = element("button");
 			create_component(icon.$$.fragment);
-			attr(button, "class", "icon-btn danger node-delete svelte-1d5unl");
+			attr(button, "class", "icon-btn danger node-delete svelte-4gj809");
 			attr(button, "title", "删除节点");
 			attr(button, "aria-label", "删除节点");
 		},
@@ -392,7 +397,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (190:10) {#each nodes as node}
+// (199:10) {#each nodes as node}
 function create_each_block(ctx) {
 	let tr;
 	let td0;
@@ -485,11 +490,11 @@ function create_each_block(ctx) {
 			td6 = element("td");
 			if (if_block1) if_block1.c();
 			t17 = space();
-			attr(div0, "class", "node-name svelte-1d5unl");
-			attr(div1, "class", "node-kind svelte-1d5unl");
+			attr(div0, "class", "node-name svelte-4gj809");
+			attr(div1, "class", "node-kind svelte-4gj809");
 			attr(td1, "class", "mono");
 			attr(td4, "class", "mono");
-			attr(div2, "class", "node-status svelte-1d5unl");
+			attr(div2, "class", "node-status svelte-4gj809");
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
@@ -618,7 +623,7 @@ function create_fragment(ctx) {
 	let t8;
 	let div3;
 	let code0;
-	let t9_value = (/*installCommand*/ ctx[3] || '生成中…') + "";
+	let t9_value = displayInstallCommand(/*installCommand*/ ctx[3]) + "";
 	let t9;
 	let t10;
 	let button1;
@@ -666,12 +671,12 @@ function create_fragment(ctx) {
 	return {
 		c() {
 			div0 = element("div");
-			div0.innerHTML = `<h2 class="svelte-1d5unl">节点</h2>`;
+			div0.innerHTML = `<h2 class="svelte-4gj809">节点</h2>`;
 			t1 = space();
 			div6 = element("div");
 			div2 = element("div");
 			div1 = element("div");
-			div1.innerHTML = `<strong>接入节点</strong><span class="svelte-1d5unl">在目标 VPS 执行</span>`;
+			div1.innerHTML = `<strong>接入节点</strong><span class="svelte-4gj809">在目标 VPS 执行</span>`;
 			t4 = space();
 			button0 = element("button");
 			t5 = text(t5_value);
@@ -699,22 +704,23 @@ function create_fragment(ctx) {
 			t16 = space();
 			if_block3.c();
 			if_block3_anchor = empty();
-			attr(div0, "class", "page-header compact-header svelte-1d5unl");
-			attr(div1, "class", "enroll-head svelte-1d5unl");
-			attr(button0, "class", "link-btn svelte-1d5unl");
+			attr(div0, "class", "page-header compact-header svelte-4gj809");
+			attr(div1, "class", "enroll-head svelte-4gj809");
+			attr(button0, "class", "link-btn svelte-4gj809");
 			button0.disabled = /*rotating*/ ctx[8];
-			attr(div2, "class", "enroll-toolbar svelte-1d5unl");
-			attr(code0, "class", "cmd svelte-1d5unl");
-			attr(button1, "class", "copy-trigger command-copy svelte-1d5unl");
+			attr(div2, "class", "enroll-toolbar svelte-4gj809");
+			attr(code0, "class", "cmd svelte-4gj809");
+			attr(code0, "title", /*installCommand*/ ctx[3]);
+			attr(button1, "class", "copy-trigger command-copy svelte-4gj809");
 			attr(button1, "title", button1_title_value = /*copied*/ ctx[7] ? '已复制' : '复制命令');
 			attr(button1, "aria-label", button1_aria_label_value = /*copied*/ ctx[7] ? '已复制' : '复制命令');
 			button1.disabled = button1_disabled_value = !/*installCommand*/ ctx[3];
 			toggle_class(button1, "done", /*copied*/ ctx[7]);
-			attr(div3, "class", "cmd-row svelte-1d5unl");
-			attr(code1, "class", "svelte-1d5unl");
-			attr(div4, "class", "enroll-server svelte-1d5unl");
-			attr(div5, "class", "enroll-body svelte-1d5unl");
-			attr(div6, "class", "enroll-card svelte-1d5unl");
+			attr(div3, "class", "cmd-row svelte-4gj809");
+			attr(code1, "class", "svelte-4gj809");
+			attr(div4, "class", "enroll-server svelte-4gj809");
+			attr(div5, "class", "enroll-body svelte-4gj809");
+			attr(div6, "class", "enroll-card svelte-4gj809");
 		},
 		m(target, anchor) {
 			insert(target, div0, anchor);
@@ -792,7 +798,12 @@ function create_fragment(ctx) {
 				if_block1 = null;
 			}
 
-			if ((!current || dirty & /*installCommand*/ 8) && t9_value !== (t9_value = (/*installCommand*/ ctx[3] || '生成中…') + "")) set_data(t9, t9_value);
+			if ((!current || dirty & /*installCommand*/ 8) && t9_value !== (t9_value = displayInstallCommand(/*installCommand*/ ctx[3]) + "")) set_data(t9, t9_value);
+
+			if (!current || dirty & /*installCommand*/ 8) {
+				attr(code0, "title", /*installCommand*/ ctx[3]);
+			}
+
 			const icon_changes = {};
 			if (dirty & /*copied*/ 128) icon_changes.name = /*copied*/ ctx[7] ? 'check' : 'copy';
 			icon.$set(icon_changes);
@@ -901,7 +912,8 @@ async function writeClipboard(text) {
 }
 
 function fmtBytes(n) {
-	if (!n) return '—';
+	if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+	if (Number(n) <= 0) return '0 B';
 	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
 	let i = 0;
 	let v = n;
@@ -923,6 +935,15 @@ function fmtSeen(ts) {
 	if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
 	if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
 	return d.toLocaleString();
+}
+
+function displayInstallCommand(value) {
+	if (!value) return '生成中…';
+
+	return value.replace(/(token=)([^'&\s]+)/, (_, prefix, token) => {
+		if (token.length <= 16) return prefix + token;
+		return `${prefix}${token.slice(0, 8)}…${token.slice(-4)}`;
+	});
 }
 
 function instance($$self, $$props, $$invalidate) {
@@ -1043,7 +1064,7 @@ function instance($$self, $$props, $$invalidate) {
 class Nodes extends SvelteComponent {
 	constructor(options) {
 		super();
-		init(this, options, instance, create_fragment, safe_not_equal, {});
+		init(this, options, instance, create_fragment, safe_not_equal, {}, add_css);
 	}
 }
 
