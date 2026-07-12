@@ -81,6 +81,7 @@ func (s *Server) Router() http.Handler {
 
 		// 节点（本机 + 远程 agent）
 		r.Get("/api/nodes/json", h.NodesJSON)
+		r.Get("/api/nodes/rotate", h.NodeRotateInfo)
 		r.Post("/api/nodes/enroll", h.NodeEnroll)
 		r.Post("/api/nodes/delete", h.NodeDelete)
 		r.Post("/api/nodes/token/rotate", h.NodeTokenRotate)

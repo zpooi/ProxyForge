@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -160,6 +161,23 @@ func (h *Hub) ResolveEgress(username string) proxy.Egress {
 		return nil
 	}
 	return &agentEgress{conn: ac}
+}
+
+// OnlineEgresses 返回当前所有在线 agent 的出口，按 NodeID 升序稳定排序，
+// 供统一轮换凭据（auto）在节点间可预测地轮转。
+func (h *Hub) OnlineEgresses() []proxy.Egress {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	ids := make([]string, 0, len(h.agents))
+	for id := range h.agents {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	out := make([]proxy.Egress, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, &agentEgress{conn: h.agents[id]})
+	}
+	return out
 }
 
 // OnlineNode 是查询用的在线 agent 快照。

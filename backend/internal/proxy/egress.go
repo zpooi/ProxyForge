@@ -17,6 +17,13 @@ func AgentUsername(nodeID string) string {
 	return NodeUsernamePrefix + nodeID
 }
 
+// RotateUsername 是「统一轮换」凭据的用户名。客户端用它（配合共享代理密码）时，
+// 服务端在所有逻辑节点之间轮换出口：WARP 池算一个节点，每个在线 agent 各算一个。
+// 按客户端 IP 粘滞一个时间窗避免乱飘，窗口到期轮到下一个；全局 round-robin 把新
+// 分配均匀铺开，既不挤在同一节点、也不让节点乱飘。选中节点故障时链式转移到其余节点。
+// 一条链接遍历所有地区，省得逐个节点复制。
+const RotateUsername = "auto"
+
 // Egress 是一条可拨号的出口通道。WARP 隧道（*Tunnel）和远程 agent 节点
 // （agentEgress）都实现它，代理监听器 dialVia/relay 只依赖这个接口，从而
 // 对「本机 WARP 出口」和「远程 VPS 原生出口」一视同仁地转发、计流量、记失败。

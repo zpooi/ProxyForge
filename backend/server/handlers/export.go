@@ -32,6 +32,34 @@ func (h *Handlers) ExportProxies(w http.ResponseWriter, r *http.Request) {
 	writePlain(w, active)
 }
 
+// proxyEndpoint 汇总代理对外连接所需的信息（对外地址、端口、TLS、共享密码），
+// 供导出、订阅和统一轮换凭据接口共用。
+type proxyEndpoint struct {
+	Host     string
+	Port     int
+	TLS      bool
+	Password string
+}
+
+func (h *Handlers) proxyEndpointInfo(r *http.Request, settings map[string]string) proxyEndpoint {
+	port := 7843
+	if v, ok := settings[SettingProxyPort]; ok {
+		fmt.Sscanf(v, "%d", &port)
+	}
+	// 优先用设置里的「代理对外地址」（服务器真实 IP 或灰云域名）。面板域名常经
+	// Cloudflare / nginx 只反代面板端口，套上代理端口会连不通，所以不能直接用它。
+	host := strings.TrimSpace(settings[SettingProxyPublicHost])
+	if host == "" {
+		host = requestHost(r)
+	}
+	return proxyEndpoint{
+		Host:     host,
+		Port:     port,
+		TLS:      settings[SettingProxyTLS] != "off",
+		Password: settings[SettingProxyPassword],
+	}
+}
+
 // collectActiveExports 汇总当前可用（隧道在跑、有出口 IP）的固定代理槽位，
 // 供导出接口和免登录订阅接口共用。
 func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error) {
@@ -40,20 +68,13 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 		return nil, err
 	}
 	settings, _ := h.DB.AllSettings()
-	proxyPort := 7843
-	if v, ok := settings[SettingProxyPort]; ok {
-		fmt.Sscanf(v, "%d", &proxyPort)
-	}
+	ep := h.proxyEndpointInfo(r, settings)
+	proxyPort := ep.Port
 
-	// 优先用设置里的「代理对外地址」（服务器真实 IP 或灰云域名）。面板域名常经
-	// Cloudflare / nginx 只反代面板端口，套上代理端口会连不通，所以不能直接用它。
-	host := strings.TrimSpace(settings[SettingProxyPublicHost])
-	if host == "" {
-		host = requestHost(r)
-	}
+	host := ep.Host
 	// TLS 默认开启（opportunistic）。开启时导出的 Clash 节点带 tls + skip-cert-verify，
 	// 让客户端把 CONNECT 主机名藏进加密流，避开审查中间盒基于主机名的连接重置。
-	proxyTLS := settings[SettingProxyTLS] != "off"
+	proxyTLS := ep.TLS
 	var active []*proxyExport
 	running := tagSet(h.Scheduler.RunningTags())
 	for _, s := range slots {

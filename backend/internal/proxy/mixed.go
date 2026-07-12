@@ -19,7 +19,7 @@ import (
 // mixedServer is the single inbound proxy listener. It supports HTTP proxy
 // requests, CONNECT, and SOCKS5 username/password auth on the same TCP port.
 type mixedServer struct {
-	resolve func(username, password string) []Egress
+	resolve func(username, password, clientIP string) []Egress
 	onUsage func(ProxyUsage)
 
 	tlsConfig *tls.Config
@@ -42,7 +42,7 @@ type ProxyUsage struct {
 	DownBytes  int64
 }
 
-func startProxy(bindAddr string, port int, resolve func(string, string) []Egress, onUsage func(ProxyUsage), tlsConfig *tls.Config) (*mixedServer, error) {
+func startProxy(bindAddr string, port int, resolve func(string, string, string) []Egress, onUsage func(ProxyUsage), tlsConfig *tls.Config) (*mixedServer, error) {
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0"
 	}
@@ -176,7 +176,7 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader, clientIP s
 	if _, err := client.Write([]byte{0x05, 0x02}); err != nil {
 		return
 	}
-	session := s.socks5Auth(client, br)
+	session := s.socks5Auth(client, br, clientIP)
 	if session == nil || len(session.egresses) == 0 {
 		return
 	}
@@ -247,7 +247,7 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader, clientIP s
 	s.relay(client, br, remote, eg, session, clientIP)
 }
 
-func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader) *proxySession {
+func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader, clientIP string) *proxySession {
 	ver, err := br.ReadByte()
 	if err != nil || ver != 0x01 {
 		return nil
@@ -270,7 +270,7 @@ func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader) *proxySessio
 	}
 
 	username := string(uname)
-	egresses := s.resolve(username, string(passwd))
+	egresses := s.resolve(username, string(passwd), clientIP)
 	if len(egresses) == 0 {
 		_, _ = client.Write([]byte{0x01, 0x01})
 		return nil
@@ -300,7 +300,7 @@ func (s *mixedServer) handleHTTP(client net.Conn, br *bufio.Reader, clientIP str
 		return
 	}
 
-	session := s.httpAuthSession(req)
+	session := s.httpAuthSession(req, clientIP)
 	if session == nil || len(session.egresses) == 0 {
 		resp := "HTTP/1.1 407 Proxy Authentication Required\r\n" +
 			"Proxy-Authenticate: Basic realm=\"proxyforge\"\r\n" +
@@ -316,7 +316,7 @@ func (s *mixedServer) handleHTTP(client net.Conn, br *bufio.Reader, clientIP str
 	s.httpForward(client, br, req, session, clientIP)
 }
 
-func (s *mixedServer) httpAuthSession(req *http.Request) *proxySession {
+func (s *mixedServer) httpAuthSession(req *http.Request, clientIP string) *proxySession {
 	auth := req.Header.Get("Proxy-Authorization")
 	const prefix = "Basic "
 	if !strings.HasPrefix(auth, prefix) {
@@ -330,7 +330,7 @@ func (s *mixedServer) httpAuthSession(req *http.Request) *proxySession {
 	if !ok {
 		return nil
 	}
-	egresses := s.resolve(user, pass)
+	egresses := s.resolve(user, pass, clientIP)
 	if len(egresses) == 0 {
 		return nil
 	}

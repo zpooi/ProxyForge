@@ -37,16 +37,32 @@ type Manager struct {
 	pickCount    map[string]int64
 	ipPickCount  map[string]int64
 
+	// 统一轮换凭据（auto 用户名）的状态。rotateCursor 是全局 round-robin 游标，
+	// 让新分配依次落到不同逻辑节点；rotateSticky 按客户端 IP 记住当前窗口内选中的
+	// 节点键，使单个客户端在一个时间窗内固定出口（不乱飘），窗口到期再轮到下一个。
+	rotateCursor uint64
+	rotateSticky map[string]rotateAssignment
+
 	// agentResolver 把 node-<id> 用户名解析成远程 agent 出口。由 agenthub 注入，
 	// 未接入时为 nil。放在 Manager 上是为了让代理监听器的 resolve 能统一分发
 	// 本机 WARP 出口和远程 agent 出口。
 	agentResolver AgentResolver
 }
 
-// AgentResolver 把固定的 agent 节点用户名解析成一个可拨号出口。
-// 由 agenthub.Hub 实现并通过 SetAgentResolver 注入，避免 proxy 包反向依赖 agenthub。
+// rotateAssignment 记录一个客户端在当前时间窗内被粘滞分配到的逻辑节点。
+type rotateAssignment struct {
+	key      string    // 逻辑节点键："warp" 或 node-<id>
+	assigned time.Time // 分配时刻，用于判断粘滞窗口是否过期
+}
+
+// AgentResolver 把固定的 agent 节点用户名解析成一个可拨号出口，并能枚举当前在线
+// 的所有 agent 出口（供统一轮换凭据在节点间轮转）。由 agenthub.Hub 实现并通过
+// SetAgentResolver 注入，避免 proxy 包反向依赖 agenthub。
 type AgentResolver interface {
 	ResolveEgress(username string) Egress
+	// OnlineEgresses 返回当前在线 agent 的出口，按 NodeID 升序稳定排序，
+	// 让轮换游标的推进顺序可预测（节点集合不变时顺序不变）。
+	OnlineEgresses() []Egress
 }
 
 type slotBinding struct {
@@ -76,6 +92,7 @@ func NewManager(database *db.DB) *Manager {
 		lastPickedIP: make(map[string]time.Time),
 		pickCount:    make(map[string]int64),
 		ipPickCount:  make(map[string]int64),
+		rotateSticky: make(map[string]rotateAssignment),
 	}
 }
 
@@ -129,7 +146,7 @@ func (m *Manager) SetAgentResolver(r AgentResolver) {
 	m.mu.Unlock()
 }
 
-func (m *Manager) resolve(username, password string) []Egress {
+func (m *Manager) resolve(username, password, clientIP string) []Egress {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -152,6 +169,16 @@ func (m *Manager) resolve(username, password string) []Egress {
 		return nil
 	}
 
+	// auto 是统一轮换凭据：服务端在「所有逻辑节点」（WARP 池算一个 + 每个在线
+	// agent 各算一个）之间轮转。用一个凭据即可自动摊到不同地区/出口，客户端无需
+	// 逐个复制节点。选中节点排在候选链首位，其余作为故障转移兜底。
+	if strings.EqualFold(username, RotateUsername) {
+		if m.password != "" && password != m.password {
+			return nil
+		}
+		return m.rotateCandidatesLocked(clientIP)
+	}
+
 	if username == "" || strings.EqualFold(username, "random") || strings.EqualFold(username, "stable") {
 		if m.password != "" && password != m.password {
 			return nil
@@ -172,6 +199,86 @@ func (m *Manager) resolve(username, password string) []Egress {
 		return []Egress{t}
 	}
 	return nil
+}
+
+// rotateStickyWindow 是统一轮换凭据的粘滞窗口：同一客户端 IP 在窗口内固定用同一
+// 逻辑节点（不乱飘），窗口到期后下次分配轮到下一个节点。取 3 分钟与 WARP 池的
+// 粘滞衰减量级一致，既能撑住一次浏览会话，又不至于长期钉在一个节点上。
+const rotateStickyWindow = 3 * time.Minute
+
+// rotateCandidatesLocked 实现 auto 统一轮换凭据的选路：把 WARP 池当作一个逻辑节点、
+// 每个在线 agent 各当一个逻辑节点，按客户端 IP 粘滞地 round-robin 选一个作为主出口，
+// 其余节点作为故障转移兜底跟在后面。这样一条链接会自动跑遍不同节点（错开、不挤在
+// 一个上），但单个客户端在粘滞窗口内出口稳定（不乱飘），选中节点故障时又能自动转移。
+func (m *Manager) rotateCandidatesLocked(clientIP string) []Egress {
+	// 收集逻辑节点：warp 排在最前（若有可用隧道），随后是按 NodeID 稳定排序的在线 agent。
+	type node struct {
+		key   string
+		chain []Egress
+	}
+	var nodes []node
+	if warp := tunnelsAsEgress(m.rankedStableCandidatesLocked()); len(warp) > 0 {
+		nodes = append(nodes, node{key: "warp", chain: warp})
+	}
+	if m.agentResolver != nil {
+		for _, eg := range m.agentResolver.OnlineEgresses() {
+			if eg != nil {
+				nodes = append(nodes, node{key: eg.Tag(), chain: []Egress{eg}})
+			}
+		}
+	}
+	if len(nodes) == 0 {
+		return nil
+	}
+
+	idx := map[string]int{}
+	for i, n := range nodes {
+		idx[n.key] = i
+	}
+
+	// 粘滞：窗口内且节点仍在线，就复用上次选中的节点。
+	now := time.Now()
+	pick := -1
+	if clientIP != "" {
+		if a, ok := m.rotateSticky[clientIP]; ok && now.Sub(a.assigned) < rotateStickyWindow {
+			if i, ok := idx[a.key]; ok {
+				pick = i
+			}
+		}
+	}
+	// 否则用全局游标 round-robin 取下一个，并刷新该客户端的粘滞分配。
+	if pick < 0 {
+		pick = int(m.rotateCursor % uint64(len(nodes)))
+		m.rotateCursor++
+		if clientIP != "" {
+			m.rotateSticky[clientIP] = rotateAssignment{key: nodes[pick].key, assigned: now}
+		}
+		m.pruneRotateStickyLocked(now)
+	}
+
+	// 选中节点的候选链在前（本身就带故障转移），其余节点各取首个出口作为跨节点兜底。
+	selected := nodes[pick]
+	out := make([]Egress, 0, len(selected.chain)+len(nodes)-1)
+	out = append(out, selected.chain...)
+	if selected.key == "warp" {
+		m.notePickLocked(selected.chain[0].Tag())
+	}
+	for i, n := range nodes {
+		if i == pick || len(n.chain) == 0 {
+			continue
+		}
+		out = append(out, n.chain[0])
+	}
+	return out
+}
+
+// pruneRotateStickyLocked 清掉过期的粘滞分配，避免 map 随客户端 IP 无限增长。
+func (m *Manager) pruneRotateStickyLocked(now time.Time) {
+	for ip, a := range m.rotateSticky {
+		if now.Sub(a.assigned) >= rotateStickyWindow {
+			delete(m.rotateSticky, ip)
+		}
+	}
 }
 
 // tunnelsAsEgress 把 WARP 隧道候选链转成 []Egress。分开保留 *Tunnel 的内部

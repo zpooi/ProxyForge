@@ -17,6 +17,7 @@ import (
 
 	"github.com/zpooi/ProxyForge/backend/internal/agentdist"
 	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
+	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 )
 
 // AgentLink 是 agent 反向连接的 WebSocket 端点。agent 从任意 VPS 主动连回，
@@ -167,6 +168,33 @@ func (h *Handlers) NodeEnroll(w http.ResponseWriter, r *http.Request) {
 		"token":           token,
 		"server":          base,
 		"has_binary":      agentdist.HasAny(),
+	})
+}
+
+// NodeRotateInfo 返回「统一轮换凭据」的连接信息，供前端一键复制。用户在客户端
+// 里配置这一条（HTTP/SOCKS5 代理 host:port + 用户名 auto + 共享密码），服务端就会
+// 在所有逻辑节点（本机 WARP + 各在线 agent）间按客户端 IP 粘滞地 round-robin 轮转：
+// 一条链接自动跑遍不同节点、错开不挤在一个上、单会话窗口内出口稳定不乱飘、
+// 选中节点故障自动转移。省去一个个节点手动复制。
+func (h *Handlers) NodeRotateInfo(w http.ResponseWriter, r *http.Request) {
+	settings, _ := h.DB.AllSettings()
+	ep := h.proxyEndpointInfo(r, settings)
+
+	// 连接串形如 auto:<密码>@<host>:<port>。密码为空时省略，兼容未设密码的部署。
+	cred := proxy.RotateUsername
+	if ep.Password != "" {
+		cred = fmt.Sprintf("%s:%s", proxy.RotateUsername, ep.Password)
+	}
+	line := fmt.Sprintf("%s@%s:%d", cred, ep.Host, ep.Port)
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"connection": line,           // 用户名:密码@host:port，一键复制
+		"host":       ep.Host,        // 分字段返回，方便客户端逐项填写
+		"port":       ep.Port,
+		"username":   proxy.RotateUsername,
+		"password":   ep.Password,
+		"tls":        ep.TLS,
 	})
 }
 
