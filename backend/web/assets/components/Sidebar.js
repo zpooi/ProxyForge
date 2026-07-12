@@ -8,10 +8,14 @@ import {
 	destroy_each,
 	detach,
 	element,
+	empty,
+	globals,
 	init,
 	insert,
 	listen,
 	mount_component,
+	noop,
+	run_all,
 	safe_not_equal,
 	space,
 	text,
@@ -20,40 +24,41 @@ import {
 	transition_out
 } from "svelte/internal";
 
+const { window: window_1 } = globals;
 import Icon from './Icon.js';
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[4] = list[i];
+	child_ctx[10] = list[i];
 	return child_ctx;
 }
 
-// (21:4) {#each navItems as item}
+// (54:6) {#each navItems as item}
 function create_each_block(ctx) {
 	let a;
-	let t_value = /*item*/ ctx[4].label + "";
+	let t_value = /*item*/ ctx[10].label + "";
 	let t;
 	let a_href_value;
 	let mounted;
 	let dispose;
 
-	function click_handler(...args) {
-		return /*click_handler*/ ctx[3](/*item*/ ctx[4], ...args);
+	function click_handler_1(...args) {
+		return /*click_handler_1*/ ctx[8](/*item*/ ctx[10], ...args);
 	}
 
 	return {
 		c() {
 			a = element("a");
 			t = text(t_value);
-			attr(a, "href", a_href_value = /*item*/ ctx[4].href);
-			toggle_class(a, "active", /*activePath*/ ctx[0] === /*item*/ ctx[4].href);
+			attr(a, "href", a_href_value = /*item*/ ctx[10].href);
+			toggle_class(a, "active", /*activePath*/ ctx[0] === /*item*/ ctx[10].href);
 		},
 		m(target, anchor) {
 			insert(target, a, anchor);
 			append(a, t);
 
 			if (!mounted) {
-				dispose = listen(a, "click", click_handler);
+				dispose = listen(a, "click", click_handler_1);
 				mounted = true;
 			}
 		},
@@ -61,7 +66,7 @@ function create_each_block(ctx) {
 			ctx = new_ctx;
 
 			if (dirty & /*activePath, navItems*/ 5) {
-				toggle_class(a, "active", /*activePath*/ ctx[0] === /*item*/ ctx[4].href);
+				toggle_class(a, "active", /*activePath*/ ctx[0] === /*item*/ ctx[10].href);
 			}
 		},
 		d(detaching) {
@@ -72,19 +77,67 @@ function create_each_block(ctx) {
 	};
 }
 
+// (68:0) {#if mobileOpen}
+function create_if_block(ctx) {
+	let button;
+	let mounted;
+	let dispose;
+
+	return {
+		c() {
+			button = element("button");
+			attr(button, "type", "button");
+			attr(button, "class", "nav-backdrop");
+			attr(button, "aria-label", "关闭菜单");
+		},
+		m(target, anchor) {
+			insert(target, button, anchor);
+
+			if (!mounted) {
+				dispose = listen(button, "click", /*click_handler_2*/ ctx[9]);
+				mounted = true;
+			}
+		},
+		p: noop,
+		d(detaching) {
+			if (detaching) detach(button);
+			mounted = false;
+			dispose();
+		}
+	};
+}
+
 function create_fragment(ctx) {
 	let aside;
+	let div1;
 	let div0;
 	let span0;
-	let icon;
+	let icon0;
 	let t0;
 	let span1;
 	let t2;
-	let nav;
+	let button;
+	let icon1;
+	let button_aria_label_value;
 	let t3;
-	let div1;
+	let div3;
+	let nav;
+	let t4;
+	let div2;
+	let t6;
+	let if_block_anchor;
 	let current;
-	icon = new Icon({ props: { name: "bolt", size: 18 } });
+	let mounted;
+	let dispose;
+	icon0 = new Icon({ props: { name: "bolt", size: 18 } });
+
+	icon1 = new Icon({
+			props: {
+				name: /*mobileOpen*/ ctx[1] ? 'close' : 'menu',
+				size: 22
+			}
+		});
+
 	let each_value = /*navItems*/ ctx[2];
 	let each_blocks = [];
 
@@ -92,41 +145,66 @@ function create_fragment(ctx) {
 		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
 	}
 
+	let if_block = /*mobileOpen*/ ctx[1] && create_if_block(ctx);
+
 	return {
 		c() {
 			aside = element("aside");
+			div1 = element("div");
 			div0 = element("div");
 			span0 = element("span");
-			create_component(icon.$$.fragment);
+			create_component(icon0.$$.fragment);
 			t0 = space();
 			span1 = element("span");
 			span1.textContent = "ProxyForge";
 			t2 = space();
+			button = element("button");
+			create_component(icon1.$$.fragment);
+			t3 = space();
+			div3 = element("div");
 			nav = element("nav");
 
 			for (let i = 0; i < each_blocks.length; i += 1) {
 				each_blocks[i].c();
 			}
 
-			t3 = space();
-			div1 = element("div");
-			div1.innerHTML = `<a href="/logout">退出登录</a>`;
+			t4 = space();
+			div2 = element("div");
+			div2.innerHTML = `<a href="/logout">退出登录</a>`;
+			t6 = space();
+			if (if_block) if_block.c();
+			if_block_anchor = empty();
 			attr(span0, "class", "nav-brand-logo");
 			attr(span1, "class", "nav-brand-text");
 			attr(div0, "class", "nav-brand");
+			attr(button, "type", "button");
+			attr(button, "class", "mobile-menu-toggle");
+			attr(button, "aria-label", button_aria_label_value = /*mobileOpen*/ ctx[1] ? '关闭菜单' : '打开菜单');
+			attr(button, "aria-expanded", /*mobileOpen*/ ctx[1]);
+			attr(button, "aria-controls", "main-navigation");
+			attr(div1, "class", "sidebar-header");
+			attr(nav, "id", "main-navigation");
 			attr(nav, "class", "sidebar-nav");
-			attr(div1, "class", "sidebar-footer");
+			attr(div2, "class", "sidebar-footer");
+			attr(div3, "class", "sidebar-panel");
+			toggle_class(div3, "open", /*mobileOpen*/ ctx[1]);
 			attr(aside, "class", "sidebar");
+			toggle_class(aside, "mobile-open", /*mobileOpen*/ ctx[1]);
 		},
 		m(target, anchor) {
 			insert(target, aside, anchor);
-			append(aside, div0);
+			append(aside, div1);
+			append(div1, div0);
 			append(div0, span0);
-			mount_component(icon, span0, null);
+			mount_component(icon0, span0, null);
 			append(div0, t0);
 			append(div0, span1);
-			append(aside, t2);
-			append(aside, nav);
+			append(div1, t2);
+			append(div1, button);
+			mount_component(icon1, button, null);
+			append(aside, t3);
+			append(aside, div3);
+			append(div3, nav);
 
 			for (let i = 0; i < each_blocks.length; i += 1) {
 				if (each_blocks[i]) {
@@ -134,12 +212,37 @@ function create_fragment(ctx) {
 				}
 			}
 
-			append(aside, t3);
-			append(aside, div1);
+			append(div3, t4);
+			append(div3, div2);
+			insert(target, t6, anchor);
+			if (if_block) if_block.m(target, anchor);
+			insert(target, if_block_anchor, anchor);
 			current = true;
+
+			if (!mounted) {
+				dispose = [
+					listen(window_1, "keydown", /*handleKeydown*/ ctx[4]),
+					listen(window_1, "resize", /*handleResize*/ ctx[5]),
+					listen(button, "click", /*click_handler*/ ctx[7])
+				];
+
+				mounted = true;
+			}
 		},
 		p(ctx, [dirty]) {
-			if (dirty & /*navItems, activePath, onNavigate*/ 7) {
+			const icon1_changes = {};
+			if (dirty & /*mobileOpen*/ 2) icon1_changes.name = /*mobileOpen*/ ctx[1] ? 'close' : 'menu';
+			icon1.$set(icon1_changes);
+
+			if (!current || dirty & /*mobileOpen*/ 2 && button_aria_label_value !== (button_aria_label_value = /*mobileOpen*/ ctx[1] ? '关闭菜单' : '打开菜单')) {
+				attr(button, "aria-label", button_aria_label_value);
+			}
+
+			if (!current || dirty & /*mobileOpen*/ 2) {
+				attr(button, "aria-expanded", /*mobileOpen*/ ctx[1]);
+			}
+
+			if (dirty & /*navItems, activePath, navigate*/ 13) {
 				each_value = /*navItems*/ ctx[2];
 				let i;
 
@@ -161,20 +264,49 @@ function create_fragment(ctx) {
 
 				each_blocks.length = each_value.length;
 			}
+
+			if (!current || dirty & /*mobileOpen*/ 2) {
+				toggle_class(div3, "open", /*mobileOpen*/ ctx[1]);
+			}
+
+			if (!current || dirty & /*mobileOpen*/ 2) {
+				toggle_class(aside, "mobile-open", /*mobileOpen*/ ctx[1]);
+			}
+
+			if (/*mobileOpen*/ ctx[1]) {
+				if (if_block) {
+					if_block.p(ctx, dirty);
+				} else {
+					if_block = create_if_block(ctx);
+					if_block.c();
+					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+				}
+			} else if (if_block) {
+				if_block.d(1);
+				if_block = null;
+			}
 		},
 		i(local) {
 			if (current) return;
-			transition_in(icon.$$.fragment, local);
+			transition_in(icon0.$$.fragment, local);
+			transition_in(icon1.$$.fragment, local);
 			current = true;
 		},
 		o(local) {
-			transition_out(icon.$$.fragment, local);
+			transition_out(icon0.$$.fragment, local);
+			transition_out(icon1.$$.fragment, local);
 			current = false;
 		},
 		d(detaching) {
 			if (detaching) detach(aside);
-			destroy_component(icon);
+			destroy_component(icon0);
+			destroy_component(icon1);
 			destroy_each(each_blocks, detaching);
+			if (detaching) detach(t6);
+			if (if_block) if_block.d(detaching);
+			if (detaching) detach(if_block_anchor);
+			mounted = false;
+			run_all(dispose);
 		}
 	};
 }
@@ -182,6 +314,7 @@ function create_fragment(ctx) {
 function instance($$self, $$props, $$invalidate) {
 	let { activePath = '/' } = $$props;
 	let { onNavigate } = $$props;
+	let mobileOpen = false;
 
 	const navItems = [
 		{ href: '/', label: '仪表盘' },
@@ -190,20 +323,52 @@ function instance($$self, $$props, $$invalidate) {
 		{ href: '/settings', label: '代理设置' }
 	];
 
-	const click_handler = (item, event) => onNavigate(event, item.href);
+	function navigate(event, href) {
+		$$invalidate(1, mobileOpen = false);
+		onNavigate(event, href);
+	}
+
+	function handleKeydown(event) {
+		if (event.key === 'Escape') $$invalidate(1, mobileOpen = false);
+	}
+
+	function handleResize() {
+		if (window.innerWidth > 760) $$invalidate(1, mobileOpen = false);
+	}
+
+	const click_handler = () => $$invalidate(1, mobileOpen = !mobileOpen);
+	const click_handler_1 = (item, event) => navigate(event, item.href);
+	const click_handler_2 = () => $$invalidate(1, mobileOpen = false);
 
 	$$self.$$set = $$props => {
 		if ('activePath' in $$props) $$invalidate(0, activePath = $$props.activePath);
-		if ('onNavigate' in $$props) $$invalidate(1, onNavigate = $$props.onNavigate);
+		if ('onNavigate' in $$props) $$invalidate(6, onNavigate = $$props.onNavigate);
 	};
 
-	return [activePath, onNavigate, navItems, click_handler];
+	$$self.$$.update = () => {
+		if ($$self.$$.dirty & /*activePath*/ 1) {
+			$: if (activePath) $$invalidate(1, mobileOpen = false);
+		}
+	};
+
+	return [
+		activePath,
+		mobileOpen,
+		navItems,
+		navigate,
+		handleKeydown,
+		handleResize,
+		onNavigate,
+		click_handler,
+		click_handler_1,
+		click_handler_2
+	];
 }
 
 class Sidebar extends SvelteComponent {
 	constructor(options) {
 		super();
-		init(this, options, instance, create_fragment, safe_not_equal, { activePath: 0, onNavigate: 1 });
+		init(this, options, instance, create_fragment, safe_not_equal, { activePath: 0, onNavigate: 6 });
 	}
 }
 
