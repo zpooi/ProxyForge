@@ -30,124 +30,11 @@ import StatusTag from '../components/StatusTag.js';
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[20] = list[i];
+	child_ctx[16] = list[i];
 	return child_ctx;
 }
 
-// (145:0) {#if rotate}
-function create_if_block_5(ctx) {
-	let div3;
-	let div0;
-	let t3;
-	let div1;
-	let code;
-	let t4_value = /*rotate*/ ctx[9].connection + "";
-	let t4;
-	let t5;
-	let button;
-	let t6_value = (/*rotateCopied*/ ctx[10] ? '已复制' : '复制') + "";
-	let t6;
-	let t7;
-	let div2;
-	let span1;
-	let t8;
-	let t9_value = /*rotate*/ ctx[9].host + "";
-	let t9;
-	let t10;
-	let t11_value = /*rotate*/ ctx[9].port + "";
-	let t11;
-	let t12;
-	let t13_value = /*rotate*/ ctx[9].username + "";
-	let t13;
-	let t14_value = (/*rotate*/ ctx[9].tls ? ' · TLS' : '') + "";
-	let t14;
-	let t15;
-	let p;
-	let mounted;
-	let dispose;
-
-	return {
-		c() {
-			div3 = element("div");
-			div0 = element("div");
-
-			div0.innerHTML = `<strong>🔄 统一轮换链接</strong> 
-      <span class="muted">一条链接，服务端自动在所有节点（本机 + 各地区 agent）间轮换出口。不用一个个节点复制。</span>`;
-
-			t3 = space();
-			div1 = element("div");
-			code = element("code");
-			t4 = text(t4_value);
-			t5 = space();
-			button = element("button");
-			t6 = text(t6_value);
-			t7 = space();
-			div2 = element("div");
-			span1 = element("span");
-			t8 = text("HTTP / SOCKS5 代理 · 主机 ");
-			t9 = text(t9_value);
-			t10 = text(" · 端口 ");
-			t11 = text(t11_value);
-			t12 = text(" · 用户名 ");
-			t13 = text(t13_value);
-			t14 = text(t14_value);
-			t15 = space();
-			p = element("p");
-			p.textContent = "同一客户端在约 3 分钟窗口内出口稳定（不乱飘），整体在节点间均匀轮转；选中节点故障时自动转移到其他节点。";
-			attr(div0, "class", "enroll-head svelte-7gi6c9");
-			attr(code, "class", "cmd svelte-7gi6c9");
-			attr(button, "class", "btn-primary");
-			attr(div1, "class", "cmd-row svelte-7gi6c9");
-			attr(span1, "class", "muted");
-			attr(div2, "class", "enroll-foot svelte-7gi6c9");
-			attr(p, "class", "hint");
-			attr(div3, "class", "enroll-card rotate-card svelte-7gi6c9");
-		},
-		m(target, anchor) {
-			insert(target, div3, anchor);
-			append(div3, div0);
-			append(div3, t3);
-			append(div3, div1);
-			append(div1, code);
-			append(code, t4);
-			append(div1, t5);
-			append(div1, button);
-			append(button, t6);
-			append(div3, t7);
-			append(div3, div2);
-			append(div2, span1);
-			append(span1, t8);
-			append(span1, t9);
-			append(span1, t10);
-			append(span1, t11);
-			append(span1, t12);
-			append(span1, t13);
-			append(span1, t14);
-			append(div3, t15);
-			append(div3, p);
-
-			if (!mounted) {
-				dispose = listen(button, "click", /*copyRotate*/ ctx[11]);
-				mounted = true;
-			}
-		},
-		p(ctx, dirty) {
-			if (dirty & /*rotate*/ 512 && t4_value !== (t4_value = /*rotate*/ ctx[9].connection + "")) set_data(t4, t4_value);
-			if (dirty & /*rotateCopied*/ 1024 && t6_value !== (t6_value = (/*rotateCopied*/ ctx[10] ? '已复制' : '复制') + "")) set_data(t6, t6_value);
-			if (dirty & /*rotate*/ 512 && t9_value !== (t9_value = /*rotate*/ ctx[9].host + "")) set_data(t9, t9_value);
-			if (dirty & /*rotate*/ 512 && t11_value !== (t11_value = /*rotate*/ ctx[9].port + "")) set_data(t11, t11_value);
-			if (dirty & /*rotate*/ 512 && t13_value !== (t13_value = /*rotate*/ ctx[9].username + "")) set_data(t13, t13_value);
-			if (dirty & /*rotate*/ 512 && t14_value !== (t14_value = (/*rotate*/ ctx[9].tls ? ' · TLS' : '') + "")) set_data(t14, t14_value);
-		},
-		d(detaching) {
-			if (detaching) detach(div3);
-			mounted = false;
-			dispose();
-		}
-	};
-}
-
-// (171:2) {#if enrollError}
+// (127:2) {#if enrollError}
 function create_if_block_4(ctx) {
 	let div;
 	let t;
@@ -171,7 +58,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (174:2) {#if !hasBinary}
+// (130:2) {#if !hasBinary}
 function create_if_block_3(ctx) {
 	let div;
 
@@ -190,7 +77,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (193:0) {#if error}
+// (149:0) {#if error}
 function create_if_block_2(ctx) {
 	let div;
 	let t;
@@ -214,7 +101,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (199:0) {:else}
+// (155:0) {:else}
 function create_else_block(ctx) {
 	let div;
 	let table;
@@ -274,7 +161,7 @@ function create_else_block(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty & /*removeNode, nodes, fmtSeen, fmtBytes*/ 16385) {
+			if (dirty & /*removeNode, nodes, fmtSeen, fmtBytes*/ 2049) {
 				each_value = /*nodes*/ ctx[0];
 				let i;
 
@@ -326,7 +213,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (197:0) {#if loading}
+// (153:0) {#if loading}
 function create_if_block(ctx) {
 	let div;
 
@@ -348,14 +235,14 @@ function create_if_block(ctx) {
 	};
 }
 
-// (227:14) {#if node.kind !== 'local'}
+// (183:14) {#if node.kind !== 'local'}
 function create_if_block_1(ctx) {
 	let button;
 	let mounted;
 	let dispose;
 
 	function click_handler() {
-		return /*click_handler*/ ctx[15](/*node*/ ctx[20]);
+		return /*click_handler*/ ctx[12](/*node*/ ctx[16]);
 	}
 
 	return {
@@ -384,44 +271,44 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (216:8) {#each nodes as node}
+// (172:8) {#each nodes as node}
 function create_each_block(ctx) {
 	let tr;
 	let td0;
-	let t0_value = /*node*/ ctx[20].name + "";
+	let t0_value = /*node*/ ctx[16].name + "";
 	let t0;
 	let t1;
 	let td1;
-	let t2_value = (/*node*/ ctx[20].kind === 'local' ? '本机' : 'agent') + "";
+	let t2_value = (/*node*/ ctx[16].kind === 'local' ? '本机' : 'agent') + "";
 	let t2;
 	let t3;
 	let td2;
-	let t4_value = (/*node*/ ctx[20].public_ip || '—') + "";
+	let t4_value = (/*node*/ ctx[16].public_ip || '—') + "";
 	let t4;
 	let t5;
 	let td3;
-	let t6_value = (/*node*/ ctx[20].country || '—') + "";
+	let t6_value = (/*node*/ ctx[16].country || '—') + "";
 	let t6;
 
-	let t7_value = (/*node*/ ctx[20].colo
-	? ` / ${/*node*/ ctx[20].colo}`
+	let t7_value = (/*node*/ ctx[16].colo
+	? ` / ${/*node*/ ctx[16].colo}`
 	: '') + "";
 
 	let t7;
 	let t8;
 	let td4;
 
-	let t9_value = (/*node*/ ctx[20].latency_ms
-	? /*node*/ ctx[20].latency_ms + ' ms'
+	let t9_value = (/*node*/ ctx[16].latency_ms
+	? /*node*/ ctx[16].latency_ms + ' ms'
 	: '—') + "";
 
 	let t9;
 	let t10;
 	let td5;
-	let t11_value = fmtBytes(/*node*/ ctx[20].tx_bytes) + "";
+	let t11_value = fmtBytes(/*node*/ ctx[16].tx_bytes) + "";
 	let t11;
 	let t12;
-	let t13_value = fmtBytes(/*node*/ ctx[20].rx_bytes) + "";
+	let t13_value = fmtBytes(/*node*/ ctx[16].rx_bytes) + "";
 	let t13;
 	let t14;
 	let td6;
@@ -429,9 +316,9 @@ function create_each_block(ctx) {
 	let t15;
 	let td7;
 
-	let t16_value = (/*node*/ ctx[20].online
+	let t16_value = (/*node*/ ctx[16].online
 	? '在线'
-	: fmtSeen(/*node*/ ctx[20].last_seen)) + "";
+	: fmtSeen(/*node*/ ctx[16].last_seen)) + "";
 
 	let t16;
 	let t17;
@@ -441,11 +328,11 @@ function create_each_block(ctx) {
 
 	statustag = new StatusTag({
 			props: {
-				status: /*node*/ ctx[20].online ? 'active' : 'inactive'
+				status: /*node*/ ctx[16].online ? 'active' : 'inactive'
 			}
 		});
 
-	let if_block = /*node*/ ctx[20].kind !== 'local' && create_if_block_1(ctx);
+	let if_block = /*node*/ ctx[16].kind !== 'local' && create_if_block_1(ctx);
 
 	return {
 		c() {
@@ -519,30 +406,30 @@ function create_each_block(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty & /*nodes*/ 1) && t0_value !== (t0_value = /*node*/ ctx[20].name + "")) set_data(t0, t0_value);
-			if ((!current || dirty & /*nodes*/ 1) && t2_value !== (t2_value = (/*node*/ ctx[20].kind === 'local' ? '本机' : 'agent') + "")) set_data(t2, t2_value);
-			if ((!current || dirty & /*nodes*/ 1) && t4_value !== (t4_value = (/*node*/ ctx[20].public_ip || '—') + "")) set_data(t4, t4_value);
-			if ((!current || dirty & /*nodes*/ 1) && t6_value !== (t6_value = (/*node*/ ctx[20].country || '—') + "")) set_data(t6, t6_value);
+			if ((!current || dirty & /*nodes*/ 1) && t0_value !== (t0_value = /*node*/ ctx[16].name + "")) set_data(t0, t0_value);
+			if ((!current || dirty & /*nodes*/ 1) && t2_value !== (t2_value = (/*node*/ ctx[16].kind === 'local' ? '本机' : 'agent') + "")) set_data(t2, t2_value);
+			if ((!current || dirty & /*nodes*/ 1) && t4_value !== (t4_value = (/*node*/ ctx[16].public_ip || '—') + "")) set_data(t4, t4_value);
+			if ((!current || dirty & /*nodes*/ 1) && t6_value !== (t6_value = (/*node*/ ctx[16].country || '—') + "")) set_data(t6, t6_value);
 
-			if ((!current || dirty & /*nodes*/ 1) && t7_value !== (t7_value = (/*node*/ ctx[20].colo
-			? ` / ${/*node*/ ctx[20].colo}`
+			if ((!current || dirty & /*nodes*/ 1) && t7_value !== (t7_value = (/*node*/ ctx[16].colo
+			? ` / ${/*node*/ ctx[16].colo}`
 			: '') + "")) set_data(t7, t7_value);
 
-			if ((!current || dirty & /*nodes*/ 1) && t9_value !== (t9_value = (/*node*/ ctx[20].latency_ms
-			? /*node*/ ctx[20].latency_ms + ' ms'
+			if ((!current || dirty & /*nodes*/ 1) && t9_value !== (t9_value = (/*node*/ ctx[16].latency_ms
+			? /*node*/ ctx[16].latency_ms + ' ms'
 			: '—') + "")) set_data(t9, t9_value);
 
-			if ((!current || dirty & /*nodes*/ 1) && t11_value !== (t11_value = fmtBytes(/*node*/ ctx[20].tx_bytes) + "")) set_data(t11, t11_value);
-			if ((!current || dirty & /*nodes*/ 1) && t13_value !== (t13_value = fmtBytes(/*node*/ ctx[20].rx_bytes) + "")) set_data(t13, t13_value);
+			if ((!current || dirty & /*nodes*/ 1) && t11_value !== (t11_value = fmtBytes(/*node*/ ctx[16].tx_bytes) + "")) set_data(t11, t11_value);
+			if ((!current || dirty & /*nodes*/ 1) && t13_value !== (t13_value = fmtBytes(/*node*/ ctx[16].rx_bytes) + "")) set_data(t13, t13_value);
 			const statustag_changes = {};
-			if (dirty & /*nodes*/ 1) statustag_changes.status = /*node*/ ctx[20].online ? 'active' : 'inactive';
+			if (dirty & /*nodes*/ 1) statustag_changes.status = /*node*/ ctx[16].online ? 'active' : 'inactive';
 			statustag.$set(statustag_changes);
 
-			if ((!current || dirty & /*nodes*/ 1) && t16_value !== (t16_value = (/*node*/ ctx[20].online
+			if ((!current || dirty & /*nodes*/ 1) && t16_value !== (t16_value = (/*node*/ ctx[16].online
 			? '在线'
-			: fmtSeen(/*node*/ ctx[20].last_seen)) + "")) set_data(t16, t16_value);
+			: fmtSeen(/*node*/ ctx[16].last_seen)) + "")) set_data(t16, t16_value);
 
-			if (/*node*/ ctx[20].kind !== 'local') {
+			if (/*node*/ ctx[16].kind !== 'local') {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
@@ -575,43 +462,41 @@ function create_each_block(ctx) {
 function create_fragment(ctx) {
 	let div1;
 	let t3;
-	let t4;
 	let div5;
 	let div2;
+	let t7;
 	let t8;
 	let t9;
-	let t10;
 	let div3;
 	let code;
-	let t11_value = (/*installCommand*/ ctx[3] || '生成中…') + "";
+	let t10_value = (/*installCommand*/ ctx[3] || '生成中…') + "";
+	let t10;
 	let t11;
-	let t12;
 	let button0;
-	let t13_value = (/*copied*/ ctx[7] ? '已复制' : '复制') + "";
-	let t13;
+	let t12_value = (/*copied*/ ctx[7] ? '已复制' : '复制') + "";
+	let t12;
 	let button0_disabled_value;
-	let t14;
+	let t13;
 	let div4;
 	let span1;
+	let t14;
+	let t15_value = (/*server*/ ctx[4] || '—') + "";
 	let t15;
-	let t16_value = (/*server*/ ctx[4] || '—') + "";
 	let t16;
-	let t17;
 	let button1;
-	let t18_value = (/*rotating*/ ctx[8] ? '轮换中…' : '轮换 token（撤销旧命令）') + "";
+	let t17_value = (/*rotating*/ ctx[8] ? '轮换中…' : '轮换 token（撤销旧命令）') + "";
+	let t17;
 	let t18;
 	let t19;
-	let t20;
 	let current_block_type_index;
-	let if_block4;
-	let if_block4_anchor;
+	let if_block3;
+	let if_block3_anchor;
 	let current;
 	let mounted;
 	let dispose;
-	let if_block0 = /*rotate*/ ctx[9] && create_if_block_5(ctx);
-	let if_block1 = /*enrollError*/ ctx[6] && create_if_block_4(ctx);
-	let if_block2 = !/*hasBinary*/ ctx[5] && create_if_block_3(ctx);
-	let if_block3 = /*error*/ ctx[2] && create_if_block_2(ctx);
+	let if_block0 = /*enrollError*/ ctx[6] && create_if_block_4(ctx);
+	let if_block1 = !/*hasBinary*/ ctx[5] && create_if_block_3(ctx);
+	let if_block2 = /*error*/ ctx[2] && create_if_block_2(ctx);
 	const if_block_creators = [create_if_block, create_else_block];
 	const if_blocks = [];
 
@@ -621,7 +506,7 @@ function create_fragment(ctx) {
 	}
 
 	current_block_type_index = select_block_type(ctx, -1);
-	if_block4 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+	if_block3 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
 
 	return {
 		c() {
@@ -631,38 +516,36 @@ function create_fragment(ctx) {
     <p class="muted">本机 WARP 出口 + 各地区远程 agent 出口。在其他 VPS 一行命令即可接入，用它本机 IP 作为出口。</p></div>`;
 
 			t3 = space();
-			if (if_block0) if_block0.c();
-			t4 = space();
 			div5 = element("div");
 			div2 = element("div");
 
 			div2.innerHTML = `<strong>接入新节点</strong> 
     <span class="muted">在目标 VPS（root）上执行下面这行，它会装成 systemd 服务常驻自启</span>`;
 
+			t7 = space();
+			if (if_block0) if_block0.c();
 			t8 = space();
 			if (if_block1) if_block1.c();
 			t9 = space();
-			if (if_block2) if_block2.c();
-			t10 = space();
 			div3 = element("div");
 			code = element("code");
-			t11 = text(t11_value);
-			t12 = space();
+			t10 = text(t10_value);
+			t11 = space();
 			button0 = element("button");
-			t13 = text(t13_value);
-			t14 = space();
+			t12 = text(t12_value);
+			t13 = space();
 			div4 = element("div");
 			span1 = element("span");
-			t15 = text("主控地址：");
-			t16 = text(t16_value);
-			t17 = space();
+			t14 = text("主控地址：");
+			t15 = text(t15_value);
+			t16 = space();
 			button1 = element("button");
-			t18 = text(t18_value);
+			t17 = text(t17_value);
+			t18 = space();
+			if (if_block2) if_block2.c();
 			t19 = space();
-			if (if_block3) if_block3.c();
-			t20 = space();
-			if_block4.c();
-			if_block4_anchor = empty();
+			if_block3.c();
+			if_block3_anchor = empty();
 			attr(div1, "class", "page-header");
 			attr(div2, "class", "enroll-head svelte-7gi6c9");
 			attr(code, "class", "cmd svelte-7gi6c9");
@@ -678,64 +561,62 @@ function create_fragment(ctx) {
 		m(target, anchor) {
 			insert(target, div1, anchor);
 			insert(target, t3, anchor);
-			if (if_block0) if_block0.m(target, anchor);
-			insert(target, t4, anchor);
 			insert(target, div5, anchor);
 			append(div5, div2);
+			append(div5, t7);
+			if (if_block0) if_block0.m(div5, null);
 			append(div5, t8);
 			if (if_block1) if_block1.m(div5, null);
 			append(div5, t9);
-			if (if_block2) if_block2.m(div5, null);
-			append(div5, t10);
 			append(div5, div3);
 			append(div3, code);
-			append(code, t11);
-			append(div3, t12);
+			append(code, t10);
+			append(div3, t11);
 			append(div3, button0);
-			append(button0, t13);
-			append(div5, t14);
+			append(button0, t12);
+			append(div5, t13);
 			append(div5, div4);
 			append(div4, span1);
+			append(span1, t14);
 			append(span1, t15);
-			append(span1, t16);
-			append(div4, t17);
+			append(div4, t16);
 			append(div4, button1);
-			append(button1, t18);
+			append(button1, t17);
+			insert(target, t18, anchor);
+			if (if_block2) if_block2.m(target, anchor);
 			insert(target, t19, anchor);
-			if (if_block3) if_block3.m(target, anchor);
-			insert(target, t20, anchor);
 			if_blocks[current_block_type_index].m(target, anchor);
-			insert(target, if_block4_anchor, anchor);
+			insert(target, if_block3_anchor, anchor);
 			current = true;
 
 			if (!mounted) {
 				dispose = [
-					listen(button0, "click", /*copyInstall*/ ctx[12]),
-					listen(button1, "click", /*rotateToken*/ ctx[13])
+					listen(button0, "click", /*copyInstall*/ ctx[9]),
+					listen(button1, "click", /*rotateToken*/ ctx[10])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, [dirty]) {
-			if (/*rotate*/ ctx[9]) {
+			if (/*enrollError*/ ctx[6]) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
-					if_block0 = create_if_block_5(ctx);
+					if_block0 = create_if_block_4(ctx);
 					if_block0.c();
-					if_block0.m(t4.parentNode, t4);
+					if_block0.m(div5, t8);
 				}
 			} else if (if_block0) {
 				if_block0.d(1);
 				if_block0 = null;
 			}
 
-			if (/*enrollError*/ ctx[6]) {
+			if (!/*hasBinary*/ ctx[5]) {
 				if (if_block1) {
-					if_block1.p(ctx, dirty);
+					
 				} else {
-					if_block1 = create_if_block_4(ctx);
+					if_block1 = create_if_block_3(ctx);
 					if_block1.c();
 					if_block1.m(div5, t9);
 				}
@@ -744,44 +625,31 @@ function create_fragment(ctx) {
 				if_block1 = null;
 			}
 
-			if (!/*hasBinary*/ ctx[5]) {
-				if (if_block2) {
-					
-				} else {
-					if_block2 = create_if_block_3(ctx);
-					if_block2.c();
-					if_block2.m(div5, t10);
-				}
-			} else if (if_block2) {
-				if_block2.d(1);
-				if_block2 = null;
-			}
-
-			if ((!current || dirty & /*installCommand*/ 8) && t11_value !== (t11_value = (/*installCommand*/ ctx[3] || '生成中…') + "")) set_data(t11, t11_value);
-			if ((!current || dirty & /*copied*/ 128) && t13_value !== (t13_value = (/*copied*/ ctx[7] ? '已复制' : '复制') + "")) set_data(t13, t13_value);
+			if ((!current || dirty & /*installCommand*/ 8) && t10_value !== (t10_value = (/*installCommand*/ ctx[3] || '生成中…') + "")) set_data(t10, t10_value);
+			if ((!current || dirty & /*copied*/ 128) && t12_value !== (t12_value = (/*copied*/ ctx[7] ? '已复制' : '复制') + "")) set_data(t12, t12_value);
 
 			if (!current || dirty & /*installCommand*/ 8 && button0_disabled_value !== (button0_disabled_value = !/*installCommand*/ ctx[3])) {
 				button0.disabled = button0_disabled_value;
 			}
 
-			if ((!current || dirty & /*server*/ 16) && t16_value !== (t16_value = (/*server*/ ctx[4] || '—') + "")) set_data(t16, t16_value);
-			if ((!current || dirty & /*rotating*/ 256) && t18_value !== (t18_value = (/*rotating*/ ctx[8] ? '轮换中…' : '轮换 token（撤销旧命令）') + "")) set_data(t18, t18_value);
+			if ((!current || dirty & /*server*/ 16) && t15_value !== (t15_value = (/*server*/ ctx[4] || '—') + "")) set_data(t15, t15_value);
+			if ((!current || dirty & /*rotating*/ 256) && t17_value !== (t17_value = (/*rotating*/ ctx[8] ? '轮换中…' : '轮换 token（撤销旧命令）') + "")) set_data(t17, t17_value);
 
 			if (!current || dirty & /*rotating*/ 256) {
 				button1.disabled = /*rotating*/ ctx[8];
 			}
 
 			if (/*error*/ ctx[2]) {
-				if (if_block3) {
-					if_block3.p(ctx, dirty);
+				if (if_block2) {
+					if_block2.p(ctx, dirty);
 				} else {
-					if_block3 = create_if_block_2(ctx);
-					if_block3.c();
-					if_block3.m(t20.parentNode, t20);
+					if_block2 = create_if_block_2(ctx);
+					if_block2.c();
+					if_block2.m(t19.parentNode, t19);
 				}
-			} else if (if_block3) {
-				if_block3.d(1);
-				if_block3 = null;
+			} else if (if_block2) {
+				if_block2.d(1);
+				if_block2 = null;
 			}
 
 			let previous_block_index = current_block_type_index;
@@ -797,41 +665,39 @@ function create_fragment(ctx) {
 				});
 
 				check_outros();
-				if_block4 = if_blocks[current_block_type_index];
+				if_block3 = if_blocks[current_block_type_index];
 
-				if (!if_block4) {
-					if_block4 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
-					if_block4.c();
+				if (!if_block3) {
+					if_block3 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+					if_block3.c();
 				} else {
-					if_block4.p(ctx, dirty);
+					if_block3.p(ctx, dirty);
 				}
 
-				transition_in(if_block4, 1);
-				if_block4.m(if_block4_anchor.parentNode, if_block4_anchor);
+				transition_in(if_block3, 1);
+				if_block3.m(if_block3_anchor.parentNode, if_block3_anchor);
 			}
 		},
 		i(local) {
 			if (current) return;
-			transition_in(if_block4);
+			transition_in(if_block3);
 			current = true;
 		},
 		o(local) {
-			transition_out(if_block4);
+			transition_out(if_block3);
 			current = false;
 		},
 		d(detaching) {
 			if (detaching) detach(div1);
 			if (detaching) detach(t3);
-			if (if_block0) if_block0.d(detaching);
-			if (detaching) detach(t4);
 			if (detaching) detach(div5);
+			if (if_block0) if_block0.d();
 			if (if_block1) if_block1.d();
-			if (if_block2) if_block2.d();
+			if (detaching) detach(t18);
+			if (if_block2) if_block2.d(detaching);
 			if (detaching) detach(t19);
-			if (if_block3) if_block3.d(detaching);
-			if (detaching) detach(t20);
 			if_blocks[current_block_type_index].d(detaching);
-			if (detaching) detach(if_block4_anchor);
+			if (detaching) detach(if_block3_anchor);
 			mounted = false;
 			run_all(dispose);
 		}
@@ -874,11 +740,6 @@ function instance($$self, $$props, $$invalidate) {
 	let copied = false;
 	let rotating = false;
 
-	// 统一轮换凭据：一条连接串，服务端在所有节点间自动粘滞轮换。
-	let rotate = null;
-
-	let rotateCopied = false;
-
 	async function fetchNodes() {
 		try {
 			const res = await fetch('/api/nodes/json');
@@ -908,34 +769,15 @@ function instance($$self, $$props, $$invalidate) {
 		}
 	}
 
-	// 拉取统一轮换凭据的连接信息。
-	async function fetchRotate() {
-		try {
-			const res = await fetch('/api/nodes/rotate');
-			if (!res.ok) return;
-			$$invalidate(9, rotate = await res.json());
-		} catch(err) {
-			
-		} // 非关键路径，忽略
-	}
-
 	let timer;
 
 	onMount(() => {
 		fetchNodes();
 		fetchEnroll();
-		fetchRotate();
 		timer = setInterval(fetchNodes, 5000);
 	});
 
 	onDestroy(() => clearInterval(timer));
-
-	function copyRotate() {
-		if (!rotate?.connection) return;
-		navigator.clipboard?.writeText(rotate.connection);
-		$$invalidate(10, rotateCopied = true);
-		setTimeout(() => $$invalidate(10, rotateCopied = false), 1500);
-	}
 
 	function copyInstall() {
 		if (!installCommand) return;
@@ -990,9 +832,6 @@ function instance($$self, $$props, $$invalidate) {
 		enrollError,
 		copied,
 		rotating,
-		rotate,
-		rotateCopied,
-		copyRotate,
 		copyInstall,
 		rotateToken,
 		removeNode,

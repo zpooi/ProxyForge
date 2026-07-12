@@ -13,10 +13,6 @@
   let copied = false;
   let rotating = false;
 
-  // 统一轮换凭据：一条连接串，服务端在所有节点间自动粘滞轮换。
-  let rotate = null;
-  let rotateCopied = false;
-
   async function fetchNodes() {
     try {
       const res = await fetch('/api/nodes/json');
@@ -46,32 +42,13 @@
     }
   }
 
-  // 拉取统一轮换凭据的连接信息。
-  async function fetchRotate() {
-    try {
-      const res = await fetch('/api/nodes/rotate');
-      if (!res.ok) return;
-      rotate = await res.json();
-    } catch (err) {
-      // 非关键路径，忽略
-    }
-  }
-
   let timer;
   onMount(() => {
     fetchNodes();
     fetchEnroll();
-    fetchRotate();
     timer = setInterval(fetchNodes, 5000);
   });
   onDestroy(() => clearInterval(timer));
-
-  function copyRotate() {
-    if (!rotate?.connection) return;
-    navigator.clipboard?.writeText(rotate.connection);
-    rotateCopied = true;
-    setTimeout(() => (rotateCopied = false), 1500);
-  }
 
   function copyInstall() {
     if (!installCommand) return;
@@ -141,27 +118,6 @@
     <p class="muted">本机 WARP 出口 + 各地区远程 agent 出口。在其他 VPS 一行命令即可接入，用它本机 IP 作为出口。</p>
   </div>
 </div>
-
-{#if rotate}
-  <div class="enroll-card rotate-card">
-    <div class="enroll-head">
-      <strong>🔄 统一轮换链接</strong>
-      <span class="muted">一条链接，服务端自动在所有节点（本机 + 各地区 agent）间轮换出口。不用一个个节点复制。</span>
-    </div>
-    <div class="cmd-row">
-      <code class="cmd">{rotate.connection}</code>
-      <button class="btn-primary" on:click={copyRotate}>
-        {rotateCopied ? '已复制' : '复制'}
-      </button>
-    </div>
-    <div class="enroll-foot">
-      <span class="muted">
-        HTTP / SOCKS5 代理 · 主机 {rotate.host} · 端口 {rotate.port} · 用户名 {rotate.username}{rotate.tls ? ' · TLS' : ''}
-      </span>
-    </div>
-    <p class="hint">同一客户端在约 3 分钟窗口内出口稳定（不乱飘），整体在节点间均匀轮转；选中节点故障时自动转移到其他节点。</p>
-  </div>
-{/if}
 
 <div class="enroll-card">
   <div class="enroll-head">

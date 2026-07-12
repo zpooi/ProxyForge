@@ -37,25 +37,25 @@ import { slotState } from '../lib/status.js';
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[18] = list[i];
+	child_ctx[24] = list[i];
 	return child_ctx;
 }
 
 function get_if_ctx(ctx) {
 	const child_ctx = ctx.slice();
-	const constants_0 = /*slots*/ child_ctx[0].find(s => s.username === /*menu*/ child_ctx[4].username);
-	child_ctx[17] = constants_0;
+	const constants_0 = /*slots*/ child_ctx[0].find(s => s.username === /*menu*/ child_ctx[5].username);
+	child_ctx[23] = constants_0;
 	return child_ctx;
 }
 
 function get_each_context_1(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[17] = list[i];
+	child_ctx[23] = list[i];
 	return child_ctx;
 }
 
-// (139:4) {#if copied === 'subscription'}
-function create_if_block_4(ctx) {
+// (178:4) {#if copied === 'subscription'}
+function create_if_block_7(ctx) {
 	let span;
 
 	return {
@@ -73,8 +73,8 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (141:2) {#if subUrl}
-function create_if_block_3(ctx) {
+// (180:2) {#if subUrl}
+function create_if_block_6(ctx) {
 	let code;
 	let t0;
 	let t1;
@@ -107,7 +107,160 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (146:0) {#if error}
+// (184:2) {#if rotate && rotate.host}
+function create_if_block_3(ctx) {
+	let div1;
+	let div0;
+	let span;
+	let t1;
+	let button0;
+	let t3;
+	let button1;
+	let t5;
+	let t6;
+	let t7;
+	let code;
+	let t9;
+	let p;
+	let mounted;
+	let dispose;
+	let if_block0 = /*copied*/ ctx[2] === 'rotate-http' && create_if_block_5(ctx);
+	let if_block1 = /*copied*/ ctx[2] === 'rotate-socks5' && create_if_block_4(ctx);
+
+	return {
+		c() {
+			div1 = element("div");
+			div0 = element("div");
+			span = element("span");
+			span.textContent = "🔄 统一轮换链接";
+			t1 = space();
+			button0 = element("button");
+			button0.textContent = "复制 HTTP";
+			t3 = space();
+			button1 = element("button");
+			button1.textContent = "复制 SOCKS5";
+			t5 = space();
+			if (if_block0) if_block0.c();
+			t6 = space();
+			if (if_block1) if_block1.c();
+			t7 = space();
+			code = element("code");
+			code.textContent = `${/*rotateAddress*/ ctx[11]('http')}`;
+			t9 = space();
+			p = element("p");
+			p.textContent = "一条链接服务端自动在所有节点（本机 + 各地区 agent）间轮换出口，不用一个个复制。同一来源约 3 分钟窗口内出口稳定，整体均匀轮转，选中节点故障自动转移。";
+			attr(span, "class", "rotate-label");
+			attr(button0, "type", "button");
+			attr(button0, "class", "export-link");
+			attr(button1, "type", "button");
+			attr(button1, "class", "export-link");
+			attr(div0, "class", "sub-row");
+			attr(code, "class", "sub-url");
+			attr(p, "class", "sub-hint");
+			attr(div1, "class", "rotate-block");
+		},
+		m(target, anchor) {
+			insert(target, div1, anchor);
+			append(div1, div0);
+			append(div0, span);
+			append(div0, t1);
+			append(div0, button0);
+			append(div0, t3);
+			append(div0, button1);
+			append(div0, t5);
+			if (if_block0) if_block0.m(div0, null);
+			append(div0, t6);
+			if (if_block1) if_block1.m(div0, null);
+			append(div1, t7);
+			append(div1, code);
+			append(div1, t9);
+			append(div1, p);
+
+			if (!mounted) {
+				dispose = [
+					listen(button0, "click", /*click_handler*/ ctx[13]),
+					listen(button1, "click", /*click_handler_1*/ ctx[14])
+				];
+
+				mounted = true;
+			}
+		},
+		p(ctx, dirty) {
+			if (/*copied*/ ctx[2] === 'rotate-http') {
+				if (if_block0) {
+					
+				} else {
+					if_block0 = create_if_block_5(ctx);
+					if_block0.c();
+					if_block0.m(div0, t6);
+				}
+			} else if (if_block0) {
+				if_block0.d(1);
+				if_block0 = null;
+			}
+
+			if (/*copied*/ ctx[2] === 'rotate-socks5') {
+				if (if_block1) {
+					
+				} else {
+					if_block1 = create_if_block_4(ctx);
+					if_block1.c();
+					if_block1.m(div0, null);
+				}
+			} else if (if_block1) {
+				if_block1.d(1);
+				if_block1 = null;
+			}
+		},
+		d(detaching) {
+			if (detaching) detach(div1);
+			if (if_block0) if_block0.d();
+			if (if_block1) if_block1.d();
+			mounted = false;
+			run_all(dispose);
+		}
+	};
+}
+
+// (190:8) {#if copied === 'rotate-http'}
+function create_if_block_5(ctx) {
+	let span;
+
+	return {
+		c() {
+			span = element("span");
+			span.textContent = "已复制 HTTP";
+			attr(span, "class", "copy-feedback");
+		},
+		m(target, anchor) {
+			insert(target, span, anchor);
+		},
+		d(detaching) {
+			if (detaching) detach(span);
+		}
+	};
+}
+
+// (191:8) {#if copied === 'rotate-socks5'}
+function create_if_block_4(ctx) {
+	let span;
+
+	return {
+		c() {
+			span = element("span");
+			span.textContent = "已复制 SOCKS5";
+			attr(span, "class", "copy-feedback");
+		},
+		m(target, anchor) {
+			insert(target, span, anchor);
+		},
+		d(detaching) {
+			if (detaching) detach(span);
+		}
+	};
+}
+
+// (198:0) {#if error}
 function create_if_block_2(ctx) {
 	let div;
 	let t0;
@@ -134,7 +287,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (185:6) {:else}
+// (237:6) {:else}
 function create_else_block(ctx) {
 	let tr;
 
@@ -155,7 +308,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (158:6) {#if slots.length}
+// (210:6) {#if slots.length}
 function create_if_block_1(ctx) {
 	let each_1_anchor;
 	let current;
@@ -189,7 +342,7 @@ function create_if_block_1(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty & /*copied, slots, menu, toggleMenu, slotState, fmtBps, metric, countryLabel*/ 85) {
+			if (dirty & /*copied, slots, menu, toggleMenu, slotState, fmtBps, metric, countryLabel*/ 165) {
 				each_value_1 = /*slots*/ ctx[0];
 				let i;
 
@@ -241,46 +394,46 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (159:8) {#each slots as slot}
+// (211:8) {#each slots as slot}
 function create_each_block_1(ctx) {
 	let tr;
 	let td0;
-	let t0_value = /*slot*/ ctx[17].username + "";
+	let t0_value = /*slot*/ ctx[23].username + "";
 	let t0;
 	let t1;
 	let td1;
 	let code;
-	let t2_value = /*slot*/ ctx[17].password + "";
+	let t2_value = /*slot*/ ctx[23].password + "";
 	let t2;
 	let t3;
 	let td2;
-	let t4_value = (/*slot*/ ctx[17].pinned_public_ip || /*slot*/ ctx[17].public_ip || (/*slot*/ ctx[17].account_tag ? '检测中' : '等待可用节点')) + "";
+	let t4_value = (/*slot*/ ctx[23].pinned_public_ip || /*slot*/ ctx[23].public_ip || (/*slot*/ ctx[23].account_tag ? '检测中' : '等待可用节点')) + "";
 	let t4;
 	let t5;
 	let td3;
-	let t6_value = countryLabel(/*slot*/ ctx[17].country) + "";
+	let t6_value = countryLabel(/*slot*/ ctx[23].country) + "";
 	let t6;
 	let t7;
 	let td4;
 
-	let t8_value = (/*slot*/ ctx[17].account_tag
-	? metric(/*slot*/ ctx[17].latency_ms, ' ms')
+	let t8_value = (/*slot*/ ctx[23].account_tag
+	? metric(/*slot*/ ctx[23].latency_ms, ' ms')
 	: '-') + "";
 
 	let t8;
 	let t9;
 	let td5;
 
-	let t10_value = (/*slot*/ ctx[17].speed_bps
-	? fmtBps(/*slot*/ ctx[17].speed_bps)
+	let t10_value = (/*slot*/ ctx[23].speed_bps
+	? fmtBps(/*slot*/ ctx[23].speed_bps)
 	: '-') + "";
 
 	let t10;
 	let t11;
 	let td6;
 
-	let t12_value = (/*slot*/ ctx[17].packet_loss
-	? (/*slot*/ ctx[17].packet_loss * 100).toFixed(0) + '%'
+	let t12_value = (/*slot*/ ctx[23].packet_loss
+	? (/*slot*/ ctx[23].packet_loss * 100).toFixed(0) + '%'
 	: '0%') + "";
 
 	let t12;
@@ -299,12 +452,12 @@ function create_each_block_1(ctx) {
 	let dispose;
 
 	statustag = new StatusTag({
-			props: { status: slotState(/*slot*/ ctx[17]) }
+			props: { status: slotState(/*slot*/ ctx[23]) }
 		});
 
 	icon0 = new Icon({
 			props: {
-				name: /*copied*/ ctx[2] === `${/*slot*/ ctx[17].username}-http` || /*copied*/ ctx[2] === `${/*slot*/ ctx[17].username}-socks5`
+				name: /*copied*/ ctx[2] === `${/*slot*/ ctx[23].username}-http` || /*copied*/ ctx[2] === `${/*slot*/ ctx[23].username}-socks5`
 				? 'check'
 				: 'copy',
 				size: 18
@@ -313,8 +466,8 @@ function create_each_block_1(ctx) {
 
 	icon1 = new Icon({ props: { name: "expand_more", size: 16 } });
 
-	function click_handler(...args) {
-		return /*click_handler*/ ctx[10](/*slot*/ ctx[17], ...args);
+	function click_handler_2(...args) {
+		return /*click_handler_2*/ ctx[15](/*slot*/ ctx[23], ...args);
 	}
 
 	return {
@@ -355,8 +508,8 @@ function create_each_block_1(ctx) {
 			attr(button, "class", "icon-button copy-trigger");
 			attr(button, "title", "复制代理链接");
 			attr(button, "aria-label", "复制代理链接");
-			toggle_class(button, "done", /*copied*/ ctx[2] === `${/*slot*/ ctx[17].username}-http` || /*copied*/ ctx[2] === `${/*slot*/ ctx[17].username}-socks5`);
-			toggle_class(button, "open", /*menu*/ ctx[4] && /*menu*/ ctx[4].username === /*slot*/ ctx[17].username);
+			toggle_class(button, "done", /*copied*/ ctx[2] === `${/*slot*/ ctx[23].username}-http` || /*copied*/ ctx[2] === `${/*slot*/ ctx[23].username}-socks5`);
+			toggle_class(button, "open", /*menu*/ ctx[5] && /*menu*/ ctx[5].username === /*slot*/ ctx[23].username);
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
@@ -394,46 +547,46 @@ function create_each_block_1(ctx) {
 			current = true;
 
 			if (!mounted) {
-				dispose = listen(button, "click", click_handler);
+				dispose = listen(button, "click", click_handler_2);
 				mounted = true;
 			}
 		},
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
-			if ((!current || dirty & /*slots*/ 1) && t0_value !== (t0_value = /*slot*/ ctx[17].username + "")) set_data(t0, t0_value);
-			if ((!current || dirty & /*slots*/ 1) && t2_value !== (t2_value = /*slot*/ ctx[17].password + "")) set_data(t2, t2_value);
-			if ((!current || dirty & /*slots*/ 1) && t4_value !== (t4_value = (/*slot*/ ctx[17].pinned_public_ip || /*slot*/ ctx[17].public_ip || (/*slot*/ ctx[17].account_tag ? '检测中' : '等待可用节点')) + "")) set_data(t4, t4_value);
-			if ((!current || dirty & /*slots*/ 1) && t6_value !== (t6_value = countryLabel(/*slot*/ ctx[17].country) + "")) set_data(t6, t6_value);
+			if ((!current || dirty & /*slots*/ 1) && t0_value !== (t0_value = /*slot*/ ctx[23].username + "")) set_data(t0, t0_value);
+			if ((!current || dirty & /*slots*/ 1) && t2_value !== (t2_value = /*slot*/ ctx[23].password + "")) set_data(t2, t2_value);
+			if ((!current || dirty & /*slots*/ 1) && t4_value !== (t4_value = (/*slot*/ ctx[23].pinned_public_ip || /*slot*/ ctx[23].public_ip || (/*slot*/ ctx[23].account_tag ? '检测中' : '等待可用节点')) + "")) set_data(t4, t4_value);
+			if ((!current || dirty & /*slots*/ 1) && t6_value !== (t6_value = countryLabel(/*slot*/ ctx[23].country) + "")) set_data(t6, t6_value);
 
-			if ((!current || dirty & /*slots*/ 1) && t8_value !== (t8_value = (/*slot*/ ctx[17].account_tag
-			? metric(/*slot*/ ctx[17].latency_ms, ' ms')
+			if ((!current || dirty & /*slots*/ 1) && t8_value !== (t8_value = (/*slot*/ ctx[23].account_tag
+			? metric(/*slot*/ ctx[23].latency_ms, ' ms')
 			: '-') + "")) set_data(t8, t8_value);
 
-			if ((!current || dirty & /*slots*/ 1) && t10_value !== (t10_value = (/*slot*/ ctx[17].speed_bps
-			? fmtBps(/*slot*/ ctx[17].speed_bps)
+			if ((!current || dirty & /*slots*/ 1) && t10_value !== (t10_value = (/*slot*/ ctx[23].speed_bps
+			? fmtBps(/*slot*/ ctx[23].speed_bps)
 			: '-') + "")) set_data(t10, t10_value);
 
-			if ((!current || dirty & /*slots*/ 1) && t12_value !== (t12_value = (/*slot*/ ctx[17].packet_loss
-			? (/*slot*/ ctx[17].packet_loss * 100).toFixed(0) + '%'
+			if ((!current || dirty & /*slots*/ 1) && t12_value !== (t12_value = (/*slot*/ ctx[23].packet_loss
+			? (/*slot*/ ctx[23].packet_loss * 100).toFixed(0) + '%'
 			: '0%') + "")) set_data(t12, t12_value);
 
 			const statustag_changes = {};
-			if (dirty & /*slots*/ 1) statustag_changes.status = slotState(/*slot*/ ctx[17]);
+			if (dirty & /*slots*/ 1) statustag_changes.status = slotState(/*slot*/ ctx[23]);
 			statustag.$set(statustag_changes);
 			const icon0_changes = {};
 
-			if (dirty & /*copied, slots*/ 5) icon0_changes.name = /*copied*/ ctx[2] === `${/*slot*/ ctx[17].username}-http` || /*copied*/ ctx[2] === `${/*slot*/ ctx[17].username}-socks5`
+			if (dirty & /*copied, slots*/ 5) icon0_changes.name = /*copied*/ ctx[2] === `${/*slot*/ ctx[23].username}-http` || /*copied*/ ctx[2] === `${/*slot*/ ctx[23].username}-socks5`
 			? 'check'
 			: 'copy';
 
 			icon0.$set(icon0_changes);
 
 			if (!current || dirty & /*copied, slots*/ 5) {
-				toggle_class(button, "done", /*copied*/ ctx[2] === `${/*slot*/ ctx[17].username}-http` || /*copied*/ ctx[2] === `${/*slot*/ ctx[17].username}-socks5`);
+				toggle_class(button, "done", /*copied*/ ctx[2] === `${/*slot*/ ctx[23].username}-http` || /*copied*/ ctx[2] === `${/*slot*/ ctx[23].username}-socks5`);
 			}
 
-			if (!current || dirty & /*menu, slots*/ 17) {
-				toggle_class(button, "open", /*menu*/ ctx[4] && /*menu*/ ctx[4].username === /*slot*/ ctx[17].username);
+			if (!current || dirty & /*menu, slots*/ 33) {
+				toggle_class(button, "open", /*menu*/ ctx[5] && /*menu*/ ctx[5].username === /*slot*/ ctx[23].username);
 			}
 		},
 		i(local) {
@@ -460,7 +613,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (192:0) {#if menu}
+// (244:0) {#if menu}
 function create_if_block(ctx) {
 	let div0;
 	let t0;
@@ -470,7 +623,7 @@ function create_if_block(ctx) {
 	let current;
 	let mounted;
 	let dispose;
-	let each_value = /*SCHEMES*/ ctx[5];
+	let each_value = /*SCHEMES*/ ctx[6];
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value.length; i += 1) {
@@ -497,8 +650,8 @@ function create_if_block(ctx) {
 			attr(div0, "class", "menu-backdrop");
 			attr(div1, "class", "copy-menu-title");
 			attr(div2, "class", "copy-menu");
-			set_style(div2, "right", /*menu*/ ctx[4].right + "px");
-			set_style(div2, "top", /*menu*/ ctx[4].y + "px");
+			set_style(div2, "right", /*menu*/ ctx[5].right + "px");
+			set_style(div2, "top", /*menu*/ ctx[5].y + "px");
 		},
 		m(target, anchor) {
 			insert(target, div0, anchor);
@@ -517,16 +670,16 @@ function create_if_block(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					listen(div0, "click", /*closeMenu*/ ctx[7]),
-					listen(div0, "contextmenu", prevent_default(/*closeMenu*/ ctx[7]))
+					listen(div0, "click", /*closeMenu*/ ctx[8]),
+					listen(div0, "contextmenu", prevent_default(/*closeMenu*/ ctx[8]))
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if (dirty & /*copyProxy, slots, menu, SCHEMES*/ 305) {
-				each_value = /*SCHEMES*/ ctx[5];
+			if (dirty & /*copyProxy, slots, menu, SCHEMES*/ 609) {
+				each_value = /*SCHEMES*/ ctx[6];
 				let i;
 
 				for (i = 0; i < each_value.length; i += 1) {
@@ -552,12 +705,12 @@ function create_if_block(ctx) {
 				check_outros();
 			}
 
-			if (!current || dirty & /*menu*/ 16) {
-				set_style(div2, "right", /*menu*/ ctx[4].right + "px");
+			if (!current || dirty & /*menu*/ 32) {
+				set_style(div2, "right", /*menu*/ ctx[5].right + "px");
 			}
 
-			if (!current || dirty & /*menu*/ 16) {
-				set_style(div2, "top", /*menu*/ ctx[4].y + "px");
+			if (!current || dirty & /*menu*/ 32) {
+				set_style(div2, "top", /*menu*/ ctx[5].y + "px");
 			}
 		},
 		i(local) {
@@ -589,13 +742,13 @@ function create_if_block(ctx) {
 	};
 }
 
-// (197:4) {#each SCHEMES as scheme}
+// (249:4) {#each SCHEMES as scheme}
 function create_each_block(ctx) {
 	let button;
 	let icon;
 	let t0;
 	let span;
-	let t1_value = /*scheme*/ ctx[18].label + "";
+	let t1_value = /*scheme*/ ctx[24].label + "";
 	let t1;
 	let t2;
 	let current;
@@ -603,8 +756,8 @@ function create_each_block(ctx) {
 	let dispose;
 	icon = new Icon({ props: { name: "copy", size: 16 } });
 
-	function click_handler_1() {
-		return /*click_handler_1*/ ctx[11](/*slot*/ ctx[17], /*scheme*/ ctx[18]);
+	function click_handler_3() {
+		return /*click_handler_3*/ ctx[16](/*slot*/ ctx[23], /*scheme*/ ctx[24]);
 	}
 
 	return {
@@ -628,7 +781,7 @@ function create_each_block(ctx) {
 			current = true;
 
 			if (!mounted) {
-				dispose = listen(button, "click", click_handler_1);
+				dispose = listen(button, "click", click_handler_3);
 				mounted = true;
 			}
 		},
@@ -665,21 +818,23 @@ function create_fragment(ctx) {
 	let t4;
 	let t5;
 	let t6;
+	let t7;
 	let div2;
 	let table;
 	let thead;
-	let t17;
+	let t18;
 	let tbody;
 	let current_block_type_index;
-	let if_block3;
-	let t18;
-	let if_block4_anchor;
+	let if_block4;
+	let t19;
+	let if_block5_anchor;
 	let current;
 	let mounted;
 	let dispose;
-	let if_block0 = /*copied*/ ctx[2] === 'subscription' && create_if_block_4(ctx);
-	let if_block1 = /*subUrl*/ ctx[3] && create_if_block_3(ctx);
-	let if_block2 = /*error*/ ctx[1] && create_if_block_2(ctx);
+	let if_block0 = /*copied*/ ctx[2] === 'subscription' && create_if_block_7(ctx);
+	let if_block1 = /*subUrl*/ ctx[3] && create_if_block_6(ctx);
+	let if_block2 = /*rotate*/ ctx[4] && /*rotate*/ ctx[4].host && create_if_block_3(ctx);
+	let if_block3 = /*error*/ ctx[1] && create_if_block_2(ctx);
 	const if_block_creators = [create_if_block_1, create_else_block];
 	const if_blocks = [];
 
@@ -689,8 +844,8 @@ function create_fragment(ctx) {
 	}
 
 	current_block_type_index = select_block_type(ctx, -1);
-	if_block3 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
-	let if_block4 = /*menu*/ ctx[4] && create_if_block(get_if_ctx(ctx));
+	if_block4 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+	let if_block5 = /*menu*/ ctx[5] && create_if_block(get_if_ctx(ctx));
 
 	return {
 		c() {
@@ -708,6 +863,8 @@ function create_fragment(ctx) {
 			t5 = space();
 			if (if_block2) if_block2.c();
 			t6 = space();
+			if (if_block3) if_block3.c();
+			t7 = space();
 			div2 = element("div");
 			table = element("table");
 			thead = element("thead");
@@ -715,12 +872,12 @@ function create_fragment(ctx) {
 			thead.innerHTML = `<tr><th>账号</th><th>密码</th><th>稳定出口 IP</th><th>国家</th> 
         <th>延迟</th><th>速度</th><th>丢包</th><th>状态</th><th>复制代理</th></tr>`;
 
-			t17 = space();
-			tbody = element("tbody");
-			if_block3.c();
 			t18 = space();
-			if (if_block4) if_block4.c();
-			if_block4_anchor = empty();
+			tbody = element("tbody");
+			if_block4.c();
+			t19 = space();
+			if (if_block5) if_block5.c();
+			if_block5_anchor = empty();
 			attr(button, "type", "button");
 			attr(button, "class", "export-link");
 			button.disabled = button_disabled_value = !/*subUrl*/ ctx[3];
@@ -739,22 +896,24 @@ function create_fragment(ctx) {
 			if (if_block0) if_block0.m(div0, null);
 			append(div1, t4);
 			if (if_block1) if_block1.m(div1, null);
-			insert(target, t5, anchor);
-			if (if_block2) if_block2.m(target, anchor);
+			append(div1, t5);
+			if (if_block2) if_block2.m(div1, null);
 			insert(target, t6, anchor);
+			if (if_block3) if_block3.m(target, anchor);
+			insert(target, t7, anchor);
 			insert(target, div2, anchor);
 			append(div2, table);
 			append(table, thead);
-			append(table, t17);
+			append(table, t18);
 			append(table, tbody);
 			if_blocks[current_block_type_index].m(tbody, null);
-			insert(target, t18, anchor);
-			if (if_block4) if_block4.m(target, anchor);
-			insert(target, if_block4_anchor, anchor);
+			insert(target, t19, anchor);
+			if (if_block5) if_block5.m(target, anchor);
+			insert(target, if_block5_anchor, anchor);
 			current = true;
 
 			if (!mounted) {
-				dispose = listen(button, "click", /*copySubscription*/ ctx[9]);
+				dispose = listen(button, "click", /*copySubscription*/ ctx[10]);
 				mounted = true;
 			}
 		},
@@ -767,7 +926,7 @@ function create_fragment(ctx) {
 				if (if_block0) {
 					
 				} else {
-					if_block0 = create_if_block_4(ctx);
+					if_block0 = create_if_block_7(ctx);
 					if_block0.c();
 					if_block0.m(div0, null);
 				}
@@ -780,26 +939,39 @@ function create_fragment(ctx) {
 				if (if_block1) {
 					if_block1.p(ctx, dirty);
 				} else {
-					if_block1 = create_if_block_3(ctx);
+					if_block1 = create_if_block_6(ctx);
 					if_block1.c();
-					if_block1.m(div1, null);
+					if_block1.m(div1, t5);
 				}
 			} else if (if_block1) {
 				if_block1.d(1);
 				if_block1 = null;
 			}
 
-			if (/*error*/ ctx[1]) {
+			if (/*rotate*/ ctx[4] && /*rotate*/ ctx[4].host) {
 				if (if_block2) {
 					if_block2.p(ctx, dirty);
 				} else {
-					if_block2 = create_if_block_2(ctx);
+					if_block2 = create_if_block_3(ctx);
 					if_block2.c();
-					if_block2.m(t6.parentNode, t6);
+					if_block2.m(div1, null);
 				}
 			} else if (if_block2) {
 				if_block2.d(1);
 				if_block2 = null;
+			}
+
+			if (/*error*/ ctx[1]) {
+				if (if_block3) {
+					if_block3.p(ctx, dirty);
+				} else {
+					if_block3 = create_if_block_2(ctx);
+					if_block3.c();
+					if_block3.m(t7.parentNode, t7);
+				}
+			} else if (if_block3) {
+				if_block3.d(1);
+				if_block3 = null;
 			}
 
 			let previous_block_index = current_block_type_index;
@@ -815,37 +987,37 @@ function create_fragment(ctx) {
 				});
 
 				check_outros();
-				if_block3 = if_blocks[current_block_type_index];
+				if_block4 = if_blocks[current_block_type_index];
 
-				if (!if_block3) {
-					if_block3 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
-					if_block3.c();
+				if (!if_block4) {
+					if_block4 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+					if_block4.c();
 				} else {
-					if_block3.p(ctx, dirty);
+					if_block4.p(ctx, dirty);
 				}
 
-				transition_in(if_block3, 1);
-				if_block3.m(tbody, null);
+				transition_in(if_block4, 1);
+				if_block4.m(tbody, null);
 			}
 
-			if (/*menu*/ ctx[4]) {
-				if (if_block4) {
-					if_block4.p(get_if_ctx(ctx), dirty);
+			if (/*menu*/ ctx[5]) {
+				if (if_block5) {
+					if_block5.p(get_if_ctx(ctx), dirty);
 
-					if (dirty & /*menu*/ 16) {
-						transition_in(if_block4, 1);
+					if (dirty & /*menu*/ 32) {
+						transition_in(if_block5, 1);
 					}
 				} else {
-					if_block4 = create_if_block(get_if_ctx(ctx));
-					if_block4.c();
-					transition_in(if_block4, 1);
-					if_block4.m(if_block4_anchor.parentNode, if_block4_anchor);
+					if_block5 = create_if_block(get_if_ctx(ctx));
+					if_block5.c();
+					transition_in(if_block5, 1);
+					if_block5.m(if_block5_anchor.parentNode, if_block5_anchor);
 				}
-			} else if (if_block4) {
+			} else if (if_block5) {
 				group_outros();
 
-				transition_out(if_block4, 1, 1, () => {
-					if_block4 = null;
+				transition_out(if_block5, 1, 1, () => {
+					if_block5 = null;
 				});
 
 				check_outros();
@@ -853,13 +1025,13 @@ function create_fragment(ctx) {
 		},
 		i(local) {
 			if (current) return;
-			transition_in(if_block3);
 			transition_in(if_block4);
+			transition_in(if_block5);
 			current = true;
 		},
 		o(local) {
-			transition_out(if_block3);
 			transition_out(if_block4);
+			transition_out(if_block5);
 			current = false;
 		},
 		d(detaching) {
@@ -868,14 +1040,15 @@ function create_fragment(ctx) {
 			if (detaching) detach(div1);
 			if (if_block0) if_block0.d();
 			if (if_block1) if_block1.d();
-			if (detaching) detach(t5);
-			if (if_block2) if_block2.d(detaching);
+			if (if_block2) if_block2.d();
 			if (detaching) detach(t6);
+			if (if_block3) if_block3.d(detaching);
+			if (detaching) detach(t7);
 			if (detaching) detach(div2);
 			if_blocks[current_block_type_index].d();
-			if (detaching) detach(t18);
-			if (if_block4) if_block4.d(detaching);
-			if (detaching) detach(if_block4_anchor);
+			if (detaching) detach(t19);
+			if (if_block5) if_block5.d(detaching);
+			if (detaching) detach(if_block5_anchor);
 			mounted = false;
 			dispose();
 		}
@@ -918,6 +1091,9 @@ function instance($$self, $$props, $$invalidate) {
 	let copied = '';
 	let subUrl = '';
 
+	// 统一轮换凭据：一条连接串，服务端在所有节点（本机 + 各地区 agent）间自动粘滞轮换。
+	let rotate = null;
+
 	// 打开中的复制菜单：{ username, x, y }，用 fixed 定位避开表格 overflow 裁剪。
 	let menu = null;
 
@@ -945,16 +1121,25 @@ function instance($$self, $$props, $$invalidate) {
 		}
 	}
 
+	// 拉取统一轮换凭据的连接信息。非关键路径，失败不打断页面。
+	async function loadRotate() {
+		try {
+			$$invalidate(4, rotate = await fetchJSON('/api/nodes/rotate'));
+		} catch(err) {
+			
+		} // 忽略：没有节点或未配置时该卡片不显示
+	}
+
 	function toggleMenu(event, slot) {
 		if (menu && menu.username === slot.username) {
-			$$invalidate(4, menu = null);
+			$$invalidate(5, menu = null);
 			return;
 		}
 
 		const rect = event.currentTarget.getBoundingClientRect();
 
 		// 右对齐到按钮右边缘，用 right 偏移避免菜单往右溢出视口。
-		$$invalidate(4, menu = {
+		$$invalidate(5, menu = {
 			username: slot.username,
 			right: window.innerWidth - rect.right,
 			y: rect.bottom + 4
@@ -962,12 +1147,13 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	function closeMenu() {
-		$$invalidate(4, menu = null);
+		$$invalidate(5, menu = null);
 	}
 
 	onMount(() => {
 		loadAccounts();
 		loadSubscription();
+		loadRotate();
 		const timer = setInterval(loadAccounts, 5000);
 
 		// 菜单靠 fixed 定位，滚动或改变尺寸后位置会失效，直接关掉。
@@ -994,7 +1180,7 @@ function instance($$self, $$props, $$invalidate) {
 
 		try {
 			await writeClipboard(text);
-			$$invalidate(4, menu = null);
+			$$invalidate(5, menu = null);
 			$$invalidate(2, copied = `${slot.username}-${scheme}`);
 
 			setTimeout(
@@ -1026,22 +1212,61 @@ function instance($$self, $$props, $$invalidate) {
 		}
 	}
 
-	const click_handler = (slot, e) => toggleMenu(e, slot);
-	const click_handler_1 = (slot, scheme) => copyProxy(slot, scheme.id);
+	// 统一轮换链接的地址：与单个代理同格式（scheme://user:pass@host:port），
+	// 用户名固定为 rotate.username（auto），服务端据此在所有节点间轮换出口。
+	function rotateAddress(scheme) {
+		if (!rotate) return '';
+		const user = encodeURIComponent(rotate.username || 'auto');
+		const pass = encodeURIComponent(rotate.password || '');
+		const host = formatProxyHost(rotate.host || proxyHost);
+		const port = rotate.port || proxyPort;
+		const cred = pass ? `${user}:${pass}` : user;
+		return `${scheme}://${cred}@${host}:${port}`;
+	}
+
+	async function copyRotate(scheme) {
+		const text = rotateAddress(scheme);
+		if (!text) return;
+
+		try {
+			await writeClipboard(text);
+			$$invalidate(5, menu = null);
+			$$invalidate(2, copied = `rotate-${scheme}`);
+
+			setTimeout(
+				() => {
+					if (copied === `rotate-${scheme}`) $$invalidate(2, copied = '');
+				},
+				1600
+			);
+		} catch(err) {
+			$$invalidate(1, error = '复制失败：' + err.message);
+		}
+	}
+
+	const click_handler = () => copyRotate('http');
+	const click_handler_1 = () => copyRotate('socks5');
+	const click_handler_2 = (slot, e) => toggleMenu(e, slot);
+	const click_handler_3 = (slot, scheme) => copyProxy(slot, scheme.id);
 
 	return [
 		slots,
 		error,
 		copied,
 		subUrl,
+		rotate,
 		menu,
 		SCHEMES,
 		toggleMenu,
 		closeMenu,
 		copyProxy,
 		copySubscription,
+		rotateAddress,
+		copyRotate,
 		click_handler,
-		click_handler_1
+		click_handler_1,
+		click_handler_2,
+		click_handler_3
 	];
 }
 

@@ -17,6 +17,8 @@
   let error = '';
   let copied = '';
   let subUrl = '';
+  // 统一轮换凭据：一条连接串，服务端在所有节点（本机 + 各地区 agent）间自动粘滞轮换。
+  let rotate = null;
   // 打开中的复制菜单：{ username, x, y }，用 fixed 定位避开表格 overflow 裁剪。
   let menu = null;
 
@@ -43,6 +45,15 @@
     }
   }
 
+  // 拉取统一轮换凭据的连接信息。非关键路径，失败不打断页面。
+  async function loadRotate() {
+    try {
+      rotate = await fetchJSON('/api/nodes/rotate');
+    } catch (err) {
+      // 忽略：没有节点或未配置时该卡片不显示
+    }
+  }
+
   function toggleMenu(event, slot) {
     if (menu && menu.username === slot.username) {
       menu = null;
@@ -60,6 +71,7 @@
   onMount(() => {
     loadAccounts();
     loadSubscription();
+    loadRotate();
     const timer = setInterval(loadAccounts, 5000);
     // 菜单靠 fixed 定位，滚动或改变尺寸后位置会失效，直接关掉。
     window.addEventListener('scroll', closeMenu, true);
@@ -130,6 +142,33 @@
       error = '复制失败：' + err.message;
     }
   }
+
+  // 统一轮换链接的地址：与单个代理同格式（scheme://user:pass@host:port），
+  // 用户名固定为 rotate.username（auto），服务端据此在所有节点间轮换出口。
+  function rotateAddress(scheme) {
+    if (!rotate) return '';
+    const user = encodeURIComponent(rotate.username || 'auto');
+    const pass = encodeURIComponent(rotate.password || '');
+    const host = formatProxyHost(rotate.host || proxyHost);
+    const port = rotate.port || proxyPort;
+    const cred = pass ? `${user}:${pass}` : user;
+    return `${scheme}://${cred}@${host}:${port}`;
+  }
+
+  async function copyRotate(scheme) {
+    const text = rotateAddress(scheme);
+    if (!text) return;
+    try {
+      await writeClipboard(text);
+      menu = null;
+      copied = `rotate-${scheme}`;
+      setTimeout(() => {
+        if (copied === `rotate-${scheme}`) copied = '';
+      }, 1600);
+    } catch (err) {
+      error = '复制失败：' + err.message;
+    }
+  }
 </script>
 
 <h2>代理列表</h2>
@@ -141,6 +180,19 @@
   {#if subUrl}
     <code class="sub-url">{subUrl}</code>
     <p class="sub-hint">在 Clash / Mihomo 里添加为订阅（Profile），节点会随后台自动同步。链接含免登录 token，请勿外泄。</p>
+  {/if}
+  {#if rotate && rotate.host}
+    <div class="rotate-block">
+      <div class="sub-row">
+        <span class="rotate-label">🔄 统一轮换链接</span>
+        <button type="button" class="export-link" on:click={() => copyRotate('http')}>复制 HTTP</button>
+        <button type="button" class="export-link" on:click={() => copyRotate('socks5')}>复制 SOCKS5</button>
+        {#if copied === 'rotate-http'}<span class="copy-feedback">已复制 HTTP</span>{/if}
+        {#if copied === 'rotate-socks5'}<span class="copy-feedback">已复制 SOCKS5</span>{/if}
+      </div>
+      <code class="sub-url">{rotateAddress('http')}</code>
+      <p class="sub-hint">一条链接服务端自动在所有节点（本机 + 各地区 agent）间轮换出口，不用一个个复制。同一来源约 3 分钟窗口内出口稳定，整体均匀轮转，选中节点故障自动转移。</p>
+    </div>
   {/if}
 </div>
 {#if error}
