@@ -26,7 +26,7 @@ const RotateUsername = "auto"
 
 // Egress 是一条可拨号的出口通道。WARP 隧道（*Tunnel）和远程 agent 节点
 // （agentEgress）都实现它，代理监听器 dialVia/relay 只依赖这个接口，从而
-// 对「本机 WARP 出口」和「远程 VPS 原生出口」一视同仁地转发、计流量、记失败。
+// 对「本机 WARP 出口」和「远程 Agent WARP 出口」一视同仁地转发、计流量、记失败。
 type Egress interface {
 	// DialContext 经该出口拨号到 target（host:port）。
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)

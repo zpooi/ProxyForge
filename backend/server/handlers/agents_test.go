@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/zpooi/ProxyForge/backend/internal/models"
@@ -19,6 +20,34 @@ func TestSummarizeLocalNodeMultipleEgresses(t *testing.T) {
 	}
 	if got.LatencyMs != 150 || got.TxBytes != 40 || got.RxBytes != 60 {
 		t.Fatalf("unexpected metrics summary: %+v", got)
+	}
+}
+
+func TestAgentInstallScriptUsesThreeWarpEgressesAndRestarts(t *testing.T) {
+	script := agentInstallScript("https://panel.example.com", "secret")
+	for _, want := range []string{
+		"-warp-count 3",
+		"systemctl restart pfagent.service",
+		"install -m 0755",
+	} {
+		if !strings.Contains(script, want) {
+			t.Fatalf("install script missing %q", want)
+		}
+	}
+}
+
+func TestAgentUninstallCommandRemovesServiceAndState(t *testing.T) {
+	command := agentUninstallCommand()
+	for _, want := range []string{
+		"systemctl disable --now pfagent.service",
+		"/etc/systemd/system/pfagent.service",
+		"/usr/local/bin/pfagent",
+		"/var/lib/pfagent",
+		"systemctl daemon-reload",
+	} {
+		if !strings.Contains(command, want) {
+			t.Fatalf("uninstall command missing %q", want)
+		}
 	}
 }
 

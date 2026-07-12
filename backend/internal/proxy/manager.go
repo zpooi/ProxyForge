@@ -17,10 +17,10 @@ import (
 type Manager struct {
 	db *db.DB
 
-	mu        sync.Mutex
-	tunnels   map[string]*Tunnel
-	meta      map[string]selectionMeta
-	slots     map[string]slotBinding
+	mu            sync.Mutex
+	tunnels       map[string]*Tunnel
+	meta          map[string]selectionMeta
+	slots         map[string]slotBinding
 	bindAddr      string
 	password      string
 	proxyPort     int
@@ -153,7 +153,7 @@ func (m *Manager) resolve(username, password, clientIP string) []Egress {
 	username = strings.TrimSpace(username)
 	password = strings.TrimSpace(password)
 
-	// node-<id> 是远程 agent 节点，出口固定在那台 VPS 上（拿它所在地区的 IP），
+	// node-<id> 是远程 agent 节点，出口固定在那台 VPS 的 WARP 隧道上，
 	// 所以不接入 WARP 池排序，也不做跨地区兜底——离线就返回空，交给客户端的
 	// 自动选择/故障转移组切到别的地区节点。鉴权仍走统一的代理密码。
 	if strings.HasPrefix(username, NodeUsernamePrefix) {

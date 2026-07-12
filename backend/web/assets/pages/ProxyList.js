@@ -37,7 +37,7 @@ import { fmtBps, metric, prettyError } from '../lib/format.js';
 import { slotState } from '../lib/status.js';
 
 function add_css(target) {
-	append_styles(target, "svelte-dkq0er", ".rotate-block.svelte-dkq0er.svelte-dkq0er{display:flex;align-items:center;justify-content:space-between;width:100%;gap:16px;margin-top:6px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-sm)}.rotate-summary.svelte-dkq0er.svelte-dkq0er{display:flex;align-items:baseline;gap:10px;min-width:0}.rotate-summary.svelte-dkq0er strong.svelte-dkq0er{color:var(--text);font-size:14px}.rotate-summary.svelte-dkq0er span.svelte-dkq0er{color:var(--text-3);font-size:12px;white-space:nowrap}.rotate-trigger.svelte-dkq0er.svelte-dkq0er{min-width:42px;min-height:34px;margin-left:auto;flex-shrink:0}@media(max-width: 620px){.rotate-summary.svelte-dkq0er.svelte-dkq0er{align-items:flex-start;flex-direction:column;gap:1px}}");
+	append_styles(target, "svelte-i8fvdo", ".subscription-row.svelte-i8fvdo.svelte-i8fvdo{display:grid;grid-template-columns:minmax(0, 1fr) 40px;align-items:center;gap:8px}.subscription-url.svelte-i8fvdo.svelte-i8fvdo{display:block;min-width:0;padding:10px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#0f172a;color:#e2e8f0;border-radius:8px;font-size:13px}.subscription-copy.svelte-i8fvdo.svelte-i8fvdo{width:40px;min-height:40px;padding:8px}.rotate-block.svelte-i8fvdo.svelte-i8fvdo{display:flex;align-items:center;justify-content:space-between;width:100%;gap:16px;margin-top:6px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-sm)}.rotate-summary.svelte-i8fvdo.svelte-i8fvdo{display:flex;align-items:baseline;gap:10px;min-width:0}.rotate-summary.svelte-i8fvdo strong.svelte-i8fvdo{color:var(--text);font-size:14px}.rotate-summary.svelte-i8fvdo span.svelte-i8fvdo{color:var(--text-3);font-size:12px;white-space:nowrap}.rotate-trigger.svelte-i8fvdo.svelte-i8fvdo{min-width:42px;min-height:34px;margin-left:auto;flex-shrink:0}@media(max-width: 620px){.rotate-summary.svelte-i8fvdo.svelte-i8fvdo{align-items:flex-start;flex-direction:column;gap:1px}}");
 }
 
 function get_each_context_1(ctx, list, i) {
@@ -65,60 +65,26 @@ function get_each_context_2(ctx, list, i) {
 	return child_ctx;
 }
 
-// (187:4) {#if copied === 'subscription'}
-function create_if_block_6(ctx) {
-	let span;
-
-	return {
-		c() {
-			span = element("span");
-			span.textContent = "已复制";
-			attr(span, "class", "copy-feedback");
-		},
-		m(target, anchor) {
-			insert(target, span, anchor);
-		},
-		d(detaching) {
-			if (detaching) detach(span);
-		}
-	};
-}
-
-// (189:2) {#if subUrl}
+// (207:2) {#if subUrl}
 function create_if_block_5(ctx) {
-	let code;
-	let t0;
-	let t1;
 	let p;
 
 	return {
 		c() {
-			code = element("code");
-			t0 = text(/*subUrl*/ ctx[3]);
-			t1 = space();
 			p = element("p");
-			p.textContent = "在 Clash / Mihomo 里添加为订阅（Profile），节点会随后台自动同步。链接含免登录 token，请勿外泄。";
-			attr(code, "class", "sub-url");
+			p.textContent = "Clash / Mihomo 添加为订阅；链接含 token，请勿外泄。";
 			attr(p, "class", "sub-hint");
 		},
 		m(target, anchor) {
-			insert(target, code, anchor);
-			append(code, t0);
-			insert(target, t1, anchor);
 			insert(target, p, anchor);
 		},
-		p(ctx, dirty) {
-			if (dirty & /*subUrl*/ 8) set_data(t0, /*subUrl*/ ctx[3]);
-		},
 		d(detaching) {
-			if (detaching) detach(code);
-			if (detaching) detach(t1);
 			if (detaching) detach(p);
 		}
 	};
 }
 
-// (193:2) {#if rotate && rotate.host}
+// (210:2) {#if rotate && rotate.host}
 function create_if_block_4(ctx) {
 	let div1;
 	let div0;
@@ -146,20 +112,20 @@ function create_if_block_4(ctx) {
 		c() {
 			div1 = element("div");
 			div0 = element("div");
-			div0.innerHTML = `<strong class="svelte-dkq0er">统一轮换</strong><span class="svelte-dkq0er">3 分钟粘滞 · 故障切换</span>`;
+			div0.innerHTML = `<strong class="svelte-i8fvdo">统一轮换</strong><span class="svelte-i8fvdo">3 分钟粘滞 · 故障切换</span>`;
 			t2 = space();
 			button = element("button");
 			create_component(icon0.$$.fragment);
 			t3 = space();
 			create_component(icon1.$$.fragment);
-			attr(div0, "class", "rotate-summary svelte-dkq0er");
+			attr(div0, "class", "rotate-summary svelte-i8fvdo");
 			attr(button, "type", "button");
-			attr(button, "class", "copy-trigger rotate-trigger svelte-dkq0er");
+			attr(button, "class", "copy-trigger rotate-trigger svelte-i8fvdo");
 			attr(button, "title", "复制轮换链接");
 			attr(button, "aria-label", "复制轮换链接");
 			toggle_class(button, "done", /*copied*/ ctx[2] === 'rotate-http' || /*copied*/ ctx[2] === 'rotate-socks5');
 			toggle_class(button, "open", /*menu*/ ctx[5] && /*menu*/ ctx[5].kind === 'rotate');
-			attr(div1, "class", "rotate-block svelte-dkq0er");
+			attr(div1, "class", "rotate-block svelte-i8fvdo");
 		},
 		m(target, anchor) {
 			insert(target, div1, anchor);
@@ -214,7 +180,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (213:0) {#if error}
+// (230:0) {#if error}
 function create_if_block_3(ctx) {
 	let div;
 	let t0;
@@ -241,7 +207,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (296:6) {:else}
+// (336:6) {:else}
 function create_else_block_1(ctx) {
 	let tr;
 
@@ -262,7 +228,7 @@ function create_else_block_1(ctx) {
 	};
 }
 
-// (269:6) {#if slots.length}
+// (309:6) {#if slots.length}
 function create_if_block_2(ctx) {
 	let each_1_anchor;
 	let current;
@@ -348,7 +314,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (270:8) {#each slots as slot}
+// (310:8) {#each slots as slot}
 function create_each_block_2(ctx) {
 	let tr;
 	let td0;
@@ -574,7 +540,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (303:0) {#if menu}
+// (343:0) {#if menu}
 function create_if_block(ctx) {
 	let div0;
 	let t0;
@@ -690,7 +656,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (314:4) {:else}
+// (354:4) {:else}
 function create_else_block(ctx) {
 	let each_1_anchor;
 	let current;
@@ -776,7 +742,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (307:4) {#if menu.kind === 'rotate'}
+// (347:4) {#if menu.kind === 'rotate'}
 function create_if_block_1(ctx) {
 	let each_1_anchor;
 	let current;
@@ -862,7 +828,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (316:6) {#each SCHEMES as scheme}
+// (356:6) {#each SCHEMES as scheme}
 function create_each_block_1(ctx) {
 	let button;
 	let icon;
@@ -926,7 +892,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (308:6) {#each SCHEMES as scheme}
+// (348:6) {#each SCHEMES as scheme}
 function create_each_block(ctx) {
 	let button;
 	let icon;
@@ -995,10 +961,15 @@ function create_fragment(ctx) {
 	let t1;
 	let div1;
 	let div0;
-	let button;
+	let code;
+	let t2_value = displaySubscriptionURL(/*subUrl*/ ctx[3]) + "";
 	let t2;
-	let button_disabled_value;
 	let t3;
+	let button;
+	let icon;
+	let button_title_value;
+	let button_aria_label_value;
+	let button_disabled_value;
 	let t4;
 	let t5;
 	let t6;
@@ -1009,16 +980,23 @@ function create_fragment(ctx) {
 	let t18;
 	let tbody;
 	let current_block_type_index;
-	let if_block4;
+	let if_block3;
 	let t19;
-	let if_block5_anchor;
+	let if_block4_anchor;
 	let current;
 	let mounted;
 	let dispose;
-	let if_block0 = /*copied*/ ctx[2] === 'subscription' && create_if_block_6(ctx);
-	let if_block1 = /*subUrl*/ ctx[3] && create_if_block_5(ctx);
-	let if_block2 = /*rotate*/ ctx[4] && /*rotate*/ ctx[4].host && create_if_block_4(ctx);
-	let if_block3 = /*error*/ ctx[1] && create_if_block_3(ctx);
+
+	icon = new Icon({
+			props: {
+				name: /*copied*/ ctx[2] === 'subscription' ? 'check' : 'copy',
+				size: 18
+			}
+		});
+
+	let if_block0 = /*subUrl*/ ctx[3] && create_if_block_5(ctx);
+	let if_block1 = /*rotate*/ ctx[4] && /*rotate*/ ctx[4].host && create_if_block_4(ctx);
+	let if_block2 = /*error*/ ctx[1] && create_if_block_3(ctx);
 	const if_block_creators = [create_if_block_2, create_else_block_1];
 	const if_blocks = [];
 
@@ -1028,8 +1006,8 @@ function create_fragment(ctx) {
 	}
 
 	current_block_type_index = select_block_type(ctx, -1);
-	if_block4 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
-	let if_block5 = /*menu*/ ctx[5] && create_if_block(ctx);
+	if_block3 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+	let if_block4 = /*menu*/ ctx[5] && create_if_block(ctx);
 
 	return {
 		c() {
@@ -1038,16 +1016,17 @@ function create_fragment(ctx) {
 			t1 = space();
 			div1 = element("div");
 			div0 = element("div");
-			button = element("button");
-			t2 = text("复制 Clash 订阅链接");
+			code = element("code");
+			t2 = text(t2_value);
 			t3 = space();
-			if (if_block0) if_block0.c();
+			button = element("button");
+			create_component(icon.$$.fragment);
 			t4 = space();
-			if (if_block1) if_block1.c();
+			if (if_block0) if_block0.c();
 			t5 = space();
-			if (if_block2) if_block2.c();
+			if (if_block1) if_block1.c();
 			t6 = space();
-			if (if_block3) if_block3.c();
+			if (if_block2) if_block2.c();
 			t7 = space();
 			div2 = element("div");
 			table = element("table");
@@ -1058,14 +1037,26 @@ function create_fragment(ctx) {
 
 			t18 = space();
 			tbody = element("tbody");
-			if_block4.c();
+			if_block3.c();
 			t19 = space();
-			if (if_block5) if_block5.c();
-			if_block5_anchor = empty();
+			if (if_block4) if_block4.c();
+			if_block4_anchor = empty();
+			attr(code, "class", "subscription-url svelte-i8fvdo");
+			attr(code, "title", /*subUrl*/ ctx[3]);
 			attr(button, "type", "button");
-			attr(button, "class", "export-link");
+			attr(button, "class", "copy-trigger subscription-copy svelte-i8fvdo");
+
+			attr(button, "title", button_title_value = /*copied*/ ctx[2] === 'subscription'
+			? '已复制'
+			: '复制 Clash 订阅');
+
+			attr(button, "aria-label", button_aria_label_value = /*copied*/ ctx[2] === 'subscription'
+			? '已复制'
+			: '复制 Clash 订阅');
+
 			button.disabled = button_disabled_value = !/*subUrl*/ ctx[3];
-			attr(div0, "class", "sub-row");
+			toggle_class(button, "done", /*copied*/ ctx[2] === 'subscription');
+			attr(div0, "class", "subscription-row svelte-i8fvdo");
 			attr(div1, "class", "sub-bar");
 			attr(div2, "class", "table-wrap");
 		},
@@ -1074,16 +1065,17 @@ function create_fragment(ctx) {
 			insert(target, t1, anchor);
 			insert(target, div1, anchor);
 			append(div1, div0);
-			append(div0, button);
-			append(button, t2);
+			append(div0, code);
+			append(code, t2);
 			append(div0, t3);
-			if (if_block0) if_block0.m(div0, null);
+			append(div0, button);
+			mount_component(icon, button, null);
 			append(div1, t4);
-			if (if_block1) if_block1.m(div1, null);
+			if (if_block0) if_block0.m(div1, null);
 			append(div1, t5);
-			if (if_block2) if_block2.m(div1, null);
+			if (if_block1) if_block1.m(div1, null);
 			insert(target, t6, anchor);
-			if (if_block3) if_block3.m(target, anchor);
+			if (if_block2) if_block2.m(target, anchor);
 			insert(target, t7, anchor);
 			insert(target, div2, anchor);
 			append(div2, table);
@@ -1092,8 +1084,8 @@ function create_fragment(ctx) {
 			append(table, tbody);
 			if_blocks[current_block_type_index].m(tbody, null);
 			insert(target, t19, anchor);
-			if (if_block5) if_block5.m(target, anchor);
-			insert(target, if_block5_anchor, anchor);
+			if (if_block4) if_block4.m(target, anchor);
+			insert(target, if_block4_anchor, anchor);
 			current = true;
 
 			if (!mounted) {
@@ -1102,70 +1094,83 @@ function create_fragment(ctx) {
 			}
 		},
 		p(ctx, [dirty]) {
+			if ((!current || dirty & /*subUrl*/ 8) && t2_value !== (t2_value = displaySubscriptionURL(/*subUrl*/ ctx[3]) + "")) set_data(t2, t2_value);
+
+			if (!current || dirty & /*subUrl*/ 8) {
+				attr(code, "title", /*subUrl*/ ctx[3]);
+			}
+
+			const icon_changes = {};
+			if (dirty & /*copied*/ 4) icon_changes.name = /*copied*/ ctx[2] === 'subscription' ? 'check' : 'copy';
+			icon.$set(icon_changes);
+
+			if (!current || dirty & /*copied*/ 4 && button_title_value !== (button_title_value = /*copied*/ ctx[2] === 'subscription'
+			? '已复制'
+			: '复制 Clash 订阅')) {
+				attr(button, "title", button_title_value);
+			}
+
+			if (!current || dirty & /*copied*/ 4 && button_aria_label_value !== (button_aria_label_value = /*copied*/ ctx[2] === 'subscription'
+			? '已复制'
+			: '复制 Clash 订阅')) {
+				attr(button, "aria-label", button_aria_label_value);
+			}
+
 			if (!current || dirty & /*subUrl*/ 8 && button_disabled_value !== (button_disabled_value = !/*subUrl*/ ctx[3])) {
 				button.disabled = button_disabled_value;
 			}
 
-			if (/*copied*/ ctx[2] === 'subscription') {
+			if (!current || dirty & /*copied*/ 4) {
+				toggle_class(button, "done", /*copied*/ ctx[2] === 'subscription');
+			}
+
+			if (/*subUrl*/ ctx[3]) {
 				if (if_block0) {
 					
 				} else {
-					if_block0 = create_if_block_6(ctx);
+					if_block0 = create_if_block_5(ctx);
 					if_block0.c();
-					if_block0.m(div0, null);
+					if_block0.m(div1, t5);
 				}
 			} else if (if_block0) {
 				if_block0.d(1);
 				if_block0 = null;
 			}
 
-			if (/*subUrl*/ ctx[3]) {
+			if (/*rotate*/ ctx[4] && /*rotate*/ ctx[4].host) {
 				if (if_block1) {
 					if_block1.p(ctx, dirty);
-				} else {
-					if_block1 = create_if_block_5(ctx);
-					if_block1.c();
-					if_block1.m(div1, t5);
-				}
-			} else if (if_block1) {
-				if_block1.d(1);
-				if_block1 = null;
-			}
-
-			if (/*rotate*/ ctx[4] && /*rotate*/ ctx[4].host) {
-				if (if_block2) {
-					if_block2.p(ctx, dirty);
 
 					if (dirty & /*rotate*/ 16) {
-						transition_in(if_block2, 1);
+						transition_in(if_block1, 1);
 					}
 				} else {
-					if_block2 = create_if_block_4(ctx);
-					if_block2.c();
-					transition_in(if_block2, 1);
-					if_block2.m(div1, null);
+					if_block1 = create_if_block_4(ctx);
+					if_block1.c();
+					transition_in(if_block1, 1);
+					if_block1.m(div1, null);
 				}
-			} else if (if_block2) {
+			} else if (if_block1) {
 				group_outros();
 
-				transition_out(if_block2, 1, 1, () => {
-					if_block2 = null;
+				transition_out(if_block1, 1, 1, () => {
+					if_block1 = null;
 				});
 
 				check_outros();
 			}
 
 			if (/*error*/ ctx[1]) {
-				if (if_block3) {
-					if_block3.p(ctx, dirty);
+				if (if_block2) {
+					if_block2.p(ctx, dirty);
 				} else {
-					if_block3 = create_if_block_3(ctx);
-					if_block3.c();
-					if_block3.m(t7.parentNode, t7);
+					if_block2 = create_if_block_3(ctx);
+					if_block2.c();
+					if_block2.m(t7.parentNode, t7);
 				}
-			} else if (if_block3) {
-				if_block3.d(1);
-				if_block3 = null;
+			} else if (if_block2) {
+				if_block2.d(1);
+				if_block2 = null;
 			}
 
 			let previous_block_index = current_block_type_index;
@@ -1181,37 +1186,37 @@ function create_fragment(ctx) {
 				});
 
 				check_outros();
-				if_block4 = if_blocks[current_block_type_index];
+				if_block3 = if_blocks[current_block_type_index];
 
-				if (!if_block4) {
-					if_block4 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
-					if_block4.c();
+				if (!if_block3) {
+					if_block3 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+					if_block3.c();
 				} else {
-					if_block4.p(ctx, dirty);
+					if_block3.p(ctx, dirty);
 				}
 
-				transition_in(if_block4, 1);
-				if_block4.m(tbody, null);
+				transition_in(if_block3, 1);
+				if_block3.m(tbody, null);
 			}
 
 			if (/*menu*/ ctx[5]) {
-				if (if_block5) {
-					if_block5.p(ctx, dirty);
+				if (if_block4) {
+					if_block4.p(ctx, dirty);
 
 					if (dirty & /*menu*/ 32) {
-						transition_in(if_block5, 1);
+						transition_in(if_block4, 1);
 					}
 				} else {
-					if_block5 = create_if_block(ctx);
-					if_block5.c();
-					transition_in(if_block5, 1);
-					if_block5.m(if_block5_anchor.parentNode, if_block5_anchor);
+					if_block4 = create_if_block(ctx);
+					if_block4.c();
+					transition_in(if_block4, 1);
+					if_block4.m(if_block4_anchor.parentNode, if_block4_anchor);
 				}
-			} else if (if_block5) {
+			} else if (if_block4) {
 				group_outros();
 
-				transition_out(if_block5, 1, 1, () => {
-					if_block5 = null;
+				transition_out(if_block4, 1, 1, () => {
+					if_block4 = null;
 				});
 
 				check_outros();
@@ -1219,32 +1224,34 @@ function create_fragment(ctx) {
 		},
 		i(local) {
 			if (current) return;
-			transition_in(if_block2);
+			transition_in(icon.$$.fragment, local);
+			transition_in(if_block1);
+			transition_in(if_block3);
 			transition_in(if_block4);
-			transition_in(if_block5);
 			current = true;
 		},
 		o(local) {
-			transition_out(if_block2);
+			transition_out(icon.$$.fragment, local);
+			transition_out(if_block1);
+			transition_out(if_block3);
 			transition_out(if_block4);
-			transition_out(if_block5);
 			current = false;
 		},
 		d(detaching) {
 			if (detaching) detach(h2);
 			if (detaching) detach(t1);
 			if (detaching) detach(div1);
+			destroy_component(icon);
 			if (if_block0) if_block0.d();
 			if (if_block1) if_block1.d();
-			if (if_block2) if_block2.d();
 			if (detaching) detach(t6);
-			if (if_block3) if_block3.d(detaching);
+			if (if_block2) if_block2.d(detaching);
 			if (detaching) detach(t7);
 			if (detaching) detach(div2);
 			if_blocks[current_block_type_index].d();
 			if (detaching) detach(t19);
-			if (if_block5) if_block5.d(detaching);
-			if (detaching) detach(if_block5_anchor);
+			if (if_block4) if_block4.d(detaching);
+			if (detaching) detach(if_block4_anchor);
 			mounted = false;
 			dispose();
 		}
@@ -1276,6 +1283,15 @@ async function writeClipboard(text) {
 	input.select();
 	document.execCommand('copy');
 	document.body.removeChild(input);
+}
+
+function displaySubscriptionURL(value) {
+	if (!value) return '生成中…';
+
+	return value.replace(/(token=)([^&\s]+)/, (_, prefix, token) => {
+		if (token.length <= 16) return prefix + token;
+		return `${prefix}${token.slice(0, 8)}…${token.slice(-4)}`;
+	});
 }
 
 function instance($$self, $$props, $$invalidate) {

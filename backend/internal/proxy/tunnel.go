@@ -107,6 +107,13 @@ func newTunnel(cfg Config) (*Tunnel, error) {
 	return nil, fmt.Errorf("tunnel %s: unsupported transport mode %q", cfg.Tag, cfg.TransportMode)
 }
 
+// NewTunnel creates a standalone WARP egress tunnel. The controller manager
+// and the lightweight remote agent share this constructor, while lifecycle
+// and persistence remain owned by their respective callers.
+func NewTunnel(cfg Config) (*Tunnel, error) {
+	return newTunnel(cfg)
+}
+
 func normalizeTransportMode(mode string) string {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
 	case "", "auto":

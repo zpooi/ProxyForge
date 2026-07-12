@@ -152,6 +152,14 @@
     }
   }
 
+  function displaySubscriptionURL(value) {
+    if (!value) return '生成中…';
+    return value.replace(/(token=)([^&\s]+)/, (_, prefix, token) => {
+      if (token.length <= 16) return prefix + token;
+      return `${prefix}${token.slice(0, 8)}…${token.slice(-4)}`;
+    });
+  }
+
   // 统一轮换链接的地址：与单个代理同格式（scheme://user:pass@host:port），
   // 用户名固定为 rotate.username（auto），服务端据此在所有节点间轮换出口。
   function rotateAddress(scheme) {
@@ -182,13 +190,22 @@
 
 <h2>代理列表</h2>
 <div class="sub-bar">
-  <div class="sub-row">
-    <button type="button" class="export-link" on:click={copySubscription} disabled={!subUrl}>复制 Clash 订阅链接</button>
-    {#if copied === 'subscription'}<span class="copy-feedback">已复制</span>{/if}
+  <div class="subscription-row">
+    <code class="subscription-url" title={subUrl}>{displaySubscriptionURL(subUrl)}</code>
+    <button
+      type="button"
+      class="copy-trigger subscription-copy"
+      class:done={copied === 'subscription'}
+      title={copied === 'subscription' ? '已复制' : '复制 Clash 订阅'}
+      aria-label={copied === 'subscription' ? '已复制' : '复制 Clash 订阅'}
+      on:click={copySubscription}
+      disabled={!subUrl}
+    >
+      <Icon name={copied === 'subscription' ? 'check' : 'copy'} size={18} />
+    </button>
   </div>
   {#if subUrl}
-    <code class="sub-url">{subUrl}</code>
-    <p class="sub-hint">在 Clash / Mihomo 里添加为订阅（Profile），节点会随后台自动同步。链接含免登录 token，请勿外泄。</p>
+    <p class="sub-hint">Clash / Mihomo 添加为订阅；链接含 token，请勿外泄。</p>
   {/if}
   {#if rotate && rotate.host}
     <div class="rotate-block">
@@ -215,6 +232,29 @@
 {/if}
 
 <style>
+  .subscription-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    align-items: center;
+    gap: 8px;
+  }
+  .subscription-url {
+    display: block;
+    min-width: 0;
+    padding: 10px 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .subscription-copy {
+    width: 40px;
+    min-height: 40px;
+    padding: 8px;
+  }
   .rotate-block {
     display: flex;
     align-items: center;

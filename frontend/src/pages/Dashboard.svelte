@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import StatCard from '../components/StatCard.svelte';
   import { fetchJSON } from '../lib/api.js';
-  import { fmtBps, fmtBytes, fmtTime } from '../lib/format.js';
+  import { fmtBytes, fmtTime } from '../lib/format.js';
   import { chart } from '../lib/chart.js';
 
   let dashboard = null;
@@ -146,65 +146,13 @@
 
   <section class="dashboard-section">
     <div class="section-header">
-      <h3>出口 IP 明细</h3>
-      <span class="section-sub">按累计流量排序</span>
+      <h3>最近使用者 IP</h3><span class="section-sub">按最近访问排序</span>
     </div>
     <div class="table-wrap compact">
       <table class="clients-table">
         <thead>
           <tr>
-            <th>出口 IP</th>
-            <th>地区 / 机房</th>
-            <th>绑定账号</th>
-            <th>延迟</th>
-            <th>槽位</th>
-            <th>实时 ↓/↑</th>
-            <th>累计 ↓</th>
-            <th>累计 ↑</th>
-            <th>最近活跃</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#if egress.length === 0}
-            <tr>
-              <td colspan="9">暂无出口 IP 记录</td>
-            </tr>
-          {:else}
-            {#each egress as e}
-              <tr>
-                <td><code>{e.ip || '-'}</code></td>
-                <td>{(e.country || '??') + (e.colo ? ' / ' + e.colo : '')}</td>
-                <td>{e.account_tag || '-'}</td>
-                <td>{e.latency_ms ? e.latency_ms + ' ms' : '-'}</td>
-                <td>{e.slot_count || 0}</td>
-                <td>{fmtBps(e.current_down_bps || 0)} / {fmtBps(e.current_up_bps || 0)}</td>
-                <td>{fmtBytes(e.total_down || 0)}</td>
-                <td>{fmtBytes(e.total_up || 0)}</td>
-                <td>{fmtTime(e.last_seen_at, '-')}</td>
-              </tr>
-            {/each}
-          {/if}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="dashboard-section">
-    <div class="section-header">
-      <h3>最近使用者 IP</h3>
-      <span class="section-sub">按最近访问排序</span>
-    </div>
-    <div class="table-wrap compact">
-      <table class="clients-table">
-        <thead>
-          <tr>
-            <th>使用者 IP</th>
-            <th>代理账号</th>
-            <th>WARP 节点</th>
-            <th>上行</th>
-            <th>下行</th>
-            <th>连接次数</th>
-            <th>最近使用</th>
+            <th>使用者 IP</th><th>代理账号</th><th>WARP 节点</th><th>上行</th><th>下行</th><th>连接次数</th><th>最近使用</th>
           </tr>
         </thead>
         <tbody>

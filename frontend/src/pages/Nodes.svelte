@@ -8,10 +8,11 @@
   let error = '';
 
   let installCommand = '';
+  let uninstallCommand = '';
   let server = '';
   let hasBinary = true;
   let enrollError = '';
-  let copied = false;
+  let copied = '';
   let rotating = false;
 
   async function fetchNodes() {
@@ -35,6 +36,7 @@
       if (!res.ok) throw new Error('获取安装命令失败');
       const data = await res.json();
       installCommand = data.install_command || '';
+      uninstallCommand = data.uninstall_command || '';
       server = data.server || '';
       hasBinary = data.has_binary !== false;
       enrollError = '';
@@ -67,15 +69,25 @@
     document.body.removeChild(input);
   }
 
-  async function copyInstall() {
-    if (!installCommand) return;
+  async function copyCommand(command, kind) {
+    if (!command) return;
     try {
-      await writeClipboard(installCommand);
-      copied = true;
-      setTimeout(() => (copied = false), 1500);
+      await writeClipboard(command);
+      copied = kind;
+      setTimeout(() => {
+        if (copied === kind) copied = '';
+      }, 1500);
     } catch (err) {
       enrollError = '复制失败：' + err.message;
     }
+  }
+
+  function copyInstall() {
+    return copyCommand(installCommand, 'install');
+  }
+
+  function copyUninstall() {
+    return copyCommand(uninstallCommand, 'uninstall');
   }
 
   // 轮换 token 后，旧命令和已安装 agent 的后续重连都会失效。
@@ -149,11 +161,17 @@
 <div class="enroll-card">
   <div class="enroll-toolbar">
     <div class="enroll-head">
-      <strong>接入节点</strong><span>在目标 VPS 执行</span>
+      <strong>接入节点</strong><span>自动创建 3 个当地 WARP 出口</span>
     </div>
-    <button class="link-btn" on:click={rotateToken} disabled={rotating}>
-      {rotating ? '重置中…' : '重置接入码'}
-    </button>
+    <div class="enroll-actions">
+      <button class="link-btn uninstall-btn" on:click={copyUninstall} disabled={!uninstallCommand}>
+        <Icon name={copied === 'uninstall' ? 'check' : 'copy'} size={15} />
+        <span>{copied === 'uninstall' ? '已复制' : '卸载命令'}</span>
+      </button>
+      <button class="link-btn" on:click={rotateToken} disabled={rotating}>
+        {rotating ? '重置中…' : '重置接入码'}
+      </button>
+    </div>
   </div>
   <div class="enroll-body">
     {#if enrollError}
@@ -166,13 +184,13 @@
       <code class="cmd" title={installCommand}>{displayInstallCommand(installCommand)}</code>
       <button
         class="copy-trigger command-copy"
-        class:done={copied}
-        title={copied ? '已复制' : '复制命令'}
-        aria-label={copied ? '已复制' : '复制命令'}
+        class:done={copied === 'install'}
+        title={copied === 'install' ? '已复制' : '复制命令'}
+        aria-label={copied === 'install' ? '已复制' : '复制命令'}
         on:click={copyInstall}
         disabled={!installCommand}
       >
-        <Icon name={copied ? 'check' : 'copy'} size={18} />
+        <Icon name={copied === 'install' ? 'check' : 'copy'} size={18} />
       </button>
     </div>
     <div class="enroll-server">
@@ -200,7 +218,7 @@
             <tr>
               <td>
                 <div class="node-name">{node.name}</div>
-                <div class="node-kind">{node.kind === 'local' ? '本机' : 'Agent'}</div>
+                <div class="node-kind">{node.kind === 'local' ? '本机' : 'Agent WARP'}</div>
               </td>
               <td class="mono">{node.public_ip || '—'}</td>
               <td>{node.country || '—'}{node.colo ? ` / ${node.colo}` : ''}</td>
@@ -261,6 +279,12 @@
     color: var(--text-3);
     font-size: 12px;
   }
+  .enroll-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
   .enroll-body {
     padding: 14px 16px;
   }
@@ -313,6 +337,15 @@
     cursor: pointer;
     font-size: 13px;
     padding: 0;
+    min-height: 30px;
+  }
+  .uninstall-btn {
+    gap: 5px;
+    color: var(--danger);
+  }
+  .uninstall-btn:hover {
+    background: transparent;
+    color: var(--danger-hover);
   }
   .link-btn:disabled {
     opacity: 0.6;
@@ -390,11 +423,16 @@
   @media (max-width: 760px) {
     .enroll-toolbar {
       align-items: flex-start;
+      flex-direction: column;
     }
     .enroll-head {
       align-items: flex-start;
       flex-direction: column;
       gap: 1px;
+    }
+    .enroll-actions {
+      width: 100%;
+      justify-content: space-between;
     }
   }
 </style>

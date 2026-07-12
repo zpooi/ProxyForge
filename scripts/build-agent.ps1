@@ -16,14 +16,23 @@ $targets = @(
   @{ os = 'linux'; arch = 'arm64' }
 )
 
-foreach ($t in $targets) {
-  $out = Join-Path $distDir "pfagent-$($t.os)-$($t.arch)"
-  Write-Host "[build-agent] $($t.os)/$($t.arch) -> $out"
-  $env:CGO_ENABLED = '0'
-  $env:GOOS = $t.os
-  $env:GOARCH = $t.arch
-  go build -trimpath -ldflags="-s -w" -o $out (Join-Path $repoRoot 'backend/cmd/pfagent')
-  if ($LASTEXITCODE -ne 0) { throw "build failed for $($t.os)/$($t.arch)" }
+$oldCGO = $env:CGO_ENABLED
+$oldGOOS = $env:GOOS
+$oldGOARCH = $env:GOARCH
+try {
+  foreach ($t in $targets) {
+    $out = Join-Path $distDir "pfagent-$($t.os)-$($t.arch)"
+    Write-Host "[build-agent] $($t.os)/$($t.arch) -> $out"
+    $env:CGO_ENABLED = '0'
+    $env:GOOS = $t.os
+    $env:GOARCH = $t.arch
+    go build -trimpath -ldflags="-s -w" -o $out (Join-Path $repoRoot 'backend/cmd/pfagent')
+    if ($LASTEXITCODE -ne 0) { throw "build failed for $($t.os)/$($t.arch)" }
+  }
+} finally {
+  $env:CGO_ENABLED = $oldCGO
+  $env:GOOS = $oldGOOS
+  $env:GOARCH = $oldGOARCH
 }
 
 Write-Host "[build-agent] 完成，产物在 $distDir"

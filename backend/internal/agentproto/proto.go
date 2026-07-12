@@ -1,7 +1,7 @@
 // Package agentproto 定义主控与远程 agent 之间在 yamux 流上的最小握手协议。
 //
-// 它刻意只依赖标准库 —— 主控（agenthub）和轻量 agent（cmd/pfagent）都导入它，
-// 而 agent 不能因此被拖入 sqlite / wireguard 等重依赖，否则二进制体积失控。
+// 它刻意只依赖标准库，供主控（agenthub）和轻量 agent（cmd/pfagent）共享，
+// 避免协议层反向依赖具体的 WARP 隧道实现。
 package agentproto
 
 import (

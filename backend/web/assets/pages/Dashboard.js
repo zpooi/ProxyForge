@@ -28,7 +28,7 @@ import {
 import { onMount } from 'svelte';
 import StatCard from '../components/StatCard.js';
 import { fetchJSON } from '../lib/api.js';
-import { fmtBps, fmtBytes, fmtTime } from '../lib/format.js';
+import { fmtBytes, fmtTime } from '../lib/format.js';
 import { chart } from '../lib/chart.js';
 
 function get_each_context(ctx, list, i) {
@@ -37,14 +37,8 @@ function get_each_context(ctx, list, i) {
 	return child_ctx;
 }
 
-function get_each_context_1(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[14] = list[i];
-	return child_ctx;
-}
-
-// (232:0) {:else}
-function create_else_block_3(ctx) {
+// (180:0) {:else}
+function create_else_block_2(ctx) {
 	let div;
 
 	return {
@@ -124,21 +118,12 @@ function create_if_block_1(ctx) {
 	let t29;
 	let section2;
 	let div11;
-	let t33;
+	let t32;
 	let div12;
-	let table0;
-	let thead0;
-	let t51;
-	let tbody0;
-	let t52;
-	let section3;
-	let div13;
-	let t56;
-	let div14;
-	let table1;
-	let thead1;
-	let t70;
-	let tbody1;
+	let table;
+	let thead;
+	let t40;
+	let tbody;
 	let current;
 
 	statcard0 = new StatCard({
@@ -174,28 +159,20 @@ function create_if_block_1(ctx) {
 		});
 
 	function select_block_type_1(ctx, dirty) {
-		if (/*egress*/ ctx[1].length) return create_if_block_4;
-		return create_else_block_2;
+		if (/*egress*/ ctx[1].length) return create_if_block_3;
+		return create_else_block_1;
 	}
 
 	let current_block_type = select_block_type_1(ctx, -1);
 	let if_block0 = current_block_type(ctx);
 
 	function select_block_type_2(ctx, dirty) {
-		if (/*egress*/ ctx[1].length === 0) return create_if_block_3;
-		return create_else_block_1;
-	}
-
-	let current_block_type_1 = select_block_type_2(ctx, -1);
-	let if_block1 = current_block_type_1(ctx);
-
-	function select_block_type_3(ctx, dirty) {
 		if (/*clients*/ ctx[5].length === 0) return create_if_block_2;
 		return create_else_block;
 	}
 
-	let current_block_type_2 = select_block_type_3(ctx, -1);
-	let if_block2 = current_block_type_2(ctx);
+	let current_block_type_1 = select_block_type_2(ctx, -1);
+	let if_block1 = current_block_type_1(ctx);
 
 	return {
 		c() {
@@ -262,51 +239,15 @@ function create_if_block_1(ctx) {
 			t29 = space();
 			section2 = element("section");
 			div11 = element("div");
-
-			div11.innerHTML = `<h3>出口 IP 明细</h3> 
-      <span class="section-sub">按累计流量排序</span>`;
-
-			t33 = space();
+			div11.innerHTML = `<h3>最近使用者 IP</h3><span class="section-sub">按最近访问排序</span>`;
+			t32 = space();
 			div12 = element("div");
-			table0 = element("table");
-			thead0 = element("thead");
-
-			thead0.innerHTML = `<tr><th>出口 IP</th> 
-            <th>地区 / 机房</th> 
-            <th>绑定账号</th> 
-            <th>延迟</th> 
-            <th>槽位</th> 
-            <th>实时 ↓/↑</th> 
-            <th>累计 ↓</th> 
-            <th>累计 ↑</th> 
-            <th>最近活跃</th></tr>`;
-
-			t51 = space();
-			tbody0 = element("tbody");
+			table = element("table");
+			thead = element("thead");
+			thead.innerHTML = `<tr><th>使用者 IP</th><th>代理账号</th><th>WARP 节点</th><th>上行</th><th>下行</th><th>连接次数</th><th>最近使用</th></tr>`;
+			t40 = space();
+			tbody = element("tbody");
 			if_block1.c();
-			t52 = space();
-			section3 = element("section");
-			div13 = element("div");
-
-			div13.innerHTML = `<h3>最近使用者 IP</h3> 
-      <span class="section-sub">按最近访问排序</span>`;
-
-			t56 = space();
-			div14 = element("div");
-			table1 = element("table");
-			thead1 = element("thead");
-
-			thead1.innerHTML = `<tr><th>使用者 IP</th> 
-            <th>代理账号</th> 
-            <th>WARP 节点</th> 
-            <th>上行</th> 
-            <th>下行</th> 
-            <th>连接次数</th> 
-            <th>最近使用</th></tr>`;
-
-			t70 = space();
-			tbody1 = element("tbody");
-			if_block2.c();
 			attr(div0, "class", "dashboard-grid");
 			attr(div1, "class", "section-header");
 			attr(div2, "class", "chart-box");
@@ -322,13 +263,9 @@ function create_if_block_1(ctx) {
 			attr(section1, "class", "dashboard-section");
 			attr(div10, "class", "dashboard-columns");
 			attr(div11, "class", "section-header");
-			attr(table0, "class", "clients-table");
+			attr(table, "class", "clients-table");
 			attr(div12, "class", "table-wrap compact");
 			attr(section2, "class", "dashboard-section");
-			attr(div13, "class", "section-header");
-			attr(table1, "class", "clients-table");
-			attr(div14, "class", "table-wrap compact");
-			attr(section3, "class", "dashboard-section");
 		},
 		m(target, anchor) {
 			insert(target, div0, anchor);
@@ -384,23 +321,13 @@ function create_if_block_1(ctx) {
 			insert(target, t29, anchor);
 			insert(target, section2, anchor);
 			append(section2, div11);
-			append(section2, t33);
+			append(section2, t32);
 			append(section2, div12);
-			append(div12, table0);
-			append(table0, thead0);
-			append(table0, t51);
-			append(table0, tbody0);
-			if_block1.m(tbody0, null);
-			insert(target, t52, anchor);
-			insert(target, section3, anchor);
-			append(section3, div13);
-			append(section3, t56);
-			append(section3, div14);
-			append(div14, table1);
-			append(table1, thead1);
-			append(table1, t70);
-			append(table1, tbody1);
-			if_block2.m(tbody1, null);
+			append(div12, table);
+			append(table, thead);
+			append(table, t40);
+			append(table, tbody);
+			if_block1.m(tbody, null);
 			current = true;
 		},
 		p(ctx, dirty) {
@@ -449,19 +376,7 @@ function create_if_block_1(ctx) {
 
 				if (if_block1) {
 					if_block1.c();
-					if_block1.m(tbody0, null);
-				}
-			}
-
-			if (current_block_type_2 === (current_block_type_2 = select_block_type_3(ctx, dirty)) && if_block2) {
-				if_block2.p(ctx, dirty);
-			} else {
-				if_block2.d(1);
-				if_block2 = current_block_type_2(ctx);
-
-				if (if_block2) {
-					if_block2.c();
-					if_block2.m(tbody1, null);
+					if_block1.m(tbody, null);
 				}
 			}
 		},
@@ -492,9 +407,6 @@ function create_if_block_1(ctx) {
 			if (detaching) detach(t29);
 			if (detaching) detach(section2);
 			if_block1.d();
-			if (detaching) detach(t52);
-			if (detaching) detach(section3);
-			if_block2.d();
 		}
 	};
 }
@@ -529,7 +441,7 @@ function create_if_block(ctx) {
 }
 
 // (126:8) {:else}
-function create_else_block_2(ctx) {
+function create_else_block_1(ctx) {
 	let div;
 
 	return {
@@ -549,7 +461,7 @@ function create_else_block_2(ctx) {
 }
 
 // (124:8) {#if egress.length}
-function create_if_block_4(ctx) {
+function create_if_block_3(ctx) {
 	let div;
 	let chart_action;
 	let mounted;
@@ -579,221 +491,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (172:10) {:else}
-function create_else_block_1(ctx) {
-	let each_1_anchor;
-	let each_value_1 = /*egress*/ ctx[1];
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value_1.length; i += 1) {
-		each_blocks[i] = create_each_block_1(get_each_context_1(ctx, each_value_1, i));
-	}
-
-	return {
-		c() {
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-
-			each_1_anchor = empty();
-		},
-		m(target, anchor) {
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				if (each_blocks[i]) {
-					each_blocks[i].m(target, anchor);
-				}
-			}
-
-			insert(target, each_1_anchor, anchor);
-		},
-		p(ctx, dirty) {
-			if (dirty & /*fmtTime, egress, fmtBytes, fmtBps*/ 2) {
-				each_value_1 = /*egress*/ ctx[1];
-				let i;
-
-				for (i = 0; i < each_value_1.length; i += 1) {
-					const child_ctx = get_each_context_1(ctx, each_value_1, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-					} else {
-						each_blocks[i] = create_each_block_1(child_ctx);
-						each_blocks[i].c();
-						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
-					}
-				}
-
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].d(1);
-				}
-
-				each_blocks.length = each_value_1.length;
-			}
-		},
-		d(detaching) {
-			destroy_each(each_blocks, detaching);
-			if (detaching) detach(each_1_anchor);
-		}
-	};
-}
-
-// (168:10) {#if egress.length === 0}
-function create_if_block_3(ctx) {
-	let tr;
-
-	return {
-		c() {
-			tr = element("tr");
-			tr.innerHTML = `<td colspan="9">暂无出口 IP 记录</td>`;
-		},
-		m(target, anchor) {
-			insert(target, tr, anchor);
-		},
-		p: noop,
-		d(detaching) {
-			if (detaching) detach(tr);
-		}
-	};
-}
-
-// (173:12) {#each egress as e}
-function create_each_block_1(ctx) {
-	let tr;
-	let td0;
-	let code;
-	let t0_value = (/*e*/ ctx[14].ip || '-') + "";
-	let t0;
-	let t1;
-	let td1;
-	let t2_value = (/*e*/ ctx[14].country || '??') + (/*e*/ ctx[14].colo ? ' / ' + /*e*/ ctx[14].colo : '') + "";
-	let t2;
-	let t3;
-	let td2;
-	let t4_value = (/*e*/ ctx[14].account_tag || '-') + "";
-	let t4;
-	let t5;
-	let td3;
-
-	let t6_value = (/*e*/ ctx[14].latency_ms
-	? /*e*/ ctx[14].latency_ms + ' ms'
-	: '-') + "";
-
-	let t6;
-	let t7;
-	let td4;
-	let t8_value = (/*e*/ ctx[14].slot_count || 0) + "";
-	let t8;
-	let t9;
-	let td5;
-	let t10_value = fmtBps(/*e*/ ctx[14].current_down_bps || 0) + "";
-	let t10;
-	let t11;
-	let t12_value = fmtBps(/*e*/ ctx[14].current_up_bps || 0) + "";
-	let t12;
-	let t13;
-	let td6;
-	let t14_value = fmtBytes(/*e*/ ctx[14].total_down || 0) + "";
-	let t14;
-	let t15;
-	let td7;
-	let t16_value = fmtBytes(/*e*/ ctx[14].total_up || 0) + "";
-	let t16;
-	let t17;
-	let td8;
-	let t18_value = fmtTime(/*e*/ ctx[14].last_seen_at, '-') + "";
-	let t18;
-	let t19;
-
-	return {
-		c() {
-			tr = element("tr");
-			td0 = element("td");
-			code = element("code");
-			t0 = text(t0_value);
-			t1 = space();
-			td1 = element("td");
-			t2 = text(t2_value);
-			t3 = space();
-			td2 = element("td");
-			t4 = text(t4_value);
-			t5 = space();
-			td3 = element("td");
-			t6 = text(t6_value);
-			t7 = space();
-			td4 = element("td");
-			t8 = text(t8_value);
-			t9 = space();
-			td5 = element("td");
-			t10 = text(t10_value);
-			t11 = text(" / ");
-			t12 = text(t12_value);
-			t13 = space();
-			td6 = element("td");
-			t14 = text(t14_value);
-			t15 = space();
-			td7 = element("td");
-			t16 = text(t16_value);
-			t17 = space();
-			td8 = element("td");
-			t18 = text(t18_value);
-			t19 = space();
-		},
-		m(target, anchor) {
-			insert(target, tr, anchor);
-			append(tr, td0);
-			append(td0, code);
-			append(code, t0);
-			append(tr, t1);
-			append(tr, td1);
-			append(td1, t2);
-			append(tr, t3);
-			append(tr, td2);
-			append(td2, t4);
-			append(tr, t5);
-			append(tr, td3);
-			append(td3, t6);
-			append(tr, t7);
-			append(tr, td4);
-			append(td4, t8);
-			append(tr, t9);
-			append(tr, td5);
-			append(td5, t10);
-			append(td5, t11);
-			append(td5, t12);
-			append(tr, t13);
-			append(tr, td6);
-			append(td6, t14);
-			append(tr, t15);
-			append(tr, td7);
-			append(td7, t16);
-			append(tr, t17);
-			append(tr, td8);
-			append(td8, t18);
-			append(tr, t19);
-		},
-		p(ctx, dirty) {
-			if (dirty & /*egress*/ 2 && t0_value !== (t0_value = (/*e*/ ctx[14].ip || '-') + "")) set_data(t0, t0_value);
-			if (dirty & /*egress*/ 2 && t2_value !== (t2_value = (/*e*/ ctx[14].country || '??') + (/*e*/ ctx[14].colo ? ' / ' + /*e*/ ctx[14].colo : '') + "")) set_data(t2, t2_value);
-			if (dirty & /*egress*/ 2 && t4_value !== (t4_value = (/*e*/ ctx[14].account_tag || '-') + "")) set_data(t4, t4_value);
-
-			if (dirty & /*egress*/ 2 && t6_value !== (t6_value = (/*e*/ ctx[14].latency_ms
-			? /*e*/ ctx[14].latency_ms + ' ms'
-			: '-') + "")) set_data(t6, t6_value);
-
-			if (dirty & /*egress*/ 2 && t8_value !== (t8_value = (/*e*/ ctx[14].slot_count || 0) + "")) set_data(t8, t8_value);
-			if (dirty & /*egress*/ 2 && t10_value !== (t10_value = fmtBps(/*e*/ ctx[14].current_down_bps || 0) + "")) set_data(t10, t10_value);
-			if (dirty & /*egress*/ 2 && t12_value !== (t12_value = fmtBps(/*e*/ ctx[14].current_up_bps || 0) + "")) set_data(t12, t12_value);
-			if (dirty & /*egress*/ 2 && t14_value !== (t14_value = fmtBytes(/*e*/ ctx[14].total_down || 0) + "")) set_data(t14, t14_value);
-			if (dirty & /*egress*/ 2 && t16_value !== (t16_value = fmtBytes(/*e*/ ctx[14].total_up || 0) + "")) set_data(t16, t16_value);
-			if (dirty & /*egress*/ 2 && t18_value !== (t18_value = fmtTime(/*e*/ ctx[14].last_seen_at, '-') + "")) set_data(t18, t18_value);
-		},
-		d(detaching) {
-			if (detaching) detach(tr);
-		}
-	};
-}
-
-// (215:10) {:else}
+// (163:10) {:else}
 function create_else_block(ctx) {
 	let each_1_anchor;
 	let each_value = /*clients*/ ctx[5];
@@ -851,7 +549,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (211:10) {#if clients.length === 0}
+// (159:10) {#if clients.length === 0}
 function create_if_block_2(ctx) {
 	let tr;
 
@@ -870,7 +568,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (216:12) {#each clients as client}
+// (164:12) {#each clients as client}
 function create_each_block(ctx) {
 	let tr;
 	let td0;
@@ -976,7 +674,7 @@ function create_fragment(ctx) {
 	let if_block;
 	let if_block_anchor;
 	let current;
-	const if_block_creators = [create_if_block, create_if_block_1, create_else_block_3];
+	const if_block_creators = [create_if_block, create_if_block_1, create_else_block_2];
 	const if_blocks = [];
 
 	function select_block_type(ctx, dirty) {

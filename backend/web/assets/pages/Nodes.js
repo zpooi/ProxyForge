@@ -32,16 +32,16 @@ import StatusTag from '../components/StatusTag.js';
 import Icon from '../components/Icon.js';
 
 function add_css(target) {
-	append_styles(target, "svelte-4gj809", ".compact-header.svelte-4gj809.svelte-4gj809{margin-bottom:16px}.compact-header.svelte-4gj809 h2.svelte-4gj809{margin:0}.enroll-card.svelte-4gj809.svelte-4gj809{background:var(--surface, #fff);border:1px solid var(--border, #e5e7eb);border-radius:10px;margin-bottom:16px;overflow:hidden}.enroll-toolbar.svelte-4gj809.svelte-4gj809{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border)}.enroll-head.svelte-4gj809.svelte-4gj809{display:flex;align-items:baseline;gap:9px;min-width:0}.enroll-head.svelte-4gj809 span.svelte-4gj809{color:var(--text-3);font-size:12px}.enroll-body.svelte-4gj809.svelte-4gj809{padding:14px 16px}.cmd-row.svelte-4gj809.svelte-4gj809{display:grid;grid-template-columns:minmax(0, 1fr) 40px;gap:8px;align-items:center}.cmd.svelte-4gj809.svelte-4gj809{display:block;min-width:0;padding:9px 11px;background:var(--code-bg, #0f172a);color:var(--code-fg, #e2e8f0);border-radius:8px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.command-copy.svelte-4gj809.svelte-4gj809{width:40px;min-height:38px;padding:8px}.enroll-server.svelte-4gj809.svelte-4gj809{display:flex;align-items:center;gap:8px;min-width:0;margin-top:9px;color:var(--text-3);font-size:11px}.enroll-server.svelte-4gj809 code.svelte-4gj809{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:transparent;padding:0;color:var(--text-2)}.link-btn.svelte-4gj809.svelte-4gj809{background:none;border:none;color:var(--accent, #6366f1);cursor:pointer;font-size:13px;padding:0}.link-btn.svelte-4gj809.svelte-4gj809:disabled{opacity:0.6;cursor:default}.icon-btn.danger.svelte-4gj809.svelte-4gj809{color:var(--danger, #ef4444)}.node-delete.svelte-4gj809.svelte-4gj809{min-width:32px;min-height:32px;padding:6px;background:transparent;color:var(--text-3)}.node-delete.svelte-4gj809.svelte-4gj809:hover{background:#fdeaea;color:var(--danger, #ef4444)}.node-name.svelte-4gj809.svelte-4gj809{color:var(--text);font-weight:600}.node-kind.svelte-4gj809.svelte-4gj809{margin-top:1px;color:var(--text-3);font-size:11px}.node-status.svelte-4gj809.svelte-4gj809{display:flex;align-items:center;gap:7px;color:var(--text-3);font-size:11px;white-space:nowrap}.empty-state.svelte-4gj809.svelte-4gj809{height:108px;color:var(--text-3);text-align:center}.banner.warn.svelte-4gj809.svelte-4gj809{background:#fef3c7;color:#92400e;padding:8px 10px;border-radius:8px;margin-bottom:12px}.banner.error.svelte-4gj809.svelte-4gj809{margin-bottom:12px;padding:8px 10px;border-radius:8px;background:#fdeaea;color:var(--danger-hover)}.table-wrap{border-radius:10px}.table-wrap table{min-width:760px}.table-wrap th,.table-wrap td{padding:10px 12px}.table-wrap th:first-child,.table-wrap td:first-child{padding-left:16px}.table-wrap th:last-child,.table-wrap td:last-child{padding-right:16px;width:48px}@media(max-width: 760px){.enroll-toolbar.svelte-4gj809.svelte-4gj809{align-items:flex-start}.enroll-head.svelte-4gj809.svelte-4gj809{align-items:flex-start;flex-direction:column;gap:1px}}");
+	append_styles(target, "svelte-15keadm", ".compact-header.svelte-15keadm.svelte-15keadm{margin-bottom:16px}.compact-header.svelte-15keadm h2.svelte-15keadm{margin:0}.enroll-card.svelte-15keadm.svelte-15keadm{background:var(--surface, #fff);border:1px solid var(--border, #e5e7eb);border-radius:10px;margin-bottom:16px;overflow:hidden}.enroll-toolbar.svelte-15keadm.svelte-15keadm{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border)}.enroll-head.svelte-15keadm.svelte-15keadm{display:flex;align-items:baseline;gap:9px;min-width:0}.enroll-head.svelte-15keadm span.svelte-15keadm{color:var(--text-3);font-size:12px}.enroll-actions.svelte-15keadm.svelte-15keadm{display:flex;align-items:center;gap:14px;flex-shrink:0}.enroll-body.svelte-15keadm.svelte-15keadm{padding:14px 16px}.cmd-row.svelte-15keadm.svelte-15keadm{display:grid;grid-template-columns:minmax(0, 1fr) 40px;gap:8px;align-items:center}.cmd.svelte-15keadm.svelte-15keadm{display:block;min-width:0;padding:9px 11px;background:var(--code-bg, #0f172a);color:var(--code-fg, #e2e8f0);border-radius:8px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.command-copy.svelte-15keadm.svelte-15keadm{width:40px;min-height:38px;padding:8px}.enroll-server.svelte-15keadm.svelte-15keadm{display:flex;align-items:center;gap:8px;min-width:0;margin-top:9px;color:var(--text-3);font-size:11px}.enroll-server.svelte-15keadm code.svelte-15keadm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:transparent;padding:0;color:var(--text-2)}.link-btn.svelte-15keadm.svelte-15keadm{background:none;border:none;color:var(--accent, #6366f1);cursor:pointer;font-size:13px;padding:0;min-height:30px}.uninstall-btn.svelte-15keadm.svelte-15keadm{gap:5px;color:var(--danger)}.uninstall-btn.svelte-15keadm.svelte-15keadm:hover{background:transparent;color:var(--danger-hover)}.link-btn.svelte-15keadm.svelte-15keadm:disabled{opacity:0.6;cursor:default}.icon-btn.danger.svelte-15keadm.svelte-15keadm{color:var(--danger, #ef4444)}.node-delete.svelte-15keadm.svelte-15keadm{min-width:32px;min-height:32px;padding:6px;background:transparent;color:var(--text-3)}.node-delete.svelte-15keadm.svelte-15keadm:hover{background:#fdeaea;color:var(--danger, #ef4444)}.node-name.svelte-15keadm.svelte-15keadm{color:var(--text);font-weight:600}.node-kind.svelte-15keadm.svelte-15keadm{margin-top:1px;color:var(--text-3);font-size:11px}.node-status.svelte-15keadm.svelte-15keadm{display:flex;align-items:center;gap:7px;color:var(--text-3);font-size:11px;white-space:nowrap}.empty-state.svelte-15keadm.svelte-15keadm{height:108px;color:var(--text-3);text-align:center}.banner.warn.svelte-15keadm.svelte-15keadm{background:#fef3c7;color:#92400e;padding:8px 10px;border-radius:8px;margin-bottom:12px}.banner.error.svelte-15keadm.svelte-15keadm{margin-bottom:12px;padding:8px 10px;border-radius:8px;background:#fdeaea;color:var(--danger-hover)}.table-wrap{border-radius:10px}.table-wrap table{min-width:760px}.table-wrap th,.table-wrap td{padding:10px 12px}.table-wrap th:first-child,.table-wrap td:first-child{padding-left:16px}.table-wrap th:last-child,.table-wrap td:last-child{padding-right:16px;width:48px}@media(max-width: 760px){.enroll-toolbar.svelte-15keadm.svelte-15keadm{align-items:flex-start;flex-direction:column}.enroll-head.svelte-15keadm.svelte-15keadm{align-items:flex-start;flex-direction:column;gap:1px}.enroll-actions.svelte-15keadm.svelte-15keadm{width:100%;justify-content:space-between}}");
 }
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[16] = list[i];
+	child_ctx[19] = list[i];
 	return child_ctx;
 }
 
-// (159:4) {#if enrollError}
+// (177:4) {#if enrollError}
 function create_if_block_6(ctx) {
 	let div;
 	let t;
@@ -49,15 +49,15 @@ function create_if_block_6(ctx) {
 	return {
 		c() {
 			div = element("div");
-			t = text(/*enrollError*/ ctx[6]);
-			attr(div, "class", "banner error svelte-4gj809");
+			t = text(/*enrollError*/ ctx[7]);
+			attr(div, "class", "banner error svelte-15keadm");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
 			append(div, t);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*enrollError*/ 64) set_data(t, /*enrollError*/ ctx[6]);
+			if (dirty & /*enrollError*/ 128) set_data(t, /*enrollError*/ ctx[7]);
 		},
 		d(detaching) {
 			if (detaching) detach(div);
@@ -65,7 +65,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (162:4) {#if !hasBinary}
+// (180:4) {#if !hasBinary}
 function create_if_block_5(ctx) {
 	let div;
 
@@ -73,7 +73,7 @@ function create_if_block_5(ctx) {
 		c() {
 			div = element("div");
 			div.textContent = "未找到 agent 二进制，请先完成构建。";
-			attr(div, "class", "banner warn svelte-4gj809");
+			attr(div, "class", "banner warn svelte-15keadm");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -84,7 +84,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (185:0) {#if error}
+// (203:0) {#if error}
 function create_if_block_4(ctx) {
 	let div;
 	let t;
@@ -93,7 +93,7 @@ function create_if_block_4(ctx) {
 		c() {
 			div = element("div");
 			t = text(/*error*/ ctx[2]);
-			attr(div, "class", "banner error svelte-4gj809");
+			attr(div, "class", "banner error svelte-15keadm");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -108,7 +108,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (191:0) {:else}
+// (209:0) {:else}
 function create_else_block(ctx) {
 	let div;
 	let table;
@@ -192,7 +192,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (189:0) {#if loading}
+// (207:0) {#if loading}
 function create_if_block(ctx) {
 	let div;
 
@@ -214,14 +214,14 @@ function create_if_block(ctx) {
 	};
 }
 
-// (224:8) {:else}
+// (242:8) {:else}
 function create_else_block_1(ctx) {
 	let tr;
 
 	return {
 		c() {
 			tr = element("tr");
-			tr.innerHTML = `<td class="empty-state svelte-4gj809" colspan="7">暂无节点</td>`;
+			tr.innerHTML = `<td class="empty-state svelte-15keadm" colspan="7">暂无节点</td>`;
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
@@ -235,7 +235,7 @@ function create_else_block_1(ctx) {
 	};
 }
 
-// (198:8) {#if nodes.length}
+// (216:8) {#if nodes.length}
 function create_if_block_1(ctx) {
 	let each_1_anchor;
 	let current;
@@ -269,7 +269,7 @@ function create_if_block_1(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty & /*removeNode, nodes, fmtSeen, fmtBytes*/ 2049) {
+			if (dirty & /*removeNode, nodes, fmtSeen, fmtBytes*/ 8193) {
 				each_value = /*nodes*/ ctx[0];
 				let i;
 
@@ -321,10 +321,10 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (212:18) {#if !node.online}
+// (230:18) {#if !node.online}
 function create_if_block_3(ctx) {
 	let span;
-	let t_value = fmtSeen(/*node*/ ctx[16].last_seen) + "";
+	let t_value = fmtSeen(/*node*/ ctx[19].last_seen) + "";
 	let t;
 
 	return {
@@ -337,7 +337,7 @@ function create_if_block_3(ctx) {
 			append(span, t);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*nodes*/ 1 && t_value !== (t_value = fmtSeen(/*node*/ ctx[16].last_seen) + "")) set_data(t, t_value);
+			if (dirty & /*nodes*/ 1 && t_value !== (t_value = fmtSeen(/*node*/ ctx[19].last_seen) + "")) set_data(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) detach(span);
@@ -345,7 +345,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (216:16) {#if node.kind !== 'local'}
+// (234:16) {#if node.kind !== 'local'}
 function create_if_block_2(ctx) {
 	let button;
 	let icon;
@@ -355,14 +355,14 @@ function create_if_block_2(ctx) {
 	icon = new Icon({ props: { name: "delete", size: 17 } });
 
 	function click_handler() {
-		return /*click_handler*/ ctx[12](/*node*/ ctx[16]);
+		return /*click_handler*/ ctx[14](/*node*/ ctx[19]);
 	}
 
 	return {
 		c() {
 			button = element("button");
 			create_component(icon.$$.fragment);
-			attr(button, "class", "icon-btn danger node-delete svelte-4gj809");
+			attr(button, "class", "icon-btn danger node-delete svelte-15keadm");
 			attr(button, "title", "删除节点");
 			attr(button, "aria-label", "删除节点");
 		},
@@ -397,45 +397,45 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (199:10) {#each nodes as node}
+// (217:10) {#each nodes as node}
 function create_each_block(ctx) {
 	let tr;
 	let td0;
 	let div0;
-	let t0_value = /*node*/ ctx[16].name + "";
+	let t0_value = /*node*/ ctx[19].name + "";
 	let t0;
 	let t1;
 	let div1;
-	let t2_value = (/*node*/ ctx[16].kind === 'local' ? '本机' : 'Agent') + "";
+	let t2_value = (/*node*/ ctx[19].kind === 'local' ? '本机' : 'Agent WARP') + "";
 	let t2;
 	let t3;
 	let td1;
-	let t4_value = (/*node*/ ctx[16].public_ip || '—') + "";
+	let t4_value = (/*node*/ ctx[19].public_ip || '—') + "";
 	let t4;
 	let t5;
 	let td2;
-	let t6_value = (/*node*/ ctx[16].country || '—') + "";
+	let t6_value = (/*node*/ ctx[19].country || '—') + "";
 	let t6;
 
-	let t7_value = (/*node*/ ctx[16].colo
-	? ` / ${/*node*/ ctx[16].colo}`
+	let t7_value = (/*node*/ ctx[19].colo
+	? ` / ${/*node*/ ctx[19].colo}`
 	: '') + "";
 
 	let t7;
 	let t8;
 	let td3;
 
-	let t9_value = (/*node*/ ctx[16].latency_ms
-	? /*node*/ ctx[16].latency_ms + ' ms'
+	let t9_value = (/*node*/ ctx[19].latency_ms
+	? /*node*/ ctx[19].latency_ms + ' ms'
 	: '—') + "";
 
 	let t9;
 	let t10;
 	let td4;
-	let t11_value = fmtBytes(/*node*/ ctx[16].tx_bytes) + "";
+	let t11_value = fmtBytes(/*node*/ ctx[19].tx_bytes) + "";
 	let t11;
 	let t12;
-	let t13_value = fmtBytes(/*node*/ ctx[16].rx_bytes) + "";
+	let t13_value = fmtBytes(/*node*/ ctx[19].rx_bytes) + "";
 	let t13;
 	let t14;
 	let td5;
@@ -449,12 +449,12 @@ function create_each_block(ctx) {
 
 	statustag = new StatusTag({
 			props: {
-				status: /*node*/ ctx[16].online ? 'active' : 'inactive'
+				status: /*node*/ ctx[19].online ? 'active' : 'inactive'
 			}
 		});
 
-	let if_block0 = !/*node*/ ctx[16].online && create_if_block_3(ctx);
-	let if_block1 = /*node*/ ctx[16].kind !== 'local' && create_if_block_2(ctx);
+	let if_block0 = !/*node*/ ctx[19].online && create_if_block_3(ctx);
+	let if_block1 = /*node*/ ctx[19].kind !== 'local' && create_if_block_2(ctx);
 
 	return {
 		c() {
@@ -490,11 +490,11 @@ function create_each_block(ctx) {
 			td6 = element("td");
 			if (if_block1) if_block1.c();
 			t17 = space();
-			attr(div0, "class", "node-name svelte-4gj809");
-			attr(div1, "class", "node-kind svelte-4gj809");
+			attr(div0, "class", "node-name svelte-15keadm");
+			attr(div1, "class", "node-kind svelte-15keadm");
 			attr(td1, "class", "mono");
 			attr(td4, "class", "mono");
-			attr(div2, "class", "node-status svelte-4gj809");
+			attr(div2, "class", "node-status svelte-15keadm");
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
@@ -532,26 +532,26 @@ function create_each_block(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty & /*nodes*/ 1) && t0_value !== (t0_value = /*node*/ ctx[16].name + "")) set_data(t0, t0_value);
-			if ((!current || dirty & /*nodes*/ 1) && t2_value !== (t2_value = (/*node*/ ctx[16].kind === 'local' ? '本机' : 'Agent') + "")) set_data(t2, t2_value);
-			if ((!current || dirty & /*nodes*/ 1) && t4_value !== (t4_value = (/*node*/ ctx[16].public_ip || '—') + "")) set_data(t4, t4_value);
-			if ((!current || dirty & /*nodes*/ 1) && t6_value !== (t6_value = (/*node*/ ctx[16].country || '—') + "")) set_data(t6, t6_value);
+			if ((!current || dirty & /*nodes*/ 1) && t0_value !== (t0_value = /*node*/ ctx[19].name + "")) set_data(t0, t0_value);
+			if ((!current || dirty & /*nodes*/ 1) && t2_value !== (t2_value = (/*node*/ ctx[19].kind === 'local' ? '本机' : 'Agent WARP') + "")) set_data(t2, t2_value);
+			if ((!current || dirty & /*nodes*/ 1) && t4_value !== (t4_value = (/*node*/ ctx[19].public_ip || '—') + "")) set_data(t4, t4_value);
+			if ((!current || dirty & /*nodes*/ 1) && t6_value !== (t6_value = (/*node*/ ctx[19].country || '—') + "")) set_data(t6, t6_value);
 
-			if ((!current || dirty & /*nodes*/ 1) && t7_value !== (t7_value = (/*node*/ ctx[16].colo
-			? ` / ${/*node*/ ctx[16].colo}`
+			if ((!current || dirty & /*nodes*/ 1) && t7_value !== (t7_value = (/*node*/ ctx[19].colo
+			? ` / ${/*node*/ ctx[19].colo}`
 			: '') + "")) set_data(t7, t7_value);
 
-			if ((!current || dirty & /*nodes*/ 1) && t9_value !== (t9_value = (/*node*/ ctx[16].latency_ms
-			? /*node*/ ctx[16].latency_ms + ' ms'
+			if ((!current || dirty & /*nodes*/ 1) && t9_value !== (t9_value = (/*node*/ ctx[19].latency_ms
+			? /*node*/ ctx[19].latency_ms + ' ms'
 			: '—') + "")) set_data(t9, t9_value);
 
-			if ((!current || dirty & /*nodes*/ 1) && t11_value !== (t11_value = fmtBytes(/*node*/ ctx[16].tx_bytes) + "")) set_data(t11, t11_value);
-			if ((!current || dirty & /*nodes*/ 1) && t13_value !== (t13_value = fmtBytes(/*node*/ ctx[16].rx_bytes) + "")) set_data(t13, t13_value);
+			if ((!current || dirty & /*nodes*/ 1) && t11_value !== (t11_value = fmtBytes(/*node*/ ctx[19].tx_bytes) + "")) set_data(t11, t11_value);
+			if ((!current || dirty & /*nodes*/ 1) && t13_value !== (t13_value = fmtBytes(/*node*/ ctx[19].rx_bytes) + "")) set_data(t13, t13_value);
 			const statustag_changes = {};
-			if (dirty & /*nodes*/ 1) statustag_changes.status = /*node*/ ctx[16].online ? 'active' : 'inactive';
+			if (dirty & /*nodes*/ 1) statustag_changes.status = /*node*/ ctx[19].online ? 'active' : 'inactive';
 			statustag.$set(statustag_changes);
 
-			if (!/*node*/ ctx[16].online) {
+			if (!/*node*/ ctx[19].online) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
@@ -564,7 +564,7 @@ function create_each_block(ctx) {
 				if_block0 = null;
 			}
 
-			if (/*node*/ ctx[16].kind !== 'local') {
+			if (/*node*/ ctx[19].kind !== 'local') {
 				if (if_block1) {
 					if_block1.p(ctx, dirty);
 
@@ -610,48 +610,65 @@ function create_each_block(ctx) {
 function create_fragment(ctx) {
 	let div0;
 	let t1;
-	let div6;
-	let div2;
+	let div7;
+	let div3;
 	let div1;
 	let t4;
+	let div2;
 	let button0;
-	let t5_value = (/*rotating*/ ctx[8] ? '重置中…' : '重置接入码') + "";
+	let icon0;
 	let t5;
+	let span1;
+	let t6_value = (/*copied*/ ctx[8] === 'uninstall' ? '已复制' : '卸载命令') + "";
 	let t6;
-	let div5;
+	let button0_disabled_value;
 	let t7;
-	let t8;
-	let div3;
-	let code0;
-	let t9_value = displayInstallCommand(/*installCommand*/ ctx[3]) + "";
-	let t9;
-	let t10;
 	let button1;
-	let icon;
-	let button1_title_value;
-	let button1_aria_label_value;
-	let button1_disabled_value;
+	let t8_value = (/*rotating*/ ctx[9] ? '重置中…' : '重置接入码') + "";
+	let t8;
+	let t9;
+	let div6;
+	let t10;
 	let t11;
 	let div4;
-	let span1;
+	let code0;
+	let t12_value = displayInstallCommand(/*installCommand*/ ctx[3]) + "";
+	let t12;
 	let t13;
-	let code1;
-	let t14_value = (/*server*/ ctx[4] || '—') + "";
+	let button2;
+	let icon1;
+	let button2_title_value;
+	let button2_aria_label_value;
+	let button2_disabled_value;
 	let t14;
-	let t15;
+	let div5;
+	let span2;
 	let t16;
+	let code1;
+	let t17_value = (/*server*/ ctx[5] || '—') + "";
+	let t17;
+	let t18;
+	let t19;
 	let current_block_type_index;
 	let if_block3;
 	let if_block3_anchor;
 	let current;
 	let mounted;
 	let dispose;
-	let if_block0 = /*enrollError*/ ctx[6] && create_if_block_6(ctx);
-	let if_block1 = !/*hasBinary*/ ctx[5] && create_if_block_5(ctx);
 
-	icon = new Icon({
+	icon0 = new Icon({
 			props: {
-				name: /*copied*/ ctx[7] ? 'check' : 'copy',
+				name: /*copied*/ ctx[8] === 'uninstall' ? 'check' : 'copy',
+				size: 15
+			}
+		});
+
+	let if_block0 = /*enrollError*/ ctx[7] && create_if_block_6(ctx);
+	let if_block1 = !/*hasBinary*/ ctx[6] && create_if_block_5(ctx);
+
+	icon1 = new Icon({
+			props: {
+				name: /*copied*/ ctx[8] === 'install' ? 'check' : 'copy',
 				size: 18
 			}
 		});
@@ -671,160 +688,187 @@ function create_fragment(ctx) {
 	return {
 		c() {
 			div0 = element("div");
-			div0.innerHTML = `<h2 class="svelte-4gj809">节点</h2>`;
+			div0.innerHTML = `<h2 class="svelte-15keadm">节点</h2>`;
 			t1 = space();
-			div6 = element("div");
-			div2 = element("div");
-			div1 = element("div");
-			div1.innerHTML = `<strong>接入节点</strong><span class="svelte-4gj809">在目标 VPS 执行</span>`;
-			t4 = space();
-			button0 = element("button");
-			t5 = text(t5_value);
-			t6 = space();
-			div5 = element("div");
-			if (if_block0) if_block0.c();
-			t7 = space();
-			if (if_block1) if_block1.c();
-			t8 = space();
+			div7 = element("div");
 			div3 = element("div");
-			code0 = element("code");
-			t9 = text(t9_value);
-			t10 = space();
+			div1 = element("div");
+			div1.innerHTML = `<strong>接入节点</strong><span class="svelte-15keadm">自动创建 3 个当地 WARP 出口</span>`;
+			t4 = space();
+			div2 = element("div");
+			button0 = element("button");
+			create_component(icon0.$$.fragment);
+			t5 = space();
+			span1 = element("span");
+			t6 = text(t6_value);
+			t7 = space();
 			button1 = element("button");
-			create_component(icon.$$.fragment);
+			t8 = text(t8_value);
+			t9 = space();
+			div6 = element("div");
+			if (if_block0) if_block0.c();
+			t10 = space();
+			if (if_block1) if_block1.c();
 			t11 = space();
 			div4 = element("div");
-			span1 = element("span");
-			span1.textContent = "主控";
+			code0 = element("code");
+			t12 = text(t12_value);
 			t13 = space();
-			code1 = element("code");
-			t14 = text(t14_value);
-			t15 = space();
-			if (if_block2) if_block2.c();
+			button2 = element("button");
+			create_component(icon1.$$.fragment);
+			t14 = space();
+			div5 = element("div");
+			span2 = element("span");
+			span2.textContent = "主控";
 			t16 = space();
+			code1 = element("code");
+			t17 = text(t17_value);
+			t18 = space();
+			if (if_block2) if_block2.c();
+			t19 = space();
 			if_block3.c();
 			if_block3_anchor = empty();
-			attr(div0, "class", "page-header compact-header svelte-4gj809");
-			attr(div1, "class", "enroll-head svelte-4gj809");
-			attr(button0, "class", "link-btn svelte-4gj809");
-			button0.disabled = /*rotating*/ ctx[8];
-			attr(div2, "class", "enroll-toolbar svelte-4gj809");
-			attr(code0, "class", "cmd svelte-4gj809");
+			attr(div0, "class", "page-header compact-header svelte-15keadm");
+			attr(div1, "class", "enroll-head svelte-15keadm");
+			attr(button0, "class", "link-btn uninstall-btn svelte-15keadm");
+			button0.disabled = button0_disabled_value = !/*uninstallCommand*/ ctx[4];
+			attr(button1, "class", "link-btn svelte-15keadm");
+			button1.disabled = /*rotating*/ ctx[9];
+			attr(div2, "class", "enroll-actions svelte-15keadm");
+			attr(div3, "class", "enroll-toolbar svelte-15keadm");
+			attr(code0, "class", "cmd svelte-15keadm");
 			attr(code0, "title", /*installCommand*/ ctx[3]);
-			attr(button1, "class", "copy-trigger command-copy svelte-4gj809");
-			attr(button1, "title", button1_title_value = /*copied*/ ctx[7] ? '已复制' : '复制命令');
-			attr(button1, "aria-label", button1_aria_label_value = /*copied*/ ctx[7] ? '已复制' : '复制命令');
-			button1.disabled = button1_disabled_value = !/*installCommand*/ ctx[3];
-			toggle_class(button1, "done", /*copied*/ ctx[7]);
-			attr(div3, "class", "cmd-row svelte-4gj809");
-			attr(code1, "class", "svelte-4gj809");
-			attr(div4, "class", "enroll-server svelte-4gj809");
-			attr(div5, "class", "enroll-body svelte-4gj809");
-			attr(div6, "class", "enroll-card svelte-4gj809");
+			attr(button2, "class", "copy-trigger command-copy svelte-15keadm");
+			attr(button2, "title", button2_title_value = /*copied*/ ctx[8] === 'install' ? '已复制' : '复制命令');
+			attr(button2, "aria-label", button2_aria_label_value = /*copied*/ ctx[8] === 'install' ? '已复制' : '复制命令');
+			button2.disabled = button2_disabled_value = !/*installCommand*/ ctx[3];
+			toggle_class(button2, "done", /*copied*/ ctx[8] === 'install');
+			attr(div4, "class", "cmd-row svelte-15keadm");
+			attr(code1, "class", "svelte-15keadm");
+			attr(div5, "class", "enroll-server svelte-15keadm");
+			attr(div6, "class", "enroll-body svelte-15keadm");
+			attr(div7, "class", "enroll-card svelte-15keadm");
 		},
 		m(target, anchor) {
 			insert(target, div0, anchor);
 			insert(target, t1, anchor);
-			insert(target, div6, anchor);
-			append(div6, div2);
-			append(div2, div1);
-			append(div2, t4);
+			insert(target, div7, anchor);
+			append(div7, div3);
+			append(div3, div1);
+			append(div3, t4);
+			append(div3, div2);
 			append(div2, button0);
+			mount_component(icon0, button0, null);
 			append(button0, t5);
-			append(div6, t6);
-			append(div6, div5);
-			if (if_block0) if_block0.m(div5, null);
-			append(div5, t7);
-			if (if_block1) if_block1.m(div5, null);
-			append(div5, t8);
-			append(div5, div3);
-			append(div3, code0);
-			append(code0, t9);
-			append(div3, t10);
-			append(div3, button1);
-			mount_component(icon, button1, null);
-			append(div5, t11);
-			append(div5, div4);
-			append(div4, span1);
+			append(button0, span1);
+			append(span1, t6);
+			append(div2, t7);
+			append(div2, button1);
+			append(button1, t8);
+			append(div7, t9);
+			append(div7, div6);
+			if (if_block0) if_block0.m(div6, null);
+			append(div6, t10);
+			if (if_block1) if_block1.m(div6, null);
+			append(div6, t11);
+			append(div6, div4);
+			append(div4, code0);
+			append(code0, t12);
 			append(div4, t13);
-			append(div4, code1);
-			append(code1, t14);
-			insert(target, t15, anchor);
+			append(div4, button2);
+			mount_component(icon1, button2, null);
+			append(div6, t14);
+			append(div6, div5);
+			append(div5, span2);
+			append(div5, t16);
+			append(div5, code1);
+			append(code1, t17);
+			insert(target, t18, anchor);
 			if (if_block2) if_block2.m(target, anchor);
-			insert(target, t16, anchor);
+			insert(target, t19, anchor);
 			if_blocks[current_block_type_index].m(target, anchor);
 			insert(target, if_block3_anchor, anchor);
 			current = true;
 
 			if (!mounted) {
 				dispose = [
-					listen(button0, "click", /*rotateToken*/ ctx[10]),
-					listen(button1, "click", /*copyInstall*/ ctx[9])
+					listen(button0, "click", /*copyUninstall*/ ctx[11]),
+					listen(button1, "click", /*rotateToken*/ ctx[12]),
+					listen(button2, "click", /*copyInstall*/ ctx[10])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, [dirty]) {
-			if ((!current || dirty & /*rotating*/ 256) && t5_value !== (t5_value = (/*rotating*/ ctx[8] ? '重置中…' : '重置接入码') + "")) set_data(t5, t5_value);
+			const icon0_changes = {};
+			if (dirty & /*copied*/ 256) icon0_changes.name = /*copied*/ ctx[8] === 'uninstall' ? 'check' : 'copy';
+			icon0.$set(icon0_changes);
+			if ((!current || dirty & /*copied*/ 256) && t6_value !== (t6_value = (/*copied*/ ctx[8] === 'uninstall' ? '已复制' : '卸载命令') + "")) set_data(t6, t6_value);
 
-			if (!current || dirty & /*rotating*/ 256) {
-				button0.disabled = /*rotating*/ ctx[8];
+			if (!current || dirty & /*uninstallCommand*/ 16 && button0_disabled_value !== (button0_disabled_value = !/*uninstallCommand*/ ctx[4])) {
+				button0.disabled = button0_disabled_value;
 			}
 
-			if (/*enrollError*/ ctx[6]) {
+			if ((!current || dirty & /*rotating*/ 512) && t8_value !== (t8_value = (/*rotating*/ ctx[9] ? '重置中…' : '重置接入码') + "")) set_data(t8, t8_value);
+
+			if (!current || dirty & /*rotating*/ 512) {
+				button1.disabled = /*rotating*/ ctx[9];
+			}
+
+			if (/*enrollError*/ ctx[7]) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
 					if_block0 = create_if_block_6(ctx);
 					if_block0.c();
-					if_block0.m(div5, t7);
+					if_block0.m(div6, t10);
 				}
 			} else if (if_block0) {
 				if_block0.d(1);
 				if_block0 = null;
 			}
 
-			if (!/*hasBinary*/ ctx[5]) {
+			if (!/*hasBinary*/ ctx[6]) {
 				if (if_block1) {
 					
 				} else {
 					if_block1 = create_if_block_5(ctx);
 					if_block1.c();
-					if_block1.m(div5, t8);
+					if_block1.m(div6, t11);
 				}
 			} else if (if_block1) {
 				if_block1.d(1);
 				if_block1 = null;
 			}
 
-			if ((!current || dirty & /*installCommand*/ 8) && t9_value !== (t9_value = displayInstallCommand(/*installCommand*/ ctx[3]) + "")) set_data(t9, t9_value);
+			if ((!current || dirty & /*installCommand*/ 8) && t12_value !== (t12_value = displayInstallCommand(/*installCommand*/ ctx[3]) + "")) set_data(t12, t12_value);
 
 			if (!current || dirty & /*installCommand*/ 8) {
 				attr(code0, "title", /*installCommand*/ ctx[3]);
 			}
 
-			const icon_changes = {};
-			if (dirty & /*copied*/ 128) icon_changes.name = /*copied*/ ctx[7] ? 'check' : 'copy';
-			icon.$set(icon_changes);
+			const icon1_changes = {};
+			if (dirty & /*copied*/ 256) icon1_changes.name = /*copied*/ ctx[8] === 'install' ? 'check' : 'copy';
+			icon1.$set(icon1_changes);
 
-			if (!current || dirty & /*copied*/ 128 && button1_title_value !== (button1_title_value = /*copied*/ ctx[7] ? '已复制' : '复制命令')) {
-				attr(button1, "title", button1_title_value);
+			if (!current || dirty & /*copied*/ 256 && button2_title_value !== (button2_title_value = /*copied*/ ctx[8] === 'install' ? '已复制' : '复制命令')) {
+				attr(button2, "title", button2_title_value);
 			}
 
-			if (!current || dirty & /*copied*/ 128 && button1_aria_label_value !== (button1_aria_label_value = /*copied*/ ctx[7] ? '已复制' : '复制命令')) {
-				attr(button1, "aria-label", button1_aria_label_value);
+			if (!current || dirty & /*copied*/ 256 && button2_aria_label_value !== (button2_aria_label_value = /*copied*/ ctx[8] === 'install' ? '已复制' : '复制命令')) {
+				attr(button2, "aria-label", button2_aria_label_value);
 			}
 
-			if (!current || dirty & /*installCommand*/ 8 && button1_disabled_value !== (button1_disabled_value = !/*installCommand*/ ctx[3])) {
-				button1.disabled = button1_disabled_value;
+			if (!current || dirty & /*installCommand*/ 8 && button2_disabled_value !== (button2_disabled_value = !/*installCommand*/ ctx[3])) {
+				button2.disabled = button2_disabled_value;
 			}
 
-			if (!current || dirty & /*copied*/ 128) {
-				toggle_class(button1, "done", /*copied*/ ctx[7]);
+			if (!current || dirty & /*copied*/ 256) {
+				toggle_class(button2, "done", /*copied*/ ctx[8] === 'install');
 			}
 
-			if ((!current || dirty & /*server*/ 16) && t14_value !== (t14_value = (/*server*/ ctx[4] || '—') + "")) set_data(t14, t14_value);
+			if ((!current || dirty & /*server*/ 32) && t17_value !== (t17_value = (/*server*/ ctx[5] || '—') + "")) set_data(t17, t17_value);
 
 			if (/*error*/ ctx[2]) {
 				if (if_block2) {
@@ -832,7 +876,7 @@ function create_fragment(ctx) {
 				} else {
 					if_block2 = create_if_block_4(ctx);
 					if_block2.c();
-					if_block2.m(t16.parentNode, t16);
+					if_block2.m(t19.parentNode, t19);
 				}
 			} else if (if_block2) {
 				if_block2.d(1);
@@ -867,25 +911,28 @@ function create_fragment(ctx) {
 		},
 		i(local) {
 			if (current) return;
-			transition_in(icon.$$.fragment, local);
+			transition_in(icon0.$$.fragment, local);
+			transition_in(icon1.$$.fragment, local);
 			transition_in(if_block3);
 			current = true;
 		},
 		o(local) {
-			transition_out(icon.$$.fragment, local);
+			transition_out(icon0.$$.fragment, local);
+			transition_out(icon1.$$.fragment, local);
 			transition_out(if_block3);
 			current = false;
 		},
 		d(detaching) {
 			if (detaching) detach(div0);
 			if (detaching) detach(t1);
-			if (detaching) detach(div6);
+			if (detaching) detach(div7);
+			destroy_component(icon0);
 			if (if_block0) if_block0.d();
 			if (if_block1) if_block1.d();
-			destroy_component(icon);
-			if (detaching) detach(t15);
+			destroy_component(icon1);
+			if (detaching) detach(t18);
 			if (if_block2) if_block2.d(detaching);
-			if (detaching) detach(t16);
+			if (detaching) detach(t19);
 			if_blocks[current_block_type_index].d(detaching);
 			if (detaching) detach(if_block3_anchor);
 			mounted = false;
@@ -951,10 +998,11 @@ function instance($$self, $$props, $$invalidate) {
 	let loading = true;
 	let error = '';
 	let installCommand = '';
+	let uninstallCommand = '';
 	let server = '';
 	let hasBinary = true;
 	let enrollError = '';
-	let copied = false;
+	let copied = '';
 	let rotating = false;
 
 	async function fetchNodes() {
@@ -978,11 +1026,12 @@ function instance($$self, $$props, $$invalidate) {
 			if (!res.ok) throw new Error('获取安装命令失败');
 			const data = await res.json();
 			$$invalidate(3, installCommand = data.install_command || '');
-			$$invalidate(4, server = data.server || '');
-			$$invalidate(5, hasBinary = data.has_binary !== false);
-			$$invalidate(6, enrollError = '');
+			$$invalidate(4, uninstallCommand = data.uninstall_command || '');
+			$$invalidate(5, server = data.server || '');
+			$$invalidate(6, hasBinary = data.has_binary !== false);
+			$$invalidate(7, enrollError = '');
 		} catch(err) {
-			$$invalidate(6, enrollError = err.message);
+			$$invalidate(7, enrollError = err.message);
 		}
 	}
 
@@ -996,31 +1045,45 @@ function instance($$self, $$props, $$invalidate) {
 
 	onDestroy(() => clearInterval(timer));
 
-	async function copyInstall() {
-		if (!installCommand) return;
+	async function copyCommand(command, kind) {
+		if (!command) return;
 
 		try {
-			await writeClipboard(installCommand);
-			$$invalidate(7, copied = true);
-			setTimeout(() => $$invalidate(7, copied = false), 1500);
+			await writeClipboard(command);
+			$$invalidate(8, copied = kind);
+
+			setTimeout(
+				() => {
+					if (copied === kind) $$invalidate(8, copied = '');
+				},
+				1500
+			);
 		} catch(err) {
-			$$invalidate(6, enrollError = '复制失败：' + err.message);
+			$$invalidate(7, enrollError = '复制失败：' + err.message);
 		}
+	}
+
+	function copyInstall() {
+		return copyCommand(installCommand, 'install');
+	}
+
+	function copyUninstall() {
+		return copyCommand(uninstallCommand, 'uninstall');
 	}
 
 	// 轮换 token 后，旧命令和已安装 agent 的后续重连都会失效。
 	async function rotateToken() {
 		if (!confirm('重置后，已有节点重连前需重新安装。继续？')) return;
-		$$invalidate(8, rotating = true);
+		$$invalidate(9, rotating = true);
 
 		try {
 			const res = await fetch('/api/nodes/token/rotate', { method: 'POST' });
 			if (!res.ok) throw new Error('轮换失败');
 			await fetchEnroll();
 		} catch(err) {
-			$$invalidate(6, enrollError = err.message);
+			$$invalidate(7, enrollError = err.message);
 		} finally {
-			$$invalidate(8, rotating = false);
+			$$invalidate(9, rotating = false);
 		}
 	}
 
@@ -1049,12 +1112,14 @@ function instance($$self, $$props, $$invalidate) {
 		loading,
 		error,
 		installCommand,
+		uninstallCommand,
 		server,
 		hasBinary,
 		enrollError,
 		copied,
 		rotating,
 		copyInstall,
+		copyUninstall,
 		rotateToken,
 		removeNode,
 		click_handler

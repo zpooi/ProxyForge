@@ -2,8 +2,8 @@
 //
 // 每个 agent 从它所在的 VPS 主动拨号连回主控（wss，走现有端口、穿 NAT、
 // VPS 零入站端口），在这条长连接上跑 yamux 多路复用。主控作为 yamux 服务端，
-// 需要经某个 agent 出口时就 OpenStream，agent 收到后用它本机的 IP 拨号目标 ——
-// 于是主控凭空多出一个「那台 VPS 所在地区」的出口，供订阅当作独立地区节点。
+// 需要经某个 agent 出口时就 OpenStream，agent 收到后通过 VPS 本地 WARP 隧道
+// 拨号目标，于是主控获得对应地区的 WARP 出口，供订阅当作独立地区节点。
 //
 // Hub 只维护内存态（在线会话 + RTT），持久化的「见过哪些 agent」交给 db。
 package agenthub
@@ -272,7 +272,7 @@ func (e *agentEgress) DialContext(ctx context.Context, network, address string) 
 }
 
 func (e *agentEgress) Tag() string  { return proxy.NodeUsernamePrefix + e.conn.meta.NodeID }
-func (e *agentEgress) Kind() string { return "agent" }
+func (e *agentEgress) Kind() string { return "agent-warp" }
 
 func (e *agentEgress) NoteDial(elapsed time.Duration, err error) {
 	if err == nil && elapsed > 0 {

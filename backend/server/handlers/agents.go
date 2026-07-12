@@ -170,14 +170,20 @@ func (h *Handlers) NodeEnroll(w http.ResponseWriter, r *http.Request) {
 	// 一行安装命令：从主控自身下载安装脚本并执行，脚本再拉对应架构的 agent 二进制。
 	// 脚本内联 token 与主控地址，用户粘贴即用，无需手填参数。
 	install := fmt.Sprintf("curl -fsSL '%s/agent/install.sh?token=%s' | sudo bash", base, token)
+	uninstall := agentUninstallCommand()
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"install_command": install,
-		"token":           token,
-		"server":          base,
-		"has_binary":      agentdist.HasAny(),
+		"install_command":   install,
+		"uninstall_command": uninstall,
+		"token":             token,
+		"server":            base,
+		"has_binary":        agentdist.HasAny(),
 	})
+}
+
+func agentUninstallCommand() string {
+	return "sudo sh -c 'systemctl disable --now pfagent.service 2>/dev/null || true; rm -f /etc/systemd/system/pfagent.service /usr/local/bin/pfagent; rm -rf /var/lib/pfagent; systemctl daemon-reload'"
 }
 
 // NodeRotateInfo 返回「统一轮换凭据」的连接信息，供前端一键复制。用户在客户端
@@ -422,14 +428,14 @@ func summarizeLocalNode(accounts []*models.Account, running map[string]bool) loc
 	return out
 }
 
-// agentInstallScript 生成 systemd 安装脚本。极简：下载二进制到 /usr/local/bin，
-// 写一个 systemd unit（内联 server/token），enable + start。
+// agentInstallScript 生成 systemd 安装脚本：下载二进制到 /usr/local/bin，
+// 写一个 systemd unit（内联 server/token），默认维护三个地区 WARP 出口。
 func agentInstallScript(base, token string) string {
 	return fmt.Sprintf(`#!/usr/bin/env bash
 set -euo pipefail
 
-# ProxyForge 远程出口 agent 安装脚本。
-# 用途：把当前 VPS 变成 ProxyForge 的一个出口节点（用本机原生 IP 出口）。
+# ProxyForge 远程 WARP 出口 agent 安装脚本。
+# 用途：在当前 VPS 维护三个当地 WARP 出口，并反向接入主控。
 
 SERVER='%s'
 TOKEN='%s'
@@ -449,8 +455,10 @@ case "$(uname -m)" in
 esac
 
 echo "[pfagent] 下载 agent ($ARCH)..."
-curl -fsSL "$SERVER/agent/download?token=$TOKEN&os=linux&arch=$ARCH" -o "$BIN"
-chmod +x "$BIN"
+TMP=$(mktemp)
+trap 'rm -f "$TMP"' EXIT
+curl -fsSL "$SERVER/agent/download?token=$TOKEN&os=linux&arch=$ARCH" -o "$TMP"
+install -m 0755 "$TMP" "$BIN"
 
 echo "[pfagent] 安装 systemd 服务..."
 cat >/etc/systemd/system/pfagent.service <<EOF
@@ -461,7 +469,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=$BIN -server '$SERVER' -token '$TOKEN' -state '$STATE'
+ExecStart=$BIN -server '$SERVER' -token '$TOKEN' -state '$STATE' -warp-count 3
 Restart=always
 RestartSec=5
 DynamicUser=yes
@@ -474,7 +482,8 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable --now pfagent.service
+systemctl enable pfagent.service
+systemctl restart pfagent.service
 echo "[pfagent] 完成。查看状态: systemctl status pfagent"
 `, base, token)
 }
