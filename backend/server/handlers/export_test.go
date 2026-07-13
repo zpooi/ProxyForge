@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"context"
+	"errors"
+	"net"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -65,5 +68,74 @@ func TestWriteClashEmptyFallsBackToDirect(t *testing.T) {
 	out := rec.Body.String()
 	if !strings.Contains(out, "type: select") || !strings.Contains(out, "- DIRECT") {
 		t.Errorf("empty export should emit a DIRECT select group:\n%s", out)
+	}
+}
+
+func TestResolveProxyDialHostUsesIPv4AndFallsBackToDomain(t *testing.T) {
+	lookup := func(_ context.Context, network, host string) ([]net.IP, error) {
+		if network != "ip4" || host != "proxy.example.com" {
+			t.Fatalf("unexpected lookup %q %q", network, host)
+		}
+		return []net.IP{net.ParseIP("203.0.113.9")}, nil
+	}
+	if got := resolveProxyDialHostWith(context.Background(), "proxy.example.com", lookup); got != "203.0.113.9" {
+		t.Fatalf("resolved Clash server = %q, want IPv4", got)
+	}
+
+	failing := func(context.Context, string, string) ([]net.IP, error) {
+		return nil, errors.New("dns unavailable")
+	}
+	if got := resolveProxyDialHostWith(context.Background(), "proxy.example.com", failing); got != "proxy.example.com" {
+		t.Fatalf("failed lookup should keep domain, got %q", got)
+	}
+}
+
+func TestWriteClashUsesResolvedServerAndKeepsTLSSNI(t *testing.T) {
+	rec := httptest.NewRecorder()
+	writeClash(rec, []*proxyExport{{
+		Name:          "pf-001",
+		Username:      "pf-001",
+		Password:      "pw",
+		ProxyHost:     "proxy.example.com",
+		ProxyDialHost: "203.0.113.9",
+		ProxyPort:     7843,
+		TLS:           true,
+	}})
+	out := rec.Body.String()
+	for _, want := range []string{
+		"server: 203.0.113.9",
+		"sni: proxy.example.com",
+		"skip-cert-verify: true",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("resolved Clash export missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "dns:") {
+		t.Errorf("IP-based Clash export should not depend on a DNS section:\n%s", out)
+	}
+}
+
+func TestWriteClashDomainFallbackUsesMihomoProxyNameservers(t *testing.T) {
+	rec := httptest.NewRecorder()
+	writeClash(rec, []*proxyExport{{
+		Name:      "pf-001",
+		Username:  "pf-001",
+		Password:  "pw",
+		ProxyHost: "proxy.example.com",
+		ProxyPort: 7843,
+	}})
+	out := rec.Body.String()
+	for _, want := range []string{
+		"proxy-server-nameserver:",
+		`"proxy.example.com":`,
+		"      - 223.5.5.5",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("domain fallback missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, `"223.5.5.5,119.29.29.29`) {
+		t.Errorf("nameserver-policy must be a YAML list, not a comma-joined resolver:\n%s", out)
 	}
 }

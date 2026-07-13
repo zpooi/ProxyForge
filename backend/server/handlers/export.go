@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 )
@@ -73,6 +75,11 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 	proxyPort := ep.Port
 
 	host := ep.Host
+	// Clash Verge / OpenClash 会用自己的 DNS 配置覆盖订阅顶层的 dns 段。若节点的
+	// server 仍是域名，覆盖后可能在连接代理之前就报 dns resolve failed。订阅由
+	// ProxyForge 主机先解析一次公网域名并写入直连 IP，从根上移除客户端侧 DNS 依赖；
+	// 原域名仍保留给 TLS SNI 和普通文本导出。解析失败时才回退到域名 + DNS 段。
+	clashHost := resolveProxyDialHost(host)
 	// TLS 默认开启（opportunistic）。开启时导出的 Clash 节点带 tls + skip-cert-verify，
 	// 让客户端把 CONNECT 主机名藏进加密流，避开审查中间盒基于主机名的连接重置。
 	proxyTLS := ep.TLS
@@ -97,6 +104,7 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 			Keeper:        s.IsKeeper,
 			LastSlotError: s.LastError,
 			ProxyHost:     host,
+			ProxyDialHost: clashHost,
 			ProxyPort:     proxyPort,
 			TLS:           proxyTLS,
 		})
@@ -106,8 +114,38 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 	// 靠 node-<id> 用户名在 resolve 里被解析成对应 agent 出口；代理密码是全局
 	// 共享密码（与 stable/random 一致）。地区节点没有跨地区兜底——离线即从订阅
 	// 消失，由客户端的自动选择/故障转移组切到别的地区。
-	active = append(active, h.collectAgentExports(host, proxyPort, proxyTLS, agentProxyPassword(settings[SettingProxyPassword]))...)
+	active = append(active, h.collectAgentExports(host, clashHost, proxyPort, proxyTLS, agentProxyPassword(settings[SettingProxyPassword]))...)
 	return active, nil
+}
+
+const proxyHostResolveTimeout = 3 * time.Second
+
+// resolveProxyDialHost 为 Clash/Mihomo 节点准备不依赖客户端 DNS 的连接地址。
+// IP 原样返回；域名优先解析 IPv4（当前订阅和默认监听均以 IPv4 为主）。公网 DNS
+// 暂时失败时保留原域名，writeClashDNS 仍会输出兼容性兜底。
+func resolveProxyDialHost(host string) string {
+	host = strings.TrimSpace(host)
+	if host == "" || net.ParseIP(host) != nil {
+		return host
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), proxyHostResolveTimeout)
+	defer cancel()
+	return resolveProxyDialHostWith(ctx, host, net.DefaultResolver.LookupIP)
+}
+
+type proxyHostLookup func(context.Context, string, string) ([]net.IP, error)
+
+func resolveProxyDialHostWith(ctx context.Context, host string, lookup proxyHostLookup) string {
+	addrs, err := lookup(ctx, "ip4", host)
+	if err != nil {
+		return host
+	}
+	for _, addr := range addrs {
+		if v4 := addr.To4(); v4 != nil && !v4.IsUnspecified() {
+			return v4.String()
+		}
+	}
+	return host
 }
 
 // defaultAgentProxyPassword 是全局代理密码为空时，agent 出口对外使用的占位密码。
@@ -127,7 +165,7 @@ func agentProxyPassword(globalPassword string) string {
 
 // collectAgentExports 把当前在线且启用的远程 agent 转成导出节点。名字按地区取，
 // 同地区多个节点追加短后缀去重，保证 Clash proxy-group 成员引用不冲突。
-func (h *Handlers) collectAgentExports(host string, proxyPort int, proxyTLS bool, proxyPassword string) []*proxyExport {
+func (h *Handlers) collectAgentExports(host, clashHost string, proxyPort int, proxyTLS bool, proxyPassword string) []*proxyExport {
 	if h.Hub == nil {
 		return nil
 	}
@@ -158,15 +196,16 @@ func (h *Handlers) collectAgentExports(host string, proxyPort int, proxyTLS bool
 		usedNames[label]++
 
 		out = append(out, &proxyExport{
-			Name:      label,
-			Username:  proxy.AgentUsername(n.NodeID),
-			Password:  proxyPassword,
-			PublicIP:  n.PublicIP,
-			Country:   n.Country,
-			ProxyHost: host,
-			ProxyPort: proxyPort,
-			TLS:       proxyTLS,
-			IsAgent:   true,
+			Name:          label,
+			Username:      proxy.AgentUsername(n.NodeID),
+			Password:      proxyPassword,
+			PublicIP:      n.PublicIP,
+			Country:       n.Country,
+			ProxyHost:     host,
+			ProxyDialHost: clashHost,
+			ProxyPort:     proxyPort,
+			TLS:           proxyTLS,
+			IsAgent:       true,
 		})
 	}
 	return out
@@ -187,6 +226,7 @@ type proxyExport struct {
 	Keeper        bool
 	LastSlotError string
 	ProxyHost     string
+	ProxyDialHost string // Clash 实际拨号地址；优先为服务端预解析的 IP
 	ProxyPort     int
 	TLS           bool
 	IsAgent       bool
@@ -199,6 +239,13 @@ func (p *proxyExport) NodeName() string {
 		return p.Name
 	}
 	return p.Username
+}
+
+func (p *proxyExport) ClashServer() string {
+	if strings.TrimSpace(p.ProxyDialHost) != "" {
+		return p.ProxyDialHost
+	}
+	return p.ProxyHost
 }
 
 // clashScalar 把节点名安全地序列化成 YAML 标量。agent 节点名含空格 / CJK / emoji，
@@ -254,7 +301,7 @@ func proxyServerDomains(list []*proxyExport) []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, p := range list {
-		host := strings.TrimSpace(p.ProxyHost)
+		host := strings.TrimSpace(p.ClashServer())
 		if host == "" || net.ParseIP(host) != nil {
 			continue // 空或 IP 无需解析
 		}
@@ -298,12 +345,18 @@ func writeClashDNS(w http.ResponseWriter, list []*proxyExport) {
 	for _, r := range resolvers {
 		fmt.Fprintf(w, "    - %s\n", r)
 	}
+	fmt.Fprintf(w, "  proxy-server-nameserver:\n")
+	for _, r := range resolvers {
+		fmt.Fprintf(w, "    - %s\n", r)
+	}
 	// nameserver-policy 把代理域名钉死在明文公共 DNS 上，即便用户改了上游也不会把
 	// 代理域名的解析导进代理，从根上断掉解析回环。
 	fmt.Fprintf(w, "  nameserver-policy:\n")
-	joined := strings.Join(resolvers, ",")
 	for _, d := range domains {
-		fmt.Fprintf(w, "    %s: %s\n", clashScalar(d), clashScalar(joined))
+		fmt.Fprintf(w, "    %s:\n", clashScalar(d))
+		for _, r := range resolvers {
+			fmt.Fprintf(w, "      - %s\n", r)
+		}
 	}
 	fmt.Fprintf(w, "\n")
 }
@@ -384,7 +437,7 @@ func writeClashRules(w http.ResponseWriter) {
 func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	fmt.Fprintf(w, "  - name: %s\n", clashScalar(p.NodeName()))
 	fmt.Fprintf(w, "    type: http\n")
-	fmt.Fprintf(w, "    server: %s\n", p.ProxyHost)
+	fmt.Fprintf(w, "    server: %s\n", p.ClashServer())
 	fmt.Fprintf(w, "    port: %d\n", p.ProxyPort)
 	fmt.Fprintf(w, "    username: %s\n", p.Username)
 	fmt.Fprintf(w, "    password: %s\n", p.Password)
