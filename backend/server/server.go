@@ -11,6 +11,7 @@ import (
 	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
 	"github.com/zpooi/ProxyForge/backend/internal/auth"
 	"github.com/zpooi/ProxyForge/backend/internal/db"
+	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 	"github.com/zpooi/ProxyForge/backend/internal/scheduler"
 	"github.com/zpooi/ProxyForge/backend/server/handlers"
 )
@@ -20,6 +21,7 @@ type Server struct {
 	Auth      *auth.Service
 	Scheduler *scheduler.Scheduler
 	Hub       *agenthub.Hub
+	Manager   *proxy.Manager
 }
 
 func (s *Server) Router() http.Handler {
@@ -34,6 +36,7 @@ func (s *Server) Router() http.Handler {
 		Auth:      s.Auth,
 		Scheduler: s.Scheduler,
 		Hub:       s.Hub,
+		Manager:   s.Manager,
 	}
 	if err := h.Init(backend.Web()); err != nil {
 		log.Fatalf("init handlers: %v", err)
@@ -50,6 +53,9 @@ func (s *Server) Router() http.Handler {
 
 	// 免登录订阅端点，靠 URL token 鉴权，供 Clash 客户端定时同步。
 	r.Get("/sub/clash", h.ClashSubscription)
+	// Clash/Mihomo uses Trojan over this authenticated WebSocket endpoint.
+	// nginx terminates the public TLS connection on port 443.
+	r.Get(handlers.TrojanWebSocketRoute, h.TrojanWebSocket)
 
 	// 免登录 agent 端点，靠 URL token 鉴权：反向连接、安装脚本、二进制下载。
 	// agent 从 VPS 主动连回，无浏览器会话，故不走登录中间件。

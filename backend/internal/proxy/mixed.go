@@ -19,8 +19,9 @@ import (
 // mixedServer is the single inbound proxy listener. It supports HTTP proxy
 // requests, CONNECT, and SOCKS5 username/password auth on the same TCP port.
 type mixedServer struct {
-	resolve func(username, password, clientIP string) []Egress
-	onUsage func(ProxyUsage)
+	resolve       func(username, password, clientIP string) []Egress
+	resolveTrojan func(auth [trojanAuthDigestSize]byte, clientIP string) (string, []Egress)
+	onUsage       func(ProxyUsage)
 
 	tlsConfig *tls.Config
 

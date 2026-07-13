@@ -67,6 +67,7 @@ func main() {
 		Auth:      authService,
 		Scheduler: sched,
 		Hub:       agentHub,
+		Manager:   manager,
 	}
 
 	httpServer := &http.Server{

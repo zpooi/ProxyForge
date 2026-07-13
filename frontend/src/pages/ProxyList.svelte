@@ -208,7 +208,7 @@
     </button>
   </div>
   {#if subUrl}
-    <p class="sub-hint">Clash / Mihomo 添加为订阅；链接含 token，请勿外泄。</p>
+    <p class="sub-hint">Clash / Mihomo 添加为订阅；节点使用 Trojan + TLS + WebSocket（443）。链接含 token，请勿外泄。</p>
   {/if}
   {#if rotate && rotate.host}
     <div class="rotate-block">

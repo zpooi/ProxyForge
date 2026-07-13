@@ -8,6 +8,7 @@ import (
 	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
 	"github.com/zpooi/ProxyForge/backend/internal/auth"
 	"github.com/zpooi/ProxyForge/backend/internal/db"
+	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 	"github.com/zpooi/ProxyForge/backend/internal/scheduler"
 )
 
@@ -16,6 +17,7 @@ type Handlers struct {
 	Auth      *auth.Service
 	Scheduler *scheduler.Scheduler
 	Hub       *agenthub.Hub
+	Manager   *proxy.Manager
 
 	webFS fs.FS
 }

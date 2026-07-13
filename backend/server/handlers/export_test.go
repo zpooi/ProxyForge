@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 )
 
 func TestClashScalarQuotesSpecials(t *testing.T) {
@@ -42,12 +44,22 @@ func TestWriteClashAgentNode(t *testing.T) {
 	})
 	out := rec.Body.String()
 
-	// agent 节点：显示名是地区，username 是 node-<id>。
+	// agent 节点显示名仍是地区，但 Trojan 只下发协议专用派生密码，
+	// 不再暴露或复用 HTTP/SOCKS5 的 username/password 字段。
 	if !strings.Contains(out, `- name: "日本 节点"`) {
 		t.Errorf("agent node should use region as name:\n%s", out)
 	}
-	if !strings.Contains(out, `username: "node-abc123"`) {
-		t.Errorf("agent node should authenticate as node-<id>:\n%s", out)
+	wantCredential := `password: ` + clashScalar(proxy.TrojanCredential("node-abc123", "pw"))
+	if !strings.Contains(out, wantCredential) {
+		t.Errorf("agent node should use its derived Trojan credential:\n%s", out)
+	}
+	if strings.Contains(out, `username:`) || strings.Contains(out, `password: "pw"`) {
+		t.Errorf("Trojan export leaked legacy proxy credentials:\n%s", out)
+	}
+	for _, want := range []string{"type: trojan", "network: ws", "udp: false", "client-fingerprint: chrome", "alpn:", "- http/1.1"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("Trojan agent export missing %q:\n%s", want, out)
+		}
 	}
 	// 四个组都应引用节点显示名（带引号）。
 	if n := strings.Count(out, `- "日本 节点"`); n != 4 {
@@ -115,49 +127,75 @@ func TestResolveProxyDialHostUsesIPv4AndFallsBackToDomain(t *testing.T) {
 func TestWriteClashUsesResolvedServerAndKeepsTLSSNI(t *testing.T) {
 	rec := httptest.NewRecorder()
 	writeClash(rec, []*proxyExport{{
-		Name:          "pf-001",
-		Username:      "pf-001",
-		Password:      "pw",
-		ProxyHost:     "proxy.example.com",
-		ProxyDialHost: "203.0.113.9",
-		ProxyPort:     7843,
-		TLS:           true,
+		Name:           "pf-001",
+		Username:       "pf-001",
+		Password:       "pw",
+		ProxyHost:      "proxy.example.com",
+		ProxyDialHost:  "203.0.113.9",
+		ProxyPort:      7843,
+		TLS:            true,
+		TrojanHost:     "proxy.example.com",
+		TrojanDialHost: "203.0.113.9",
+		TrojanPort:     443,
+		TrojanWSPath:   "/api/v1/connect/token123",
 	}})
 	out := rec.Body.String()
 	for _, want := range []string{
+		"type: trojan",
 		`server: "203.0.113.9"`,
 		`sni: "proxy.example.com"`,
-		"skip-cert-verify: true",
+		"port: 443",
+		"network: ws",
+		`path: "/api/v1/connect/token123"`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("resolved Clash export missing %q:\n%s", want, out)
 		}
 	}
-	if strings.Contains(out, "dns:") {
-		t.Errorf("IP-based Clash export should not depend on a DNS section:\n%s", out)
+	for _, want := range []string{
+		"dns:",
+		"https://dns.alidns.com/dns-query",
+		"https://doh.pub/dns-query",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("carrier-safe DNS output missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "nameserver-policy:") {
+		t.Errorf("IP-based Trojan server should not need a bootstrap domain policy:\n%s", out)
+	}
+	if strings.Contains(out, "skip-cert-verify") || strings.Contains(out, "type: http") {
+		t.Errorf("Trojan export must verify nginx TLS and must not downgrade to HTTP:\n%s", out)
 	}
 }
 
-func TestWriteClashQuotesCredentialScalars(t *testing.T) {
+func TestWriteClashDerivesCredentialAndQuotesScalars(t *testing.T) {
 	rec := httptest.NewRecorder()
 	writeClash(rec, []*proxyExport{{
-		Name:      "special",
-		Username:  "node:user",
-		Password:  "p:# yes",
-		ProxyHost: "proxy.example.com",
-		ProxyPort: 7843,
-		TLS:       true,
+		Name:         "special",
+		Username:     "node:user",
+		Password:     "p:# yes",
+		ProxyHost:    "proxy.example.com",
+		ProxyPort:    7843,
+		TLS:          true,
+		TrojanHost:   "proxy.example.com",
+		TrojanPort:   443,
+		TrojanWSPath: "/api/v1/connect/a token",
 	}})
 	out := rec.Body.String()
+	wantCredential := proxy.TrojanCredential("node:user", "p:# yes")
 	for _, want := range []string{
 		`server: "proxy.example.com"`,
-		`username: "node:user"`,
-		`password: "p:# yes"`,
+		`password: "` + wantCredential + `"`,
 		`sni: "proxy.example.com"`,
+		`path: "/api/v1/connect/a token"`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing safely quoted scalar %q:\n%s", want, out)
 		}
+	}
+	if strings.Contains(out, "node:user") || strings.Contains(out, "p:# yes") {
+		t.Errorf("Clash output leaked the legacy username/password:\n%s", out)
 	}
 }
 
@@ -175,6 +213,8 @@ func TestWriteClashDomainFallbackUsesMihomoProxyNameservers(t *testing.T) {
 		"proxy-server-nameserver:",
 		`"proxy.example.com":`,
 		"      - 223.5.5.5",
+		"https://dns.alidns.com/dns-query",
+		"https://doh.pub/dns-query",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("domain fallback missing %q:\n%s", want, out)

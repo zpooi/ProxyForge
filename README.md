@@ -74,9 +74,24 @@ When these variables are omitted and `Proxy public host` is a domain, ProxyForge
 ## Security defaults
 
 - The proxy port accepts HTTP and SOCKS5 directly; when TLS is enabled it also accepts HTTPS-proxy connections on the same port.
+- Clash/Mihomo subscriptions use Trojan over TLS WebSocket on the management domain's HTTPS port 443. Legacy HTTP/SOCKS5 credentials are not reused in the subscription; a separate per-node credential is derived with HMAC-SHA-256.
+- The Trojan WebSocket path is bound to the random subscription token, and TLS certificate verification stays enabled. BaoTa/nginx must forward WebSocket upgrades to the application.
+- Clash DNS uses encrypted DoH for ordinary target lookups, and Mihomo is asked to use a Chrome TLS fingerprint. Only the proxy domain's bootstrap lookup may use direct DNS.
 - Empty global proxy passwords are replaced with a random password during startup; aliases never accept an empty password.
 - The web UI applies per-IP and global request throttles, temporary scanner bans, and a stricter failed-login ban.
 - Agent admission tokens use an `Authorization: Bearer` header instead of URL query parameters.
 - New database directories/files are restricted to the service account on Unix hosts.
+
+For BaoTa/nginx, make sure the reverse-proxy location forwarding to ProxyForge includes WebSocket support and a long read timeout:
+
+```nginx
+proxy_http_version 1.1;
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection "upgrade";
+proxy_read_timeout 86400s;
+proxy_buffering off;
+```
 
 The WARP tunnels use userspace WireGuard netstack, so Docker does not need a kernel TUN device.

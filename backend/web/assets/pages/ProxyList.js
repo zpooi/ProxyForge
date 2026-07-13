@@ -77,7 +77,7 @@ function create_if_block_6(ctx) {
 	return {
 		c() {
 			p = element("p");
-			p.textContent = "Clash / Mihomo 添加为订阅；链接含 token，请勿外泄。";
+			p.textContent = "Clash / Mihomo 添加为订阅；节点使用 Trojan + TLS + WebSocket（443）。链接含 token，请勿外泄。";
 			attr(p, "class", "sub-hint");
 		},
 		m(target, anchor) {

@@ -196,7 +196,7 @@ function create_fragment(ctx) {
 			input3 = element("input");
 			t25 = space();
 			p1 = element("p");
-			p1.textContent = "导出订阅 / 复制代理链接时用的主机地址。填服务器真实 IP 或能直连代理端口的域名（如灰云子域名）。面板域名若经 Cloudflare / nginx 只反代了面板端口，请勿留空，否则客户端连不上代理端口。";
+			p1.textContent = "仅用于手动复制旧版 HTTP / SOCKS5 代理。Clash / Mihomo 订阅固定使用当前面板 HTTPS 域名的 443 端口，通过 Trojan + TLS + WebSocket 加密传输。";
 			t27 = space();
 			label6 = element("label");
 			t28 = text("传输加密（TLS）\n      ");
@@ -207,7 +207,7 @@ function create_fragment(ctx) {
 			option5.textContent = "关闭";
 			t31 = space();
 			p2 = element("p");
-			p2.textContent = "开启后，客户端↔代理这一跳套一层 TLS，把明文的 CONNECT 目标主机名藏进加密流，避开审查中间盒基于主机名的连接重置（表现为延迟能测出但访问被封域名时连接被重置）。同一端口同时兼容明文与 TLS，导出的 Clash 订阅会自动带上 tls 配置，无需额外部署。";
+			p2.textContent = "控制旧版代理端口是否额外接受 HTTPS Proxy；不会影响 Clash 订阅。Clash / Mihomo 始终使用由宝塔 nginx 提供可信证书的 Trojan + WSS，不会在公网传输明文 CONNECT。";
 			t33 = space();
 			fieldset2 = element("fieldset");
 			legend2 = element("legend");

@@ -87,7 +87,7 @@ func (g *adaptiveRequestGuard) Middleware(next http.Handler) http.Handler {
 
 		// WebSocket agent handlers are long-lived and must keep the original
 		// ResponseWriter interfaces. They are still subject to the token bucket.
-		if r.URL.Path == "/agent/link" {
+		if r.URL.Path == "/agent/link" || strings.HasPrefix(r.URL.Path, "/api/v1/connect/") {
 			next.ServeHTTP(w, r)
 			return
 		}

@@ -3,13 +3,11 @@ package handlers
 import (
 	"context"
 	"crypto/rand"
-	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -46,6 +44,16 @@ type proxyEndpoint struct {
 	Password string
 }
 
+// trojanEndpoint is the carrier-facing endpoint used by Clash/Mihomo. nginx
+// terminates its trusted HTTPS certificate on port 443 and forwards the
+// WebSocket stream to the management HTTP listener.
+type trojanEndpoint struct {
+	Host     string
+	DialHost string
+	Port     int
+	Path     string
+}
+
 func (h *Handlers) proxyEndpointInfo(r *http.Request, settings map[string]string) proxyEndpoint {
 	port := 7843
 	if v, ok := settings[SettingProxyPort]; ok {
@@ -65,6 +73,16 @@ func (h *Handlers) proxyEndpointInfo(r *http.Request, settings map[string]string
 	}
 }
 
+func (h *Handlers) trojanEndpointInfo(r *http.Request, token string) trojanEndpoint {
+	host := requestHost(r)
+	return trojanEndpoint{
+		Host:     host,
+		DialHost: resolveProxyDialHost(host),
+		Port:     443,
+		Path:     trojanWebSocketPath(token),
+	}
+}
+
 // collectActiveExports 汇总当前可用（隧道在跑、有出口 IP）的固定代理槽位，
 // 供导出接口和免登录订阅接口共用。
 func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error) {
@@ -74,6 +92,11 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 	}
 	settings, _ := h.DB.AllSettings()
 	ep := h.proxyEndpointInfo(r, settings)
+	token, err := h.ensureSubscriptionToken()
+	if err != nil {
+		return nil, err
+	}
+	trojan := h.trojanEndpointInfo(r, token)
 	proxyPort := ep.Port
 
 	host := ep.Host
@@ -82,8 +105,8 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 	// ProxyForge 主机先解析一次公网域名并写入直连 IP，从根上移除客户端侧 DNS 依赖；
 	// 原域名仍保留给 TLS SNI 和普通文本导出。解析失败时才回退到域名 + DNS 段。
 	clashHost := resolveProxyDialHost(host)
-	// TLS 默认开启且服务端拒绝明文。使用内存自签证书时导出 skip-cert-verify；
-	// 让客户端把 CONNECT 主机名藏进加密流，避开审查中间盒基于主机名的连接重置。
+	// This flag now applies only to direct legacy proxy links. Clash exports
+	// always use the separate Trojan/WSS endpoint on nginx port 443.
 	proxyTLS := ep.TLS
 	var active []*proxyExport
 	running := tagSet(h.Scheduler.RunningTags())
@@ -92,23 +115,27 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 			continue
 		}
 		active = append(active, &proxyExport{
-			Name:          s.Username,
-			Username:      s.Username,
-			Password:      s.Password,
-			AccountTag:    s.AccountTag,
-			AccountStatus: s.AccountStatus,
-			PublicIP:      s.PublicIP,
-			Country:       s.Country,
-			LatencyMs:     s.LatencyMs,
-			SpeedBps:      s.SpeedBps,
-			PacketLoss:    s.PacketLoss,
-			Score:         s.Score,
-			Keeper:        s.IsKeeper,
-			LastSlotError: s.LastError,
-			ProxyHost:     host,
-			ProxyDialHost: clashHost,
-			ProxyPort:     proxyPort,
-			TLS:           proxyTLS,
+			Name:           s.Username,
+			Username:       s.Username,
+			Password:       s.Password,
+			AccountTag:     s.AccountTag,
+			AccountStatus:  s.AccountStatus,
+			PublicIP:       s.PublicIP,
+			Country:        s.Country,
+			LatencyMs:      s.LatencyMs,
+			SpeedBps:       s.SpeedBps,
+			PacketLoss:     s.PacketLoss,
+			Score:          s.Score,
+			Keeper:         s.IsKeeper,
+			LastSlotError:  s.LastError,
+			ProxyHost:      host,
+			ProxyDialHost:  clashHost,
+			ProxyPort:      proxyPort,
+			TLS:            proxyTLS,
+			TrojanHost:     trojan.Host,
+			TrojanDialHost: trojan.DialHost,
+			TrojanPort:     trojan.Port,
+			TrojanWSPath:   trojan.Path,
 		})
 	}
 
@@ -116,7 +143,7 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 	// 靠 node-<id> 用户名在 resolve 里被解析成对应 agent 出口；代理密码是全局
 	// 共享密码（与 stable/random 一致）。地区节点没有跨地区兜底——离线即从订阅
 	// 消失，由客户端的自动选择/故障转移组切到别的地区。
-	active = append(active, h.collectAgentExports(host, clashHost, proxyPort, proxyTLS, agentProxyPassword(settings[SettingProxyPassword]))...)
+	active = append(active, h.collectAgentExports(host, clashHost, proxyPort, proxyTLS, agentProxyPassword(settings[SettingProxyPassword]), trojan)...)
 	return active, nil
 }
 
@@ -150,24 +177,15 @@ func resolveProxyDialHostWith(ctx context.Context, host string, lookup proxyHost
 	return host
 }
 
-// defaultAgentProxyPassword 是全局代理密码为空时，agent 出口对外使用的占位密码。
-// resolve 对 node-<id> 在全局密码为空时接受任意密码，所以占位值一定能通过鉴权。
-const defaultAgentProxyPassword = "proxyforge"
-
-// agentProxyPassword 返回 agent 出口对外（Clash 订阅 / 单条复制链接）使用的密码。
-// agent 出口鉴权走全局代理密码；但全局密码为空时，导出会写成空的 password 字段，
-// 部分客户端（含 Clash / Mihomo）会因此拒绝或连不上。此时回退到非空占位密码，
-// 保证客户端总能带上非空凭据；因全局密码为空，resolve 对 node-<id> 放行任意密码。
+// agentProxyPassword returns the fail-closed global agent credential. Startup
+// migrations guarantee it is non-empty; never substitute a public fallback.
 func agentProxyPassword(globalPassword string) string {
-	if strings.TrimSpace(globalPassword) != "" {
-		return globalPassword
-	}
-	return defaultAgentProxyPassword
+	return strings.TrimSpace(globalPassword)
 }
 
 // collectAgentExports 把当前在线且启用的远程 agent 转成导出节点。名字按地区取，
 // 同地区多个节点追加短后缀去重，保证 Clash proxy-group 成员引用不冲突。
-func (h *Handlers) collectAgentExports(host, clashHost string, proxyPort int, proxyTLS bool, proxyPassword string) []*proxyExport {
+func (h *Handlers) collectAgentExports(host, clashHost string, proxyPort int, proxyTLS bool, proxyPassword string, trojan trojanEndpoint) []*proxyExport {
 	if h.Hub == nil {
 		return nil
 	}
@@ -198,40 +216,48 @@ func (h *Handlers) collectAgentExports(host, clashHost string, proxyPort int, pr
 		usedNames[label]++
 
 		out = append(out, &proxyExport{
-			Name:          label,
-			Username:      proxy.AgentUsername(n.NodeID),
-			Password:      proxyPassword,
-			PublicIP:      n.PublicIP,
-			Country:       n.Country,
-			ProxyHost:     host,
-			ProxyDialHost: clashHost,
-			ProxyPort:     proxyPort,
-			TLS:           proxyTLS,
-			IsAgent:       true,
+			Name:           label,
+			Username:       proxy.AgentUsername(n.NodeID),
+			Password:       proxyPassword,
+			PublicIP:       n.PublicIP,
+			Country:        n.Country,
+			ProxyHost:      host,
+			ProxyDialHost:  clashHost,
+			ProxyPort:      proxyPort,
+			TLS:            proxyTLS,
+			IsAgent:        true,
+			TrojanHost:     trojan.Host,
+			TrojanDialHost: trojan.DialHost,
+			TrojanPort:     trojan.Port,
+			TrojanWSPath:   trojan.Path,
 		})
 	}
 	return out
 }
 
 type proxyExport struct {
-	Name          string // Clash 节点显示名：固定槽位用用户名，agent 用地区标签
-	Username      string // 代理鉴权用户名：固定槽位用槽位名，agent 用 node-<id>
-	Password      string
-	AccountTag    string
-	AccountStatus string
-	PublicIP      string
-	Country       string
-	LatencyMs     int
-	SpeedBps      int
-	PacketLoss    float64
-	Score         float64
-	Keeper        bool
-	LastSlotError string
-	ProxyHost     string
-	ProxyDialHost string // Clash 实际拨号地址；优先为服务端预解析的 IP
-	ProxyPort     int
-	TLS           bool
-	IsAgent       bool
+	Name           string // Clash 节点显示名：固定槽位用用户名，agent 用地区标签
+	Username       string // 代理鉴权用户名：固定槽位用槽位名，agent 用 node-<id>
+	Password       string
+	AccountTag     string
+	AccountStatus  string
+	PublicIP       string
+	Country        string
+	LatencyMs      int
+	SpeedBps       int
+	PacketLoss     float64
+	Score          float64
+	Keeper         bool
+	LastSlotError  string
+	ProxyHost      string
+	ProxyDialHost  string // Clash 实际拨号地址；优先为服务端预解析的 IP
+	ProxyPort      int
+	TLS            bool
+	IsAgent        bool
+	TrojanHost     string // HTTPS certificate name served by BaoTa/nginx
+	TrojanDialHost string // pre-resolved carrier-facing address for Clash
+	TrojanPort     int
+	TrojanWSPath   string
 }
 
 // NodeName 返回 Clash 里的节点显示名。优先用 Name，兜底回退到 Username，
@@ -244,10 +270,37 @@ func (p *proxyExport) NodeName() string {
 }
 
 func (p *proxyExport) ClashServer() string {
+	if strings.TrimSpace(p.TrojanDialHost) != "" {
+		return p.TrojanDialHost
+	}
+	if strings.TrimSpace(p.TrojanHost) != "" {
+		return p.TrojanHost
+	}
 	if strings.TrimSpace(p.ProxyDialHost) != "" {
 		return p.ProxyDialHost
 	}
 	return p.ProxyHost
+}
+
+func (p *proxyExport) ClashPort() int {
+	if p.TrojanPort > 0 {
+		return p.TrojanPort
+	}
+	return p.ProxyPort
+}
+
+func (p *proxyExport) ClashSNI() string {
+	if strings.TrimSpace(p.TrojanHost) != "" {
+		return p.TrojanHost
+	}
+	return p.ProxyHost
+}
+
+func (p *proxyExport) ClashWebSocketPath() string {
+	if strings.TrimSpace(p.TrojanWSPath) != "" {
+		return p.TrojanWSPath
+	}
+	return trojanWebSocketPrefix
 }
 
 // clashScalar 把节点名安全地序列化成 YAML 标量。agent 节点名含空格 / CJK / emoji，
@@ -317,47 +370,52 @@ func proxyServerDomains(list []*proxyExport) []string {
 	return out
 }
 
-// writeClashDNS 在代理服务器用域名时输出一个 DNS 段，专治 OpenClash / mihomo 的 fake-ip
-// 死锁：默认 fake-ip 模式会把代理服务器域名也解析成不可路由的 198.18.x 假 IP，或让解析
-// 依赖尚未连上的代理，导致「dns resolve failed」。这里把代理域名加入 fake-ip-filter（返回
-// 真实 IP），并用 nameserver-policy 强制它们走明文公共 DNS，绕开任何进代理的解析回环。
-// 所有节点都用 IP 时不输出 DNS 段，保持配置最小、不干扰用户既有 DNS 设置。
+// writeClashDNS always sends ordinary lookups through encrypted DoH so target
+// domains are not exposed to the local carrier. If the proxy server itself is
+// a domain, only that bootstrap lookup is pinned to direct public DNS to avoid
+// a dependency loop before the Trojan tunnel exists.
 func writeClashDNS(w http.ResponseWriter, list []*proxyExport) {
 	domains := proxyServerDomains(list)
-	if len(domains) == 0 {
-		return
+	// 仅代理服务器自身和 DoH 主机的启动解析使用明文 DNS，避免先有鸡还是先有蛋；
+	// 普通目标域名统一走加密 DoH，不把浏览域名暴露给本地运营商。
+	bootstrapResolvers := []string{"223.5.5.5", "119.29.29.29", "1.1.1.1", "8.8.8.8"}
+	secureResolvers := []string{
+		"https://dns.alidns.com/dns-query",
+		"https://doh.pub/dns-query",
+		"https://1.1.1.1/dns-query",
 	}
-	// 明文公共 DNS：解析代理域名时直连这些服务器，不经过代理，避免先有鸡还是先有蛋。
-	resolvers := []string{"223.5.5.5", "119.29.29.29", "1.1.1.1", "8.8.8.8"}
 
 	fmt.Fprintf(w, "dns:\n")
 	fmt.Fprintf(w, "  enable: true\n")
 	fmt.Fprintf(w, "  ipv6: false\n")
 	fmt.Fprintf(w, "  enhanced-mode: fake-ip\n")
 	fmt.Fprintf(w, "  fake-ip-range: 198.18.0.1/16\n")
-	fmt.Fprintf(w, "  fake-ip-filter:\n")
-	for _, d := range domains {
-		fmt.Fprintf(w, "    - %s\n", clashScalar(d))
+	if len(domains) > 0 {
+		fmt.Fprintf(w, "  fake-ip-filter:\n")
+		for _, d := range domains {
+			fmt.Fprintf(w, "    - %s\n", clashScalar(d))
+		}
 	}
 	fmt.Fprintf(w, "  default-nameserver:\n")
-	for _, r := range resolvers {
+	for _, r := range bootstrapResolvers {
 		fmt.Fprintf(w, "    - %s\n", r)
 	}
 	fmt.Fprintf(w, "  nameserver:\n")
-	for _, r := range resolvers {
+	for _, r := range secureResolvers {
 		fmt.Fprintf(w, "    - %s\n", r)
 	}
 	fmt.Fprintf(w, "  proxy-server-nameserver:\n")
-	for _, r := range resolvers {
+	for _, r := range bootstrapResolvers {
 		fmt.Fprintf(w, "    - %s\n", r)
 	}
-	// nameserver-policy 把代理域名钉死在明文公共 DNS 上，即便用户改了上游也不会把
-	// 代理域名的解析导进代理，从根上断掉解析回环。
-	fmt.Fprintf(w, "  nameserver-policy:\n")
-	for _, d := range domains {
-		fmt.Fprintf(w, "    %s:\n", clashScalar(d))
-		for _, r := range resolvers {
-			fmt.Fprintf(w, "      - %s\n", r)
+	if len(domains) > 0 {
+		// Keep only the proxy bootstrap lookup outside DoH/proxy routing.
+		fmt.Fprintf(w, "  nameserver-policy:\n")
+		for _, d := range domains {
+			fmt.Fprintf(w, "    %s:\n", clashScalar(d))
+			for _, r := range bootstrapResolvers {
+				fmt.Fprintf(w, "      - %s\n", r)
+			}
 		}
 	}
 	fmt.Fprintf(w, "\n")
@@ -457,27 +515,26 @@ func writeClashRules(w http.ResponseWriter) {
 
 func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	fmt.Fprintf(w, "  - name: %s\n", clashScalar(p.NodeName()))
-	fmt.Fprintf(w, "    type: http\n")
+	fmt.Fprintf(w, "    type: trojan\n")
 	fmt.Fprintf(w, "    server: %s\n", clashScalar(p.ClashServer()))
-	fmt.Fprintf(w, "    port: %d\n", p.ProxyPort)
-	fmt.Fprintf(w, "    username: %s\n", clashScalar(p.Username))
-	fmt.Fprintf(w, "    password: %s\n", clashScalar(p.Password))
-	// TLS 开启时，客户端对「客户端↔代理」这一跳套 TLS。配置可信证书文件后客户端
-	// 正常校验证书；仅自签兼容模式需要 skip-cert-verify。
-	if p.TLS {
-		fmt.Fprintf(w, "    tls: true\n")
-		if !trustedProxyTLSConfigured(p.ProxyHost) {
-			fmt.Fprintf(w, "    skip-cert-verify: true\n")
-		}
-		if p.ProxyHost != "" {
-			fmt.Fprintf(w, "    sni: %s\n", clashScalar(p.ProxyHost))
-		}
+	fmt.Fprintf(w, "    port: %d\n", p.ClashPort())
+	fmt.Fprintf(w, "    password: %s\n", clashScalar(proxy.TrojanCredential(p.Username, p.Password)))
+	fmt.Fprintf(w, "    udp: false\n")
+	// Mihomo's uTLS browser fingerprint avoids the distinctive default Go TLS
+	// ClientHello on carrier-facing connections.
+	fmt.Fprintf(w, "    client-fingerprint: chrome\n")
+	if sni := p.ClashSNI(); sni != "" {
+		fmt.Fprintf(w, "    sni: %s\n", clashScalar(sni))
 	}
-}
-
-func trustedProxyTLSConfigured(serverName string) bool {
-	certFile, keyFile := proxy.ResolveTLSCredentialFiles(serverName, os.Getenv("PROXY_TLS_CERT_FILE"), os.Getenv("PROXY_TLS_KEY_FILE"))
-	return certFile != "" && keyFile != ""
+	fmt.Fprintf(w, "    alpn:\n")
+	fmt.Fprintf(w, "      - http/1.1\n")
+	fmt.Fprintf(w, "    network: ws\n")
+	fmt.Fprintf(w, "    ws-opts:\n")
+	fmt.Fprintf(w, "      path: %s\n", clashScalar(p.ClashWebSocketPath()))
+	if host := p.ClashSNI(); host != "" {
+		fmt.Fprintf(w, "      headers:\n")
+		fmt.Fprintf(w, "        Host: %s\n", clashScalar(host))
+	}
 }
 
 // SubscriptionToken 返回（首次调用时生成）免登录订阅所用的 token。
@@ -498,13 +555,8 @@ func (h *Handlers) SubscriptionToken(w http.ResponseWriter, r *http.Request) {
 // ClashSubscription 是免登录的 Clash 订阅端点，靠 URL 里的 token 鉴权，
 // 让 Clash 客户端可以直接添加订阅并定时同步节点。
 func (h *Handlers) ClashSubscription(w http.ResponseWriter, r *http.Request) {
-	want, _, err := h.DB.GetSetting(SettingSubscriptionToken)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	got := r.URL.Query().Get("token")
-	if want == "" || got == "" || subtle.ConstantTimeCompare([]byte(want), []byte(got)) != 1 {
+	if !h.subscriptionTokenValid(got) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
