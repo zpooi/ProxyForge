@@ -63,6 +63,7 @@ type agentProxyView struct {
 	Country   string `json:"country"`
 	Colo      string `json:"colo"`
 	LatencyMs int    `json:"latency_ms"`
+	SpeedBps  int64  `json:"speed_bps"`
 	TrafficUp int64  `json:"traffic_up"`
 	TrafficDn int64  `json:"traffic_down"`
 }
@@ -177,6 +178,7 @@ func (h *Handlers) collectAgentProxyViews(proxyPassword string) []agentProxyView
 			Country:   o.Meta.Country,
 			Colo:      o.Meta.Colo,
 			LatencyMs: o.LatencyMs,
+			SpeedBps:  o.DownBps,
 			TrafficUp: o.TxBytes,
 			TrafficDn: o.RxBytes,
 		})

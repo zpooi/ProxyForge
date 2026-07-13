@@ -76,7 +76,14 @@ type agentConn struct {
 	lastPingMs  atomic.Int64
 	txBytes     atomic.Int64
 	rxBytes     atomic.Int64
-	closeOnce   sync.Once
+	// 实时速率：pingLoop 每 pingInterval 对累计 tx/rx 差分一次，供页面显示当前吞吐。
+	// cur* 用原子读写供查询侧无锁读取；last*/lastSampleAt 只在 pingLoop 单 goroutine 内使用。
+	curUpBps     atomic.Int64
+	curDownBps   atomic.Int64
+	lastTx       int64
+	lastRx       int64
+	lastSampleAt time.Time
+	closeOnce    sync.Once
 }
 
 // Accept 接管一条刚建立的 agent 连接（已从 websocket 转成 net.Conn），
@@ -98,9 +105,10 @@ func (h *Hub) Accept(conn net.Conn, meta Meta) error {
 	}
 
 	ac := &agentConn{
-		meta:        meta,
-		session:     session,
-		connectedAt: time.Now(),
+		meta:         meta,
+		session:      session,
+		connectedAt:  time.Now(),
+		lastSampleAt: time.Now(),
 	}
 
 	// 同一 NodeID 重连时踢掉旧会话，保证 map 里始终是最新那条。
@@ -148,6 +156,7 @@ func (h *Hub) pingLoop(ac *agentConn) {
 				ms = 1
 			}
 			ac.lastPingMs.Store(ms)
+			ac.sampleThroughput(time.Now())
 			_ = h.db.TouchAgentNode(ac.meta.NodeID)
 		}
 	}
@@ -193,6 +202,8 @@ type OnlineNode struct {
 	LatencyMs int
 	TxBytes   int64
 	RxBytes   int64
+	UpBps     int64
+	DownBps   int64
 	Since     time.Time
 }
 
@@ -208,6 +219,8 @@ func (h *Hub) Snapshot() []OnlineNode {
 			LatencyMs: int(ac.lastPingMs.Load()),
 			TxBytes:   ac.txBytes.Load(),
 			RxBytes:   ac.rxBytes.Load(),
+			UpBps:     ac.curUpBps.Load(),
+			DownBps:   ac.curDownBps.Load(),
 			Since:     ac.connectedAt,
 		})
 	}
@@ -220,6 +233,30 @@ func (h *Hub) IsOnline(nodeID string) bool {
 	defer h.mu.Unlock()
 	_, ok := h.agents[nodeID]
 	return ok
+}
+
+// sampleThroughput 按距上次采样的时间差，把累计 tx/rx 差分成当前上下行 bps。
+// 只在 pingLoop 单 goroutine 内调用，读 last*/lastSampleAt 无需加锁；结果写进
+// 原子字段供查询侧无锁读取。首次采样（lastSampleAt 为零值间隔）只记基线不出速率。
+func (ac *agentConn) sampleThroughput(now time.Time) {
+	tx := ac.txBytes.Load()
+	rx := ac.rxBytes.Load()
+	elapsed := now.Sub(ac.lastSampleAt).Seconds()
+	if elapsed > 0 {
+		up := tx - ac.lastTx
+		down := rx - ac.lastRx
+		if up < 0 {
+			up = 0
+		}
+		if down < 0 {
+			down = 0
+		}
+		ac.curUpBps.Store(int64(float64(up) / elapsed))
+		ac.curDownBps.Store(int64(float64(down) / elapsed))
+	}
+	ac.lastTx = tx
+	ac.lastRx = rx
+	ac.lastSampleAt = now
 }
 
 func (ac *agentConn) close() {

@@ -305,12 +305,19 @@
     color: var(--text-3);
     font-size: 12px;
   }
+  /* 账号列限宽，让密码列整体左移、更靠近账号；密码不换行避免撑高行。 */
+  .name-col {
+    width: 160px;
+  }
+  .pw-col {
+    width: 200px;
+  }
 </style>
 <div class="table-wrap">
   <table>
     <thead>
       <tr>
-        <th>账号</th><th>密码</th><th>稳定出口 IP</th><th>国家</th>
+        <th class="name-col">账号</th><th class="pw-col">密码</th><th>稳定出口 IP</th><th>国家</th>
         <th>延迟</th><th>速度</th><th>丢包</th><th>状态</th><th>复制代理</th>
       </tr>
     </thead>
@@ -353,8 +360,8 @@
           <td>{agent.public_ip || '检测中'}</td>
           <td>{countryLabel(agent.country)}</td>
           <td>{agent.latency_ms ? metric(agent.latency_ms, ' ms') : '-'}</td>
-          <td>-</td>
-          <td>-</td>
+          <td>{agent.speed_bps ? fmtBps(agent.speed_bps) : '0 B/s'}</td>
+          <td>0%</td>
           <td><StatusTag status="ok" /></td>
           <td>
             <button
