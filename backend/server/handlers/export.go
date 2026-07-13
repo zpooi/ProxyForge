@@ -105,8 +105,23 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 	// 靠 node-<id> 用户名在 resolve 里被解析成对应 agent 出口；代理密码是全局
 	// 共享密码（与 stable/random 一致）。地区节点没有跨地区兜底——离线即从订阅
 	// 消失，由客户端的自动选择/故障转移组切到别的地区。
-	active = append(active, h.collectAgentExports(host, proxyPort, proxyTLS, settings[SettingProxyPassword])...)
+	active = append(active, h.collectAgentExports(host, proxyPort, proxyTLS, agentProxyPassword(settings[SettingProxyPassword]))...)
 	return active, nil
+}
+
+// defaultAgentProxyPassword 是全局代理密码为空时，agent 出口对外使用的占位密码。
+// resolve 对 node-<id> 在全局密码为空时接受任意密码，所以占位值一定能通过鉴权。
+const defaultAgentProxyPassword = "proxyforge"
+
+// agentProxyPassword 返回 agent 出口对外（Clash 订阅 / 单条复制链接）使用的密码。
+// agent 出口鉴权走全局代理密码；但全局密码为空时，导出会写成空的 password 字段，
+// 部分客户端（含 Clash / Mihomo）会因此拒绝或连不上。此时回退到非空占位密码，
+// 保证客户端总能带上非空凭据；因全局密码为空，resolve 对 node-<id> 放行任意密码。
+func agentProxyPassword(globalPassword string) string {
+	if strings.TrimSpace(globalPassword) != "" {
+		return globalPassword
+	}
+	return defaultAgentProxyPassword
 }
 
 // collectAgentExports 把当前在线且启用的远程 agent 转成导出节点。名字按地区取，
