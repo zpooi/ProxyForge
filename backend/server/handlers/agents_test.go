@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
 	"github.com/zpooi/ProxyForge/backend/internal/models"
 )
 
@@ -48,6 +49,51 @@ func TestAgentUninstallCommandRemovesServiceAndState(t *testing.T) {
 		if !strings.Contains(command, want) {
 			t.Fatalf("uninstall command missing %q", want)
 		}
+	}
+}
+
+func TestOnlineAgentViewsGroupsWarpEgressesByVPS(t *testing.T) {
+	snapshot := []agenthub.OnlineNode{
+		{
+			NodeID: "abc123-2",
+			Meta: agenthub.Meta{
+				AgentID: "abc123", HostPublicIP: "203.0.113.8", HostCountry: "MY", HostColo: "KUL",
+				PublicIP: "104.28.1.2", Country: "MY", Colo: "KUL", EgressIndex: 2,
+			},
+			LatencyMs: 20, TxBytes: 30, RxBytes: 40,
+		},
+		{
+			NodeID: "abc123",
+			Meta: agenthub.Meta{
+				AgentID: "abc123", HostPublicIP: "203.0.113.8", HostCountry: "MY", HostColo: "KUL",
+				PublicIP: "104.28.1.1", Country: "MY", Colo: "KUL", EgressIndex: 1,
+			},
+			LatencyMs: 10, TxBytes: 10, RxBytes: 20,
+		},
+	}
+
+	views := onlineAgentViews(snapshot)
+	if len(views) != 1 {
+		t.Fatalf("views = %d, want 1", len(views))
+	}
+	view := views[0]
+	if view.PublicIP != "203.0.113.8" || view.Country != "MY" || view.EgressCount != 2 {
+		t.Fatalf("unexpected agent summary: %+v", view)
+	}
+	if view.LatencyMs != 15 || view.TxBytes != 40 || view.RxBytes != 60 {
+		t.Fatalf("unexpected aggregate metrics: %+v", view)
+	}
+	if view.Egresses[0].PublicIP != "104.28.1.1" || view.Egresses[1].PublicIP != "104.28.1.2" {
+		t.Fatalf("unexpected egress order: %+v", view.Egresses)
+	}
+}
+
+func TestAgentBaseIDSupportsLegacyWarpSuffix(t *testing.T) {
+	if got := agentBaseID("", "0123456789abcdef-3"); got != "0123456789abcdef" {
+		t.Fatalf("legacy agent base id = %q", got)
+	}
+	if got := agentBaseID("reported", "0123456789abcdef-3"); got != "reported" {
+		t.Fatalf("reported agent base id = %q", got)
 	}
 }
 

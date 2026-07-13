@@ -82,6 +82,9 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	directDialer := &net.Dialer{Timeout: traceTimeout}
+	hostMeta := probeMeta(ctx, directDialer.DialContext)
+	log.Printf("Agent 主机: %s / %s / %s", hostMeta.ip, hostMeta.country, hostMeta.colo)
 	if *warpCount < 1 {
 		*warpCount = defaultWarpCount
 	}
@@ -106,7 +109,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			runLoop(ctx, linkURL, *token, egress)
+			runLoop(ctx, linkURL, *token, egress, hostMeta)
 		}()
 	}
 	wg.Wait()
@@ -114,14 +117,14 @@ func main() {
 }
 
 // runLoop 反复连接主控，断线后指数退避重连，直到收到退出信号。
-func runLoop(ctx context.Context, linkURL, token string, egress *warpEgress) {
+func runLoop(ctx context.Context, linkURL, token string, egress *warpEgress, hostMeta egressMeta) {
 	backoff := minBackoff
 	for {
 		if ctx.Err() != nil {
 			return
 		}
 		start := time.Now()
-		if err := connectOnce(ctx, linkURL, token, egress); err != nil && ctx.Err() == nil {
+		if err := connectOnce(ctx, linkURL, token, egress, hostMeta); err != nil && ctx.Err() == nil {
 			log.Printf("出口 %d 连接结束: %v", egress.index+1, err)
 		}
 		// 连接维持超过 1 分钟视为一次健康会话，重置退避。
@@ -141,10 +144,10 @@ func runLoop(ctx context.Context, linkURL, token string, egress *warpEgress) {
 }
 
 // connectOnce 建立一次 wss 连接并服务其上的所有 yamux 流，直到连接断开。
-func connectOnce(ctx context.Context, linkURL, token string, egress *warpEgress) error {
+func connectOnce(ctx context.Context, linkURL, token string, egress *warpEgress, hostMeta egressMeta) error {
 	// 每次重连都通过对应 WARP 隧道重新探测出口信息，主控据此刷新节点。
 	meta := probeMeta(ctx, egress.tunnel.DialContext)
-	full := linkURL + "?" + buildQuery(token, egress.nodeID, egress.name, meta).Encode()
+	full := linkURL + "?" + buildQuery(token, egress, meta, hostMeta).Encode()
 
 	dialCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
@@ -293,10 +296,12 @@ func ensureWarpEgresses(ctx context.Context, statePath, baseNodeID, baseName str
 		}
 		name := warpNodeName(baseName, meta.country, i)
 		egresses = append(egresses, &warpEgress{
-			index:  i,
-			nodeID: warpNodeID(baseNodeID, i),
-			name:   name,
-			tunnel: tunnel,
+			index:     i,
+			agentID:   baseNodeID,
+			agentName: baseName,
+			nodeID:    warpNodeID(baseNodeID, i),
+			name:      name,
+			tunnel:    tunnel,
 		})
 		log.Printf("WARP 出口 %d 就绪: %s / %s / %s", i+1, meta.ip, meta.country, meta.colo)
 	}
@@ -436,10 +441,12 @@ type warpProfileFile struct {
 }
 
 type warpEgress struct {
-	index  int
-	nodeID string
-	name   string
-	tunnel *proxy.Tunnel
+	index     int
+	agentID   string
+	agentName string
+	nodeID    string
+	name      string
+	tunnel    *proxy.Tunnel
 }
 
 // probeMeta 通过 cloudflare trace 探测指定 WARP 隧道的公网出口信息。失败时返回空字段，
@@ -479,13 +486,18 @@ func probeMeta(ctx context.Context, dial func(context.Context, string, string) (
 	return m
 }
 
-func buildQuery(token, nodeID, name string, m egressMeta) url.Values {
+func buildQuery(token string, egress *warpEgress, m, host egressMeta) url.Values {
 	q := url.Values{}
 	q.Set("token", token)
-	q.Set("node_id", nodeID)
+	q.Set("node_id", egress.nodeID)
+	q.Set("agent_id", egress.agentID)
+	q.Set("egress_index", strconv.Itoa(egress.index+1))
 	q.Set("v", fmt.Sprintf("%d", agentproto.ProtocolVersion))
-	if name != "" {
-		q.Set("name", name)
+	if egress.name != "" {
+		q.Set("name", egress.name)
+	}
+	if egress.agentName != "" {
+		q.Set("agent_name", egress.agentName)
 	}
 	if m.ip != "" {
 		q.Set("ip", m.ip)
@@ -495,6 +507,15 @@ func buildQuery(token, nodeID, name string, m egressMeta) url.Values {
 	}
 	if m.colo != "" {
 		q.Set("colo", m.colo)
+	}
+	if host.ip != "" {
+		q.Set("host_ip", host.ip)
+	}
+	if host.country != "" {
+		q.Set("host_country", host.country)
+	}
+	if host.colo != "" {
+		q.Set("host_colo", host.colo)
 	}
 	return q
 }

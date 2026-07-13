@@ -6,6 +6,7 @@
   let nodes = [];
   let loading = true;
   let error = '';
+  let selectedAgentID = '';
 
   let installCommand = '';
   let uninstallCommand = '';
@@ -15,12 +16,19 @@
   let copied = '';
   let rotating = false;
 
+  $: selectedAgent = selectedAgentID
+    ? nodes.find((node) => node.kind === 'agent' && node.node_id === selectedAgentID) || null
+    : null;
+
   async function fetchNodes() {
     try {
       const res = await fetch('/api/nodes/json');
       if (!res.ok) throw new Error('加载失败');
       const data = await res.json();
       nodes = data.nodes || [];
+      if (selectedAgentID && !nodes.some((node) => node.node_id === selectedAgentID)) {
+        selectedAgentID = '';
+      }
       error = '';
     } catch (err) {
       error = err.message;
@@ -49,7 +57,7 @@
   onMount(() => {
     fetchNodes();
     fetchEnroll();
-    timer = setInterval(fetchNodes, 5000);
+    timer = setInterval(fetchNodes, 3000);
   });
   onDestroy(() => clearInterval(timer));
 
@@ -105,22 +113,6 @@
     }
   }
 
-  async function removeNode(node) {
-    if (node.kind === 'local') return;
-    if (!confirm(`删除节点「${node.name}」？如果它还在线，重连后会重新登记；应先在该 VPS 上停止 pfagent 服务。`)) return;
-    try {
-      const res = await fetch('/api/nodes/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ node_id: node.node_id }),
-      });
-      if (!res.ok) throw new Error('删除失败');
-      await fetchNodes();
-    } catch (err) {
-      error = err.message;
-    }
-  }
-
   function fmtBytes(n) {
     if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
     if (Number(n) <= 0) return '0 B';
@@ -134,15 +126,12 @@
     return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
   }
 
-  function fmtSeen(ts) {
-    if (!ts) return '—';
-    const d = new Date(ts);
-    if (isNaN(d)) return '—';
-    const diff = (Date.now() - d.getTime()) / 1000;
-    if (diff < 60) return '刚刚';
-    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
-    return d.toLocaleString();
+  function showAgent(node) {
+    selectedAgentID = node.node_id;
+  }
+
+  function closeAgent() {
+    selectedAgentID = '';
   }
 
   function displayInstallCommand(value) {
@@ -210,7 +199,7 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>节点</th><th>出口 IP</th><th>地区</th><th>延迟</th><th>流量 ↑ / ↓</th><th>状态</th><th></th></tr>
+        <tr><th>节点</th><th>公网 IP</th><th>所在地</th><th>延迟</th><th>流量 ↑ / ↓</th><th>状态</th><th>操作</th></tr>
       </thead>
       <tbody>
         {#if nodes.length}
@@ -218,7 +207,9 @@
             <tr>
               <td>
                 <div class="node-name">{node.name}</div>
-                <div class="node-kind">{node.kind === 'local' ? '本机' : 'Agent WARP'}</div>
+                <div class="node-kind">
+                  {node.kind === 'local' ? '本机 WARP' : `Agent · ${node.egress_count || 0} 个 WARP 出口`}
+                </div>
               </td>
               <td class="mono">{node.public_ip || '—'}</td>
               <td>{node.country || '—'}{node.colo ? ` / ${node.colo}` : ''}</td>
@@ -227,13 +218,13 @@
               <td>
                 <div class="node-status">
                   <StatusTag status={node.online ? 'active' : 'inactive'} />
-                  {#if !node.online}<span>{fmtSeen(node.last_seen)}</span>{/if}
                 </div>
               </td>
               <td>
-                {#if node.kind !== 'local'}
-                  <button class="icon-btn danger node-delete" title="删除节点" aria-label="删除节点" on:click={() => removeNode(node)}>
-                    <Icon name="delete" size={17} />
+                {#if node.kind === 'agent'}
+                  <button class="view-btn" title="查看 Agent 出口" on:click={() => showAgent(node)}>
+                    查看
+                    <Icon name="expand_more" size={16} />
                   </button>
                 {/if}
               </td>
@@ -244,6 +235,44 @@
         {/if}
       </tbody>
     </table>
+  </div>
+{/if}
+
+{#if selectedAgent}
+  <div class="modal-backdrop" role="presentation" on:click|self={closeAgent}>
+    <section class="agent-modal" role="dialog" aria-modal="true" aria-label="Agent 出口详情">
+      <div class="modal-header">
+        <div>
+          <h3>{selectedAgent.name}</h3>
+          <p>{selectedAgent.public_ip || '公网 IP 未知'} · {selectedAgent.country || '地区未知'}{selectedAgent.colo ? ` / ${selectedAgent.colo}` : ''}</p>
+        </div>
+        <button class="modal-close" title="关闭" aria-label="关闭" on:click={closeAgent}>
+          <Icon name="close" size={19} />
+        </button>
+      </div>
+      <div class="egress-summary">
+        <span><b>{selectedAgent.egress_count || 0}</b> 个 WARP 出口</span>
+        <span>平均延迟 <b>{selectedAgent.latency_ms ? `${selectedAgent.latency_ms} ms` : '—'}</b></span>
+        <span>流量 <b>{fmtBytes(selectedAgent.tx_bytes)} / {fmtBytes(selectedAgent.rx_bytes)}</b></span>
+      </div>
+      <div class="egress-table-wrap">
+        <table class="egress-table">
+          <thead>
+            <tr><th>出口 IP</th><th>地区 / 机房</th><th>延迟</th><th>流量 ↑ / ↓</th></tr>
+          </thead>
+          <tbody>
+            {#each selectedAgent.egresses || [] as egress}
+              <tr>
+                <td class="mono">{egress.public_ip || '—'}</td>
+                <td>{egress.country || '—'}{egress.colo ? ` / ${egress.colo}` : ''}</td>
+                <td>{egress.latency_ms ? `${egress.latency_ms} ms` : '—'}</td>
+                <td class="mono">{fmtBytes(egress.tx_bytes)} / {fmtBytes(egress.rx_bytes)}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 {/if}
 
@@ -351,19 +380,23 @@
     opacity: 0.6;
     cursor: default;
   }
-  .icon-btn.danger {
-    color: var(--danger, #ef4444);
-  }
-  .node-delete {
-    min-width: 32px;
+  .view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
     min-height: 32px;
-    padding: 6px;
-    background: transparent;
-    color: var(--text-3);
+    padding: 5px 8px 5px 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
   }
-  .node-delete:hover {
-    background: #fdeaea;
-    color: var(--danger, #ef4444);
+  .view-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft, #eef2ff);
   }
   .node-name {
     color: var(--text);
@@ -381,6 +414,92 @@
     color: var(--text-3);
     font-size: 11px;
     white-space: nowrap;
+  }
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.42);
+  }
+  .agent-modal {
+    width: min(760px, 100%);
+    max-height: min(680px, calc(100vh - 40px));
+    overflow: hidden;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 20px 55px rgba(15, 23, 42, 0.2);
+  }
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-header h3 {
+    margin: 0;
+    font-size: 17px;
+  }
+  .modal-header p {
+    margin: 4px 0 0;
+    color: var(--text-3);
+    font-size: 12px;
+  }
+  .modal-close {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-3);
+  }
+  .modal-close:hover {
+    background: var(--surface-2, #f8fafc);
+    color: var(--text);
+  }
+  .egress-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    padding: 11px 18px;
+    background: var(--surface-2, #f8fafc);
+    color: var(--text-3);
+    font-size: 12px;
+  }
+  .egress-summary b {
+    color: var(--text);
+  }
+  .egress-table-wrap {
+    max-height: 430px;
+    overflow: auto;
+  }
+  .egress-table {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+  }
+  .egress-table th,
+  .egress-table td {
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .egress-table th {
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .egress-table tbody tr:last-child td {
+    border-bottom: 0;
   }
   .empty-state {
     height: 108px;
@@ -418,7 +537,7 @@
   :global(.table-wrap th:last-child),
   :global(.table-wrap td:last-child) {
     padding-right: 16px;
-    width: 48px;
+    width: 76px;
   }
   @media (max-width: 760px) {
     .enroll-toolbar {
@@ -433,6 +552,21 @@
     .enroll-actions {
       width: 100%;
       justify-content: space-between;
+    }
+    .modal-backdrop {
+      align-items: end;
+      padding: 0;
+    }
+    .agent-modal {
+      width: 100%;
+      max-height: 78vh;
+      border-width: 1px 0 0;
+      border-radius: 10px 10px 0 0;
+    }
+    .modal-header,
+    .egress-summary {
+      padding-left: 14px;
+      padding-right: 14px;
     }
   }
 </style>

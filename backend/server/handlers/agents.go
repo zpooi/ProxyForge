@@ -7,11 +7,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/coder/websocket"
 
@@ -52,12 +53,18 @@ func (h *Handlers) AgentLink(w http.ResponseWriter, r *http.Request) {
 	netConn := websocket.NetConn(context.Background(), c, websocket.MessageBinary)
 
 	meta := agenthub.Meta{
-		NodeID:   nodeID,
-		Name:     strings.TrimSpace(q.Get("name")),
-		PublicIP: strings.TrimSpace(q.Get("ip")),
-		Country:  strings.TrimSpace(q.Get("country")),
-		Colo:     strings.TrimSpace(q.Get("colo")),
-		Version:  strings.TrimSpace(q.Get("v")),
+		NodeID:       nodeID,
+		Name:         strings.TrimSpace(q.Get("name")),
+		PublicIP:     strings.TrimSpace(q.Get("ip")),
+		Country:      strings.TrimSpace(q.Get("country")),
+		Colo:         strings.TrimSpace(q.Get("colo")),
+		Version:      strings.TrimSpace(q.Get("v")),
+		AgentID:      agentBaseID(q.Get("agent_id"), nodeID),
+		AgentName:    strings.TrimSpace(q.Get("agent_name")),
+		HostPublicIP: firstNonEmpty(strings.TrimSpace(q.Get("host_ip")), requestClientIP(r)),
+		HostCountry:  firstNonEmpty(strings.TrimSpace(q.Get("host_country")), strings.TrimSpace(r.Header.Get("CF-IPCountry"))),
+		HostColo:     firstNonEmpty(strings.TrimSpace(q.Get("host_colo")), requestCloudflareColo(r)),
+		EgressIndex:  parsePositiveInt(q.Get("egress_index")),
 	}
 
 	// Accept 阻塞到会话结束（agent 下线）。
@@ -65,23 +72,37 @@ func (h *Handlers) AgentLink(w http.ResponseWriter, r *http.Request) {
 	_ = c.Close(websocket.StatusNormalClosure, "session ended")
 }
 
-// NodesJSON 返回节点列表：本机 WARP 出口 + 所有远程 agent（在线态叠加内存快照）。
-func (h *Handlers) NodesJSON(w http.ResponseWriter, r *http.Request) {
-	type nodeView struct {
-		NodeID    string `json:"node_id"`
-		Name      string `json:"name"`
-		Kind      string `json:"kind"` // local / agent
-		PublicIP  string `json:"public_ip"`
-		Country   string `json:"country"`
-		Colo      string `json:"colo"`
-		Online    bool   `json:"online"`
-		Enabled   bool   `json:"enabled"`
-		LatencyMs int    `json:"latency_ms"`
-		TxBytes   int64  `json:"tx_bytes"`
-		RxBytes   int64  `json:"rx_bytes"`
-		LastSeen  string `json:"last_seen"`
-	}
+type nodeEgressView struct {
+	NodeID    string `json:"node_id"`
+	Index     int    `json:"index"`
+	Name      string `json:"name"`
+	PublicIP  string `json:"public_ip"`
+	Country   string `json:"country"`
+	Colo      string `json:"colo"`
+	LatencyMs int    `json:"latency_ms"`
+	TxBytes   int64  `json:"tx_bytes"`
+	RxBytes   int64  `json:"rx_bytes"`
+}
 
+type nodeView struct {
+	NodeID      string           `json:"node_id"`
+	Name        string           `json:"name"`
+	Kind        string           `json:"kind"` // local / agent
+	PublicIP    string           `json:"public_ip"`
+	Country     string           `json:"country"`
+	Colo        string           `json:"colo"`
+	Online      bool             `json:"online"`
+	Enabled     bool             `json:"enabled"`
+	LatencyMs   int              `json:"latency_ms"`
+	TxBytes     int64            `json:"tx_bytes"`
+	RxBytes     int64            `json:"rx_bytes"`
+	Egresses    []nodeEgressView `json:"egresses,omitempty"`
+	EgressCount int              `json:"egress_count,omitempty"`
+}
+
+// NodesJSON 返回本机 WARP 与当前在线的远程 Agent。远程 Agent 按 VPS 聚合，
+// WARP 出口只在详情里展开；断开连接的 Agent 不再返回，避免页面显示离线节点。
+func (h *Handlers) NodesJSON(w http.ResponseWriter, r *http.Request) {
 	var views []nodeView
 
 	// 本机节点：汇总当前实际运行的 WARP 隧道，避免出口、地区、延迟和流量为空。
@@ -100,63 +121,100 @@ func (h *Handlers) NodesJSON(w http.ResponseWriter, r *http.Request) {
 		LatencyMs: local.LatencyMs,
 		TxBytes:   local.TxBytes,
 		RxBytes:   local.RxBytes,
-		LastSeen:  time.Now().UTC().Format(time.RFC3339),
 	})
 
-	// 远程 agent：以 DB 里「见过的节点」为准，叠加 Hub 的实时在线态。
-	online := map[string]agenthub.OnlineNode{}
 	if h.Hub != nil {
-		for _, o := range h.Hub.Snapshot() {
-			online[o.NodeID] = o
-		}
-	}
-	nodes, _ := h.DB.ListAgentNodes()
-	for _, n := range nodes {
-		v := nodeView{
-			NodeID:   n.NodeID,
-			Name:     agentDisplayName(n.Name, n.Country, n.NodeID),
-			Kind:     "agent",
-			PublicIP: n.PublicIP,
-			Country:  n.Country,
-			Colo:     n.Colo,
-			Enabled:  n.Enabled,
-		}
-		if n.LastSeenAt != nil {
-			v.LastSeen = n.LastSeenAt.UTC().Format(time.RFC3339)
-		}
-		if o, ok := online[n.NodeID]; ok {
-			v.Online = true
-			v.LatencyMs = o.LatencyMs
-			v.TxBytes = o.TxBytes
-			v.RxBytes = o.RxBytes
-			// 在线上报的 IP/地区更新鲜，覆盖库里的旧值。
-			if o.Meta.PublicIP != "" {
-				v.PublicIP = o.Meta.PublicIP
-			}
-			if o.Meta.Country != "" {
-				v.Country = o.Meta.Country
-				v.Name = agentDisplayName(n.Name, o.Meta.Country, n.NodeID)
-			}
-			if o.Meta.Colo != "" {
-				v.Colo = o.Meta.Colo
-			}
-		}
-		views = append(views, v)
+		views = append(views, onlineAgentViews(h.Hub.Snapshot())...)
 	}
 
 	sort.Slice(views, func(i, j int) bool {
-		// 本机置顶，其余在线优先、再按名字。
+		// 本机置顶，其余按名字。
 		if views[i].Kind != views[j].Kind {
 			return views[i].Kind == "local"
-		}
-		if views[i].Online != views[j].Online {
-			return views[i].Online
 		}
 		return views[i].Name < views[j].Name
 	})
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{"nodes": views})
+}
+
+func onlineAgentViews(snapshot []agenthub.OnlineNode) []nodeView {
+	type aggregate struct {
+		view        nodeView
+		agentName   string
+		latencySum  int
+		latencyHits int
+	}
+	groups := make(map[string]*aggregate)
+	for _, o := range snapshot {
+		agentID := agentBaseID(o.Meta.AgentID, o.NodeID)
+		g := groups[agentID]
+		if g == nil {
+			g = &aggregate{agentName: o.Meta.AgentName, view: nodeView{
+				NodeID:   agentID,
+				Kind:     "agent",
+				Online:   true,
+				Enabled:  true,
+				PublicIP: o.Meta.HostPublicIP,
+				Country:  o.Meta.HostCountry,
+				Colo:     o.Meta.HostColo,
+			}}
+			groups[agentID] = g
+		}
+		if g.view.PublicIP == "" {
+			g.view.PublicIP = o.Meta.HostPublicIP
+		}
+		if g.view.Country == "" {
+			g.view.Country = o.Meta.HostCountry
+		}
+		if g.view.Colo == "" {
+			g.view.Colo = o.Meta.HostColo
+		}
+		if g.agentName == "" && o.Meta.AgentName != "" {
+			g.agentName = o.Meta.AgentName
+		}
+		g.view.Egresses = append(g.view.Egresses, nodeEgressView{
+			NodeID:    o.NodeID,
+			Index:     o.Meta.EgressIndex,
+			Name:      o.Meta.Name,
+			PublicIP:  o.Meta.PublicIP,
+			Country:   o.Meta.Country,
+			Colo:      o.Meta.Colo,
+			LatencyMs: o.LatencyMs,
+			TxBytes:   o.TxBytes,
+			RxBytes:   o.RxBytes,
+		})
+		g.view.TxBytes += o.TxBytes
+		g.view.RxBytes += o.RxBytes
+		if o.LatencyMs > 0 {
+			g.latencySum += o.LatencyMs
+			g.latencyHits++
+		}
+	}
+
+	views := make([]nodeView, 0, len(groups))
+	for _, g := range groups {
+		sort.SliceStable(g.view.Egresses, func(i, j int) bool {
+			if g.view.Egresses[i].Index != g.view.Egresses[j].Index {
+				return g.view.Egresses[i].Index < g.view.Egresses[j].Index
+			}
+			return g.view.Egresses[i].NodeID < g.view.Egresses[j].NodeID
+		})
+		g.view.EgressCount = len(g.view.Egresses)
+		g.view.Name = agentHostDisplayName(g.agentName, g.view.Country, g.view.NodeID)
+		if g.latencyHits > 0 {
+			g.view.LatencyMs = g.latencySum / g.latencyHits
+		}
+		views = append(views, g.view)
+	}
+	sort.Slice(views, func(i, j int) bool {
+		if views[i].Country != views[j].Country {
+			return views[i].Country < views[j].Country
+		}
+		return views[i].Name < views[j].Name
+	})
+	return views
 }
 
 // NodeEnroll 返回一行安装命令 + 准入信息，供前端展示复制。首次调用时生成 token。
@@ -333,6 +391,80 @@ func (h *Handlers) panelBaseURL(r *http.Request) string {
 		host = fh
 	}
 	return scheme + "://" + host
+}
+
+func agentBaseID(reported, nodeID string) string {
+	if id := strings.TrimSpace(reported); id != "" {
+		return id
+	}
+	nodeID = strings.TrimSpace(nodeID)
+	if cut := strings.LastIndex(nodeID, "-"); cut > 0 {
+		base, suffix := nodeID[:cut], nodeID[cut+1:]
+		index, err := strconv.Atoi(suffix)
+		decoded, hexErr := hex.DecodeString(base)
+		if err == nil && index >= 2 && index <= 8 && hexErr == nil && len(decoded) == 8 {
+			return base
+		}
+	}
+	return nodeID
+}
+
+func requestClientIP(r *http.Request) string {
+	for _, candidate := range []string{
+		r.Header.Get("CF-Connecting-IP"),
+		r.Header.Get("X-Real-IP"),
+		strings.Split(r.Header.Get("X-Forwarded-For"), ",")[0],
+		r.RemoteAddr,
+	} {
+		candidate = strings.TrimSpace(candidate)
+		if host, _, err := net.SplitHostPort(candidate); err == nil {
+			candidate = host
+		}
+		candidate = strings.Trim(candidate, "[]")
+		if net.ParseIP(candidate) != nil {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func requestCloudflareColo(r *http.Request) string {
+	ray := strings.TrimSpace(r.Header.Get("CF-Ray"))
+	if cut := strings.LastIndex(ray, "-"); cut >= 0 && cut < len(ray)-1 {
+		return strings.ToUpper(ray[cut+1:])
+	}
+	return ""
+}
+
+func parsePositiveInt(raw string) int {
+	n, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || n < 1 {
+		return 0
+	}
+	return n
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func agentHostDisplayName(name, country, agentID string) string {
+	if name = strings.TrimSpace(name); name != "" {
+		return name
+	}
+	if country = strings.TrimSpace(country); country != "" {
+		return country + " Agent"
+	}
+	short := agentID
+	if len(short) > 8 {
+		short = short[:8]
+	}
+	return "Agent " + short
 }
 
 func agentDisplayName(name, country, nodeID string) string {

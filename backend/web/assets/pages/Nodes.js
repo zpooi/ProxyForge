@@ -19,6 +19,7 @@ import {
 	noop,
 	run_all,
 	safe_not_equal,
+	self,
 	set_data,
 	space,
 	text,
@@ -32,16 +33,22 @@ import StatusTag from '../components/StatusTag.js';
 import Icon from '../components/Icon.js';
 
 function add_css(target) {
-	append_styles(target, "svelte-15keadm", ".compact-header.svelte-15keadm.svelte-15keadm{margin-bottom:16px}.compact-header.svelte-15keadm h2.svelte-15keadm{margin:0}.enroll-card.svelte-15keadm.svelte-15keadm{background:var(--surface, #fff);border:1px solid var(--border, #e5e7eb);border-radius:10px;margin-bottom:16px;overflow:hidden}.enroll-toolbar.svelte-15keadm.svelte-15keadm{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border)}.enroll-head.svelte-15keadm.svelte-15keadm{display:flex;align-items:baseline;gap:9px;min-width:0}.enroll-head.svelte-15keadm span.svelte-15keadm{color:var(--text-3);font-size:12px}.enroll-actions.svelte-15keadm.svelte-15keadm{display:flex;align-items:center;gap:14px;flex-shrink:0}.enroll-body.svelte-15keadm.svelte-15keadm{padding:14px 16px}.cmd-row.svelte-15keadm.svelte-15keadm{display:grid;grid-template-columns:minmax(0, 1fr) 40px;gap:8px;align-items:center}.cmd.svelte-15keadm.svelte-15keadm{display:block;min-width:0;padding:9px 11px;background:var(--code-bg, #0f172a);color:var(--code-fg, #e2e8f0);border-radius:8px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.command-copy.svelte-15keadm.svelte-15keadm{width:40px;min-height:38px;padding:8px}.enroll-server.svelte-15keadm.svelte-15keadm{display:flex;align-items:center;gap:8px;min-width:0;margin-top:9px;color:var(--text-3);font-size:11px}.enroll-server.svelte-15keadm code.svelte-15keadm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:transparent;padding:0;color:var(--text-2)}.link-btn.svelte-15keadm.svelte-15keadm{background:none;border:none;color:var(--accent, #6366f1);cursor:pointer;font-size:13px;padding:0;min-height:30px}.uninstall-btn.svelte-15keadm.svelte-15keadm{gap:5px;color:var(--danger)}.uninstall-btn.svelte-15keadm.svelte-15keadm:hover{background:transparent;color:var(--danger-hover)}.link-btn.svelte-15keadm.svelte-15keadm:disabled{opacity:0.6;cursor:default}.icon-btn.danger.svelte-15keadm.svelte-15keadm{color:var(--danger, #ef4444)}.node-delete.svelte-15keadm.svelte-15keadm{min-width:32px;min-height:32px;padding:6px;background:transparent;color:var(--text-3)}.node-delete.svelte-15keadm.svelte-15keadm:hover{background:#fdeaea;color:var(--danger, #ef4444)}.node-name.svelte-15keadm.svelte-15keadm{color:var(--text);font-weight:600}.node-kind.svelte-15keadm.svelte-15keadm{margin-top:1px;color:var(--text-3);font-size:11px}.node-status.svelte-15keadm.svelte-15keadm{display:flex;align-items:center;gap:7px;color:var(--text-3);font-size:11px;white-space:nowrap}.empty-state.svelte-15keadm.svelte-15keadm{height:108px;color:var(--text-3);text-align:center}.banner.warn.svelte-15keadm.svelte-15keadm{background:#fef3c7;color:#92400e;padding:8px 10px;border-radius:8px;margin-bottom:12px}.banner.error.svelte-15keadm.svelte-15keadm{margin-bottom:12px;padding:8px 10px;border-radius:8px;background:#fdeaea;color:var(--danger-hover)}.table-wrap{border-radius:10px}.table-wrap table{min-width:760px}.table-wrap th,.table-wrap td{padding:10px 12px}.table-wrap th:first-child,.table-wrap td:first-child{padding-left:16px}.table-wrap th:last-child,.table-wrap td:last-child{padding-right:16px;width:48px}@media(max-width: 760px){.enroll-toolbar.svelte-15keadm.svelte-15keadm{align-items:flex-start;flex-direction:column}.enroll-head.svelte-15keadm.svelte-15keadm{align-items:flex-start;flex-direction:column;gap:1px}.enroll-actions.svelte-15keadm.svelte-15keadm{width:100%;justify-content:space-between}}");
+	append_styles(target, "svelte-1kuztn1", ".compact-header.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{margin-bottom:16px}.compact-header.svelte-1kuztn1 h2.svelte-1kuztn1.svelte-1kuztn1{margin:0}.enroll-card.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{background:var(--surface, #fff);border:1px solid var(--border, #e5e7eb);border-radius:10px;margin-bottom:16px;overflow:hidden}.enroll-toolbar.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border)}.enroll-head.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:flex;align-items:baseline;gap:9px;min-width:0}.enroll-head.svelte-1kuztn1 span.svelte-1kuztn1.svelte-1kuztn1{color:var(--text-3);font-size:12px}.enroll-actions.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:flex;align-items:center;gap:14px;flex-shrink:0}.enroll-body.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{padding:14px 16px}.cmd-row.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:grid;grid-template-columns:minmax(0, 1fr) 40px;gap:8px;align-items:center}.cmd.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:block;min-width:0;padding:9px 11px;background:var(--code-bg, #0f172a);color:var(--code-fg, #e2e8f0);border-radius:8px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.command-copy.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{width:40px;min-height:38px;padding:8px}.enroll-server.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:flex;align-items:center;gap:8px;min-width:0;margin-top:9px;color:var(--text-3);font-size:11px}.enroll-server.svelte-1kuztn1 code.svelte-1kuztn1.svelte-1kuztn1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:transparent;padding:0;color:var(--text-2)}.link-btn.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{background:none;border:none;color:var(--accent, #6366f1);cursor:pointer;font-size:13px;padding:0;min-height:30px}.uninstall-btn.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{gap:5px;color:var(--danger)}.uninstall-btn.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1:hover{background:transparent;color:var(--danger-hover)}.link-btn.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1:disabled{opacity:0.6;cursor:default}.view-btn.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:inline-flex;align-items:center;justify-content:center;gap:2px;min-height:32px;padding:5px 8px 5px 10px;border:1px solid var(--border);background:var(--surface);color:var(--accent);font-size:12px;font-weight:600;white-space:nowrap}.view-btn.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1:hover{border-color:var(--accent);background:var(--accent-soft, #eef2ff)}.node-name.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{color:var(--text);font-weight:600}.node-kind.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{margin-top:1px;color:var(--text-3);font-size:11px}.node-status.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:flex;align-items:center;gap:7px;color:var(--text-3);font-size:11px;white-space:nowrap}.modal-backdrop.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:rgba(15, 23, 42, 0.42)}.agent-modal.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{width:min(760px, 100%);max-height:min(680px, calc(100vh - 40px));overflow:hidden;background:var(--surface, #fff);border:1px solid var(--border);border-radius:10px;box-shadow:0 20px 55px rgba(15, 23, 42, 0.2)}.modal-header.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 18px 13px;border-bottom:1px solid var(--border)}.modal-header.svelte-1kuztn1 h3.svelte-1kuztn1.svelte-1kuztn1{margin:0;font-size:17px}.modal-header.svelte-1kuztn1 p.svelte-1kuztn1.svelte-1kuztn1{margin:4px 0 0;color:var(--text-3);font-size:12px}.modal-close.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:grid;place-items:center;width:32px;min-width:32px;height:32px;padding:0;background:transparent;color:var(--text-3)}.modal-close.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1:hover{background:var(--surface-2, #f8fafc);color:var(--text)}.egress-summary.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{display:flex;flex-wrap:wrap;gap:8px 22px;padding:11px 18px;background:var(--surface-2, #f8fafc);color:var(--text-3);font-size:12px}.egress-summary.svelte-1kuztn1 b.svelte-1kuztn1.svelte-1kuztn1{color:var(--text)}.egress-table-wrap.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{max-height:430px;overflow:auto}.egress-table.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{width:100%;min-width:620px;border-collapse:collapse}.egress-table.svelte-1kuztn1 th.svelte-1kuztn1.svelte-1kuztn1,.egress-table.svelte-1kuztn1 td.svelte-1kuztn1.svelte-1kuztn1{padding:11px 18px;border-bottom:1px solid var(--border);text-align:left;font-size:13px;white-space:nowrap}.egress-table.svelte-1kuztn1 th.svelte-1kuztn1.svelte-1kuztn1{color:var(--text-3);font-size:11px;font-weight:600}.egress-table.svelte-1kuztn1 tbody.svelte-1kuztn1 tr:last-child td.svelte-1kuztn1{border-bottom:0}.empty-state.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{height:108px;color:var(--text-3);text-align:center}.banner.warn.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{background:#fef3c7;color:#92400e;padding:8px 10px;border-radius:8px;margin-bottom:12px}.banner.error.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{margin-bottom:12px;padding:8px 10px;border-radius:8px;background:#fdeaea;color:var(--danger-hover)}.table-wrap{border-radius:10px}.table-wrap table{min-width:760px}.table-wrap th,.table-wrap td{padding:10px 12px}.table-wrap th:first-child,.table-wrap td:first-child{padding-left:16px}.table-wrap th:last-child,.table-wrap td:last-child{padding-right:16px;width:76px}@media(max-width: 760px){.enroll-toolbar.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{align-items:flex-start;flex-direction:column}.enroll-head.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{align-items:flex-start;flex-direction:column;gap:1px}.enroll-actions.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{width:100%;justify-content:space-between}.modal-backdrop.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{align-items:end;padding:0}.agent-modal.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{width:100%;max-height:78vh;border-width:1px 0 0;border-radius:10px 10px 0 0}.modal-header.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1,.egress-summary.svelte-1kuztn1.svelte-1kuztn1.svelte-1kuztn1{padding-left:14px;padding-right:14px}}");
 }
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[19] = list[i];
+	child_ctx[22] = list[i];
 	return child_ctx;
 }
 
-// (177:4) {#if enrollError}
+function get_each_context_1(ctx, list, i) {
+	const child_ctx = ctx.slice();
+	child_ctx[25] = list[i];
+	return child_ctx;
+}
+
+// (166:4) {#if enrollError}
 function create_if_block_6(ctx) {
 	let div;
 	let t;
@@ -50,7 +57,7 @@ function create_if_block_6(ctx) {
 		c() {
 			div = element("div");
 			t = text(/*enrollError*/ ctx[7]);
-			attr(div, "class", "banner error svelte-15keadm");
+			attr(div, "class", "banner error svelte-1kuztn1");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -65,7 +72,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (180:4) {#if !hasBinary}
+// (169:4) {#if !hasBinary}
 function create_if_block_5(ctx) {
 	let div;
 
@@ -73,7 +80,7 @@ function create_if_block_5(ctx) {
 		c() {
 			div = element("div");
 			div.textContent = "未找到 agent 二进制，请先完成构建。";
-			attr(div, "class", "banner warn svelte-15keadm");
+			attr(div, "class", "banner warn svelte-1kuztn1");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -84,7 +91,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (203:0) {#if error}
+// (192:0) {#if error}
 function create_if_block_4(ctx) {
 	let div;
 	let t;
@@ -93,7 +100,7 @@ function create_if_block_4(ctx) {
 		c() {
 			div = element("div");
 			t = text(/*error*/ ctx[2]);
-			attr(div, "class", "banner error svelte-15keadm");
+			attr(div, "class", "banner error svelte-1kuztn1");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
@@ -108,17 +115,17 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (209:0) {:else}
+// (198:0) {:else}
 function create_else_block(ctx) {
 	let div;
 	let table;
 	let thead;
-	let t6;
+	let t7;
 	let tbody;
 	let current_block_type_index;
 	let if_block;
 	let current;
-	const if_block_creators = [create_if_block_1, create_else_block_1];
+	const if_block_creators = [create_if_block_2, create_else_block_1];
 	const if_blocks = [];
 
 	function select_block_type_1(ctx, dirty) {
@@ -134,17 +141,18 @@ function create_else_block(ctx) {
 			div = element("div");
 			table = element("table");
 			thead = element("thead");
-			thead.innerHTML = `<tr><th>节点</th><th>出口 IP</th><th>地区</th><th>延迟</th><th>流量 ↑ / ↓</th><th>状态</th><th></th></tr>`;
-			t6 = space();
+			thead.innerHTML = `<tr><th>节点</th><th>公网 IP</th><th>所在地</th><th>延迟</th><th>流量 ↑ / ↓</th><th>状态</th><th>操作</th></tr>`;
+			t7 = space();
 			tbody = element("tbody");
 			if_block.c();
+			attr(tbody, "class", "svelte-1kuztn1");
 			attr(div, "class", "table-wrap");
 		},
 		m(target, anchor) {
 			insert(target, div, anchor);
 			append(div, table);
 			append(table, thead);
-			append(table, t6);
+			append(table, t7);
 			append(table, tbody);
 			if_blocks[current_block_type_index].m(tbody, null);
 			current = true;
@@ -192,8 +200,8 @@ function create_else_block(ctx) {
 	};
 }
 
-// (207:0) {#if loading}
-function create_if_block(ctx) {
+// (196:0) {#if loading}
+function create_if_block_1(ctx) {
 	let div;
 
 	return {
@@ -214,14 +222,14 @@ function create_if_block(ctx) {
 	};
 }
 
-// (242:8) {:else}
+// (233:8) {:else}
 function create_else_block_1(ctx) {
 	let tr;
 
 	return {
 		c() {
 			tr = element("tr");
-			tr.innerHTML = `<td class="empty-state svelte-15keadm" colspan="7">暂无节点</td>`;
+			tr.innerHTML = `<td class="empty-state svelte-1kuztn1" colspan="7">暂无节点</td>`;
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
@@ -235,15 +243,15 @@ function create_else_block_1(ctx) {
 	};
 }
 
-// (216:8) {#if nodes.length}
-function create_if_block_1(ctx) {
+// (205:8) {#if nodes.length}
+function create_if_block_2(ctx) {
 	let each_1_anchor;
 	let current;
-	let each_value = /*nodes*/ ctx[0];
+	let each_value_1 = /*nodes*/ ctx[0];
 	let each_blocks = [];
 
-	for (let i = 0; i < each_value.length; i += 1) {
-		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+	for (let i = 0; i < each_value_1.length; i += 1) {
+		each_blocks[i] = create_each_block_1(get_each_context_1(ctx, each_value_1, i));
 	}
 
 	const out = i => transition_out(each_blocks[i], 1, 1, () => {
@@ -269,18 +277,18 @@ function create_if_block_1(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty & /*removeNode, nodes, fmtSeen, fmtBytes*/ 8193) {
-				each_value = /*nodes*/ ctx[0];
+			if (dirty & /*showAgent, nodes, fmtBytes*/ 16385) {
+				each_value_1 = /*nodes*/ ctx[0];
 				let i;
 
-				for (i = 0; i < each_value.length; i += 1) {
-					const child_ctx = get_each_context(ctx, each_value, i);
+				for (i = 0; i < each_value_1.length; i += 1) {
+					const child_ctx = get_each_context_1(ctx, each_value_1, i);
 
 					if (each_blocks[i]) {
 						each_blocks[i].p(child_ctx, dirty);
 						transition_in(each_blocks[i], 1);
 					} else {
-						each_blocks[i] = create_each_block(child_ctx);
+						each_blocks[i] = create_each_block_1(child_ctx);
 						each_blocks[i].c();
 						transition_in(each_blocks[i], 1);
 						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
@@ -289,7 +297,7 @@ function create_if_block_1(ctx) {
 
 				group_outros();
 
-				for (i = each_value.length; i < each_blocks.length; i += 1) {
+				for (i = each_value_1.length; i < each_blocks.length; i += 1) {
 					out(i);
 				}
 
@@ -299,7 +307,7 @@ function create_if_block_1(ctx) {
 		i(local) {
 			if (current) return;
 
-			for (let i = 0; i < each_value.length; i += 1) {
+			for (let i = 0; i < each_value_1.length; i += 1) {
 				transition_in(each_blocks[i]);
 			}
 
@@ -321,53 +329,31 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (230:18) {#if !node.online}
+// (224:16) {#if node.kind === 'agent'}
 function create_if_block_3(ctx) {
-	let span;
-	let t_value = fmtSeen(/*node*/ ctx[19].last_seen) + "";
-	let t;
-
-	return {
-		c() {
-			span = element("span");
-			t = text(t_value);
-		},
-		m(target, anchor) {
-			insert(target, span, anchor);
-			append(span, t);
-		},
-		p(ctx, dirty) {
-			if (dirty & /*nodes*/ 1 && t_value !== (t_value = fmtSeen(/*node*/ ctx[19].last_seen) + "")) set_data(t, t_value);
-		},
-		d(detaching) {
-			if (detaching) detach(span);
-		}
-	};
-}
-
-// (234:16) {#if node.kind !== 'local'}
-function create_if_block_2(ctx) {
 	let button;
+	let t;
 	let icon;
 	let current;
 	let mounted;
 	let dispose;
-	icon = new Icon({ props: { name: "delete", size: 17 } });
+	icon = new Icon({ props: { name: "expand_more", size: 16 } });
 
 	function click_handler() {
-		return /*click_handler*/ ctx[14](/*node*/ ctx[19]);
+		return /*click_handler*/ ctx[17](/*node*/ ctx[25]);
 	}
 
 	return {
 		c() {
 			button = element("button");
+			t = text("查看\n                    ");
 			create_component(icon.$$.fragment);
-			attr(button, "class", "icon-btn danger node-delete svelte-15keadm");
-			attr(button, "title", "删除节点");
-			attr(button, "aria-label", "删除节点");
+			attr(button, "class", "view-btn svelte-1kuztn1");
+			attr(button, "title", "查看 Agent 出口");
 		},
 		m(target, anchor) {
 			insert(target, button, anchor);
+			append(button, t);
 			mount_component(icon, button, null);
 			current = true;
 
@@ -397,64 +383,66 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (217:10) {#each nodes as node}
-function create_each_block(ctx) {
+// (206:10) {#each nodes as node}
+function create_each_block_1(ctx) {
 	let tr;
 	let td0;
 	let div0;
-	let t0_value = /*node*/ ctx[19].name + "";
+	let t0_value = /*node*/ ctx[25].name + "";
 	let t0;
 	let t1;
 	let div1;
-	let t2_value = (/*node*/ ctx[19].kind === 'local' ? '本机' : 'Agent WARP') + "";
+
+	let t2_value = (/*node*/ ctx[25].kind === 'local'
+	? '本机 WARP'
+	: `Agent · ${/*node*/ ctx[25].egress_count || 0} 个 WARP 出口`) + "";
+
 	let t2;
 	let t3;
 	let td1;
-	let t4_value = (/*node*/ ctx[19].public_ip || '—') + "";
+	let t4_value = (/*node*/ ctx[25].public_ip || '—') + "";
 	let t4;
 	let t5;
 	let td2;
-	let t6_value = (/*node*/ ctx[19].country || '—') + "";
+	let t6_value = (/*node*/ ctx[25].country || '—') + "";
 	let t6;
 
-	let t7_value = (/*node*/ ctx[19].colo
-	? ` / ${/*node*/ ctx[19].colo}`
+	let t7_value = (/*node*/ ctx[25].colo
+	? ` / ${/*node*/ ctx[25].colo}`
 	: '') + "";
 
 	let t7;
 	let t8;
 	let td3;
 
-	let t9_value = (/*node*/ ctx[19].latency_ms
-	? /*node*/ ctx[19].latency_ms + ' ms'
+	let t9_value = (/*node*/ ctx[25].latency_ms
+	? /*node*/ ctx[25].latency_ms + ' ms'
 	: '—') + "";
 
 	let t9;
 	let t10;
 	let td4;
-	let t11_value = fmtBytes(/*node*/ ctx[19].tx_bytes) + "";
+	let t11_value = fmtBytes(/*node*/ ctx[25].tx_bytes) + "";
 	let t11;
 	let t12;
-	let t13_value = fmtBytes(/*node*/ ctx[19].rx_bytes) + "";
+	let t13_value = fmtBytes(/*node*/ ctx[25].rx_bytes) + "";
 	let t13;
 	let t14;
 	let td5;
 	let div2;
 	let statustag;
 	let t15;
-	let t16;
 	let td6;
-	let t17;
+	let t16;
 	let current;
 
 	statustag = new StatusTag({
 			props: {
-				status: /*node*/ ctx[19].online ? 'active' : 'inactive'
+				status: /*node*/ ctx[25].online ? 'active' : 'inactive'
 			}
 		});
 
-	let if_block0 = !/*node*/ ctx[19].online && create_if_block_3(ctx);
-	let if_block1 = /*node*/ ctx[19].kind !== 'local' && create_if_block_2(ctx);
+	let if_block = /*node*/ ctx[25].kind === 'agent' && create_if_block_3(ctx);
 
 	return {
 		c() {
@@ -485,16 +473,19 @@ function create_each_block(ctx) {
 			div2 = element("div");
 			create_component(statustag.$$.fragment);
 			t15 = space();
-			if (if_block0) if_block0.c();
-			t16 = space();
 			td6 = element("td");
-			if (if_block1) if_block1.c();
-			t17 = space();
-			attr(div0, "class", "node-name svelte-15keadm");
-			attr(div1, "class", "node-kind svelte-15keadm");
-			attr(td1, "class", "mono");
-			attr(td4, "class", "mono");
-			attr(div2, "class", "node-status svelte-15keadm");
+			if (if_block) if_block.c();
+			t16 = space();
+			attr(div0, "class", "node-name svelte-1kuztn1");
+			attr(div1, "class", "node-kind svelte-1kuztn1");
+			attr(td0, "class", "svelte-1kuztn1");
+			attr(td1, "class", "mono svelte-1kuztn1");
+			attr(td2, "class", "svelte-1kuztn1");
+			attr(td3, "class", "svelte-1kuztn1");
+			attr(td4, "class", "mono svelte-1kuztn1");
+			attr(div2, "class", "node-status svelte-1kuztn1");
+			attr(td5, "class", "svelte-1kuztn1");
+			attr(td6, "class", "svelte-1kuztn1");
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
@@ -523,65 +514,54 @@ function create_each_block(ctx) {
 			append(tr, td5);
 			append(td5, div2);
 			mount_component(statustag, div2, null);
-			append(div2, t15);
-			if (if_block0) if_block0.m(div2, null);
-			append(tr, t16);
+			append(tr, t15);
 			append(tr, td6);
-			if (if_block1) if_block1.m(td6, null);
-			append(tr, t17);
+			if (if_block) if_block.m(td6, null);
+			append(tr, t16);
 			current = true;
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty & /*nodes*/ 1) && t0_value !== (t0_value = /*node*/ ctx[19].name + "")) set_data(t0, t0_value);
-			if ((!current || dirty & /*nodes*/ 1) && t2_value !== (t2_value = (/*node*/ ctx[19].kind === 'local' ? '本机' : 'Agent WARP') + "")) set_data(t2, t2_value);
-			if ((!current || dirty & /*nodes*/ 1) && t4_value !== (t4_value = (/*node*/ ctx[19].public_ip || '—') + "")) set_data(t4, t4_value);
-			if ((!current || dirty & /*nodes*/ 1) && t6_value !== (t6_value = (/*node*/ ctx[19].country || '—') + "")) set_data(t6, t6_value);
+			if ((!current || dirty & /*nodes*/ 1) && t0_value !== (t0_value = /*node*/ ctx[25].name + "")) set_data(t0, t0_value);
 
-			if ((!current || dirty & /*nodes*/ 1) && t7_value !== (t7_value = (/*node*/ ctx[19].colo
-			? ` / ${/*node*/ ctx[19].colo}`
+			if ((!current || dirty & /*nodes*/ 1) && t2_value !== (t2_value = (/*node*/ ctx[25].kind === 'local'
+			? '本机 WARP'
+			: `Agent · ${/*node*/ ctx[25].egress_count || 0} 个 WARP 出口`) + "")) set_data(t2, t2_value);
+
+			if ((!current || dirty & /*nodes*/ 1) && t4_value !== (t4_value = (/*node*/ ctx[25].public_ip || '—') + "")) set_data(t4, t4_value);
+			if ((!current || dirty & /*nodes*/ 1) && t6_value !== (t6_value = (/*node*/ ctx[25].country || '—') + "")) set_data(t6, t6_value);
+
+			if ((!current || dirty & /*nodes*/ 1) && t7_value !== (t7_value = (/*node*/ ctx[25].colo
+			? ` / ${/*node*/ ctx[25].colo}`
 			: '') + "")) set_data(t7, t7_value);
 
-			if ((!current || dirty & /*nodes*/ 1) && t9_value !== (t9_value = (/*node*/ ctx[19].latency_ms
-			? /*node*/ ctx[19].latency_ms + ' ms'
+			if ((!current || dirty & /*nodes*/ 1) && t9_value !== (t9_value = (/*node*/ ctx[25].latency_ms
+			? /*node*/ ctx[25].latency_ms + ' ms'
 			: '—') + "")) set_data(t9, t9_value);
 
-			if ((!current || dirty & /*nodes*/ 1) && t11_value !== (t11_value = fmtBytes(/*node*/ ctx[19].tx_bytes) + "")) set_data(t11, t11_value);
-			if ((!current || dirty & /*nodes*/ 1) && t13_value !== (t13_value = fmtBytes(/*node*/ ctx[19].rx_bytes) + "")) set_data(t13, t13_value);
+			if ((!current || dirty & /*nodes*/ 1) && t11_value !== (t11_value = fmtBytes(/*node*/ ctx[25].tx_bytes) + "")) set_data(t11, t11_value);
+			if ((!current || dirty & /*nodes*/ 1) && t13_value !== (t13_value = fmtBytes(/*node*/ ctx[25].rx_bytes) + "")) set_data(t13, t13_value);
 			const statustag_changes = {};
-			if (dirty & /*nodes*/ 1) statustag_changes.status = /*node*/ ctx[19].online ? 'active' : 'inactive';
+			if (dirty & /*nodes*/ 1) statustag_changes.status = /*node*/ ctx[25].online ? 'active' : 'inactive';
 			statustag.$set(statustag_changes);
 
-			if (!/*node*/ ctx[19].online) {
-				if (if_block0) {
-					if_block0.p(ctx, dirty);
-				} else {
-					if_block0 = create_if_block_3(ctx);
-					if_block0.c();
-					if_block0.m(div2, null);
-				}
-			} else if (if_block0) {
-				if_block0.d(1);
-				if_block0 = null;
-			}
-
-			if (/*node*/ ctx[19].kind !== 'local') {
-				if (if_block1) {
-					if_block1.p(ctx, dirty);
+			if (/*node*/ ctx[25].kind === 'agent') {
+				if (if_block) {
+					if_block.p(ctx, dirty);
 
 					if (dirty & /*nodes*/ 1) {
-						transition_in(if_block1, 1);
+						transition_in(if_block, 1);
 					}
 				} else {
-					if_block1 = create_if_block_2(ctx);
-					if_block1.c();
-					transition_in(if_block1, 1);
-					if_block1.m(td6, null);
+					if_block = create_if_block_3(ctx);
+					if_block.c();
+					transition_in(if_block, 1);
+					if_block.m(td6, null);
 				}
-			} else if (if_block1) {
+			} else if (if_block) {
 				group_outros();
 
-				transition_out(if_block1, 1, 1, () => {
-					if_block1 = null;
+				transition_out(if_block, 1, 1, () => {
+					if_block = null;
 				});
 
 				check_outros();
@@ -590,19 +570,365 @@ function create_each_block(ctx) {
 		i(local) {
 			if (current) return;
 			transition_in(statustag.$$.fragment, local);
-			transition_in(if_block1);
+			transition_in(if_block);
 			current = true;
 		},
 		o(local) {
 			transition_out(statustag.$$.fragment, local);
-			transition_out(if_block1);
+			transition_out(if_block);
 			current = false;
 		},
 		d(detaching) {
 			if (detaching) detach(tr);
 			destroy_component(statustag);
-			if (if_block0) if_block0.d();
-			if (if_block1) if_block1.d();
+			if (if_block) if_block.d();
+		}
+	};
+}
+
+// (241:0) {#if selectedAgent}
+function create_if_block(ctx) {
+	let div4;
+	let section;
+	let div1;
+	let div0;
+	let h3;
+	let t0_value = /*selectedAgent*/ ctx[10].name + "";
+	let t0;
+	let t1;
+	let p;
+	let t2_value = (/*selectedAgent*/ ctx[10].public_ip || '公网 IP 未知') + "";
+	let t2;
+	let t3;
+	let t4_value = (/*selectedAgent*/ ctx[10].country || '地区未知') + "";
+	let t4;
+
+	let t5_value = (/*selectedAgent*/ ctx[10].colo
+	? ` / ${/*selectedAgent*/ ctx[10].colo}`
+	: '') + "";
+
+	let t5;
+	let t6;
+	let button;
+	let icon;
+	let t7;
+	let div2;
+	let span0;
+	let b0;
+	let t8_value = (/*selectedAgent*/ ctx[10].egress_count || 0) + "";
+	let t8;
+	let t9;
+	let t10;
+	let span1;
+	let t11;
+	let b1;
+
+	let t12_value = (/*selectedAgent*/ ctx[10].latency_ms
+	? `${/*selectedAgent*/ ctx[10].latency_ms} ms`
+	: '—') + "";
+
+	let t12;
+	let t13;
+	let span2;
+	let t14;
+	let b2;
+	let t15_value = fmtBytes(/*selectedAgent*/ ctx[10].tx_bytes) + "";
+	let t15;
+	let t16;
+	let t17_value = fmtBytes(/*selectedAgent*/ ctx[10].rx_bytes) + "";
+	let t17;
+	let t18;
+	let div3;
+	let table;
+	let thead;
+	let t23;
+	let tbody;
+	let current;
+	let mounted;
+	let dispose;
+	icon = new Icon({ props: { name: "close", size: 19 } });
+	let each_value = /*selectedAgent*/ ctx[10].egresses || [];
+	let each_blocks = [];
+
+	for (let i = 0; i < each_value.length; i += 1) {
+		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+	}
+
+	return {
+		c() {
+			div4 = element("div");
+			section = element("section");
+			div1 = element("div");
+			div0 = element("div");
+			h3 = element("h3");
+			t0 = text(t0_value);
+			t1 = space();
+			p = element("p");
+			t2 = text(t2_value);
+			t3 = text(" · ");
+			t4 = text(t4_value);
+			t5 = text(t5_value);
+			t6 = space();
+			button = element("button");
+			create_component(icon.$$.fragment);
+			t7 = space();
+			div2 = element("div");
+			span0 = element("span");
+			b0 = element("b");
+			t8 = text(t8_value);
+			t9 = text(" 个 WARP 出口");
+			t10 = space();
+			span1 = element("span");
+			t11 = text("平均延迟 ");
+			b1 = element("b");
+			t12 = text(t12_value);
+			t13 = space();
+			span2 = element("span");
+			t14 = text("流量 ");
+			b2 = element("b");
+			t15 = text(t15_value);
+			t16 = text(" / ");
+			t17 = text(t17_value);
+			t18 = space();
+			div3 = element("div");
+			table = element("table");
+			thead = element("thead");
+			thead.innerHTML = `<tr><th class="svelte-1kuztn1">出口 IP</th><th class="svelte-1kuztn1">地区 / 机房</th><th class="svelte-1kuztn1">延迟</th><th class="svelte-1kuztn1">流量 ↑ / ↓</th></tr>`;
+			t23 = space();
+			tbody = element("tbody");
+
+			for (let i = 0; i < each_blocks.length; i += 1) {
+				each_blocks[i].c();
+			}
+
+			attr(h3, "class", "svelte-1kuztn1");
+			attr(p, "class", "svelte-1kuztn1");
+			attr(button, "class", "modal-close svelte-1kuztn1");
+			attr(button, "title", "关闭");
+			attr(button, "aria-label", "关闭");
+			attr(div1, "class", "modal-header svelte-1kuztn1");
+			attr(b0, "class", "svelte-1kuztn1");
+			attr(b1, "class", "svelte-1kuztn1");
+			attr(b2, "class", "svelte-1kuztn1");
+			attr(div2, "class", "egress-summary svelte-1kuztn1");
+			attr(table, "class", "egress-table svelte-1kuztn1");
+			attr(div3, "class", "egress-table-wrap svelte-1kuztn1");
+			attr(section, "class", "agent-modal svelte-1kuztn1");
+			attr(section, "role", "dialog");
+			attr(section, "aria-modal", "true");
+			attr(section, "aria-label", "Agent 出口详情");
+			attr(div4, "class", "modal-backdrop svelte-1kuztn1");
+			attr(div4, "role", "presentation");
+		},
+		m(target, anchor) {
+			insert(target, div4, anchor);
+			append(div4, section);
+			append(section, div1);
+			append(div1, div0);
+			append(div0, h3);
+			append(h3, t0);
+			append(div0, t1);
+			append(div0, p);
+			append(p, t2);
+			append(p, t3);
+			append(p, t4);
+			append(p, t5);
+			append(div1, t6);
+			append(div1, button);
+			mount_component(icon, button, null);
+			append(section, t7);
+			append(section, div2);
+			append(div2, span0);
+			append(span0, b0);
+			append(b0, t8);
+			append(span0, t9);
+			append(div2, t10);
+			append(div2, span1);
+			append(span1, t11);
+			append(span1, b1);
+			append(b1, t12);
+			append(div2, t13);
+			append(div2, span2);
+			append(span2, t14);
+			append(span2, b2);
+			append(b2, t15);
+			append(b2, t16);
+			append(b2, t17);
+			append(section, t18);
+			append(section, div3);
+			append(div3, table);
+			append(table, thead);
+			append(table, t23);
+			append(table, tbody);
+
+			for (let i = 0; i < each_blocks.length; i += 1) {
+				if (each_blocks[i]) {
+					each_blocks[i].m(tbody, null);
+				}
+			}
+
+			current = true;
+
+			if (!mounted) {
+				dispose = [
+					listen(button, "click", /*closeAgent*/ ctx[15]),
+					listen(div4, "click", self(/*closeAgent*/ ctx[15]))
+				];
+
+				mounted = true;
+			}
+		},
+		p(ctx, dirty) {
+			if ((!current || dirty & /*selectedAgent*/ 1024) && t0_value !== (t0_value = /*selectedAgent*/ ctx[10].name + "")) set_data(t0, t0_value);
+			if ((!current || dirty & /*selectedAgent*/ 1024) && t2_value !== (t2_value = (/*selectedAgent*/ ctx[10].public_ip || '公网 IP 未知') + "")) set_data(t2, t2_value);
+			if ((!current || dirty & /*selectedAgent*/ 1024) && t4_value !== (t4_value = (/*selectedAgent*/ ctx[10].country || '地区未知') + "")) set_data(t4, t4_value);
+
+			if ((!current || dirty & /*selectedAgent*/ 1024) && t5_value !== (t5_value = (/*selectedAgent*/ ctx[10].colo
+			? ` / ${/*selectedAgent*/ ctx[10].colo}`
+			: '') + "")) set_data(t5, t5_value);
+
+			if ((!current || dirty & /*selectedAgent*/ 1024) && t8_value !== (t8_value = (/*selectedAgent*/ ctx[10].egress_count || 0) + "")) set_data(t8, t8_value);
+
+			if ((!current || dirty & /*selectedAgent*/ 1024) && t12_value !== (t12_value = (/*selectedAgent*/ ctx[10].latency_ms
+			? `${/*selectedAgent*/ ctx[10].latency_ms} ms`
+			: '—') + "")) set_data(t12, t12_value);
+
+			if ((!current || dirty & /*selectedAgent*/ 1024) && t15_value !== (t15_value = fmtBytes(/*selectedAgent*/ ctx[10].tx_bytes) + "")) set_data(t15, t15_value);
+			if ((!current || dirty & /*selectedAgent*/ 1024) && t17_value !== (t17_value = fmtBytes(/*selectedAgent*/ ctx[10].rx_bytes) + "")) set_data(t17, t17_value);
+
+			if (dirty & /*fmtBytes, selectedAgent*/ 1024) {
+				each_value = /*selectedAgent*/ ctx[10].egresses || [];
+				let i;
+
+				for (i = 0; i < each_value.length; i += 1) {
+					const child_ctx = get_each_context(ctx, each_value, i);
+
+					if (each_blocks[i]) {
+						each_blocks[i].p(child_ctx, dirty);
+					} else {
+						each_blocks[i] = create_each_block(child_ctx);
+						each_blocks[i].c();
+						each_blocks[i].m(tbody, null);
+					}
+				}
+
+				for (; i < each_blocks.length; i += 1) {
+					each_blocks[i].d(1);
+				}
+
+				each_blocks.length = each_value.length;
+			}
+		},
+		i(local) {
+			if (current) return;
+			transition_in(icon.$$.fragment, local);
+			current = true;
+		},
+		o(local) {
+			transition_out(icon.$$.fragment, local);
+			current = false;
+		},
+		d(detaching) {
+			if (detaching) detach(div4);
+			destroy_component(icon);
+			destroy_each(each_blocks, detaching);
+			mounted = false;
+			run_all(dispose);
+		}
+	};
+}
+
+// (264:12) {#each selectedAgent.egresses || [] as egress}
+function create_each_block(ctx) {
+	let tr;
+	let td0;
+	let t0_value = (/*egress*/ ctx[22].public_ip || '—') + "";
+	let t0;
+	let t1;
+	let td1;
+	let t2_value = (/*egress*/ ctx[22].country || '—') + "";
+	let t2;
+
+	let t3_value = (/*egress*/ ctx[22].colo
+	? ` / ${/*egress*/ ctx[22].colo}`
+	: '') + "";
+
+	let t3;
+	let t4;
+	let td2;
+
+	let t5_value = (/*egress*/ ctx[22].latency_ms
+	? `${/*egress*/ ctx[22].latency_ms} ms`
+	: '—') + "";
+
+	let t5;
+	let t6;
+	let td3;
+	let t7_value = fmtBytes(/*egress*/ ctx[22].tx_bytes) + "";
+	let t7;
+	let t8;
+	let t9_value = fmtBytes(/*egress*/ ctx[22].rx_bytes) + "";
+	let t9;
+	let t10;
+
+	return {
+		c() {
+			tr = element("tr");
+			td0 = element("td");
+			t0 = text(t0_value);
+			t1 = space();
+			td1 = element("td");
+			t2 = text(t2_value);
+			t3 = text(t3_value);
+			t4 = space();
+			td2 = element("td");
+			t5 = text(t5_value);
+			t6 = space();
+			td3 = element("td");
+			t7 = text(t7_value);
+			t8 = text(" / ");
+			t9 = text(t9_value);
+			t10 = space();
+			attr(td0, "class", "mono svelte-1kuztn1");
+			attr(td1, "class", "svelte-1kuztn1");
+			attr(td2, "class", "svelte-1kuztn1");
+			attr(td3, "class", "mono svelte-1kuztn1");
+		},
+		m(target, anchor) {
+			insert(target, tr, anchor);
+			append(tr, td0);
+			append(td0, t0);
+			append(tr, t1);
+			append(tr, td1);
+			append(td1, t2);
+			append(td1, t3);
+			append(tr, t4);
+			append(tr, td2);
+			append(td2, t5);
+			append(tr, t6);
+			append(tr, td3);
+			append(td3, t7);
+			append(td3, t8);
+			append(td3, t9);
+			append(tr, t10);
+		},
+		p(ctx, dirty) {
+			if (dirty & /*selectedAgent*/ 1024 && t0_value !== (t0_value = (/*egress*/ ctx[22].public_ip || '—') + "")) set_data(t0, t0_value);
+			if (dirty & /*selectedAgent*/ 1024 && t2_value !== (t2_value = (/*egress*/ ctx[22].country || '—') + "")) set_data(t2, t2_value);
+
+			if (dirty & /*selectedAgent*/ 1024 && t3_value !== (t3_value = (/*egress*/ ctx[22].colo
+			? ` / ${/*egress*/ ctx[22].colo}`
+			: '') + "")) set_data(t3, t3_value);
+
+			if (dirty & /*selectedAgent*/ 1024 && t5_value !== (t5_value = (/*egress*/ ctx[22].latency_ms
+			? `${/*egress*/ ctx[22].latency_ms} ms`
+			: '—') + "")) set_data(t5, t5_value);
+
+			if (dirty & /*selectedAgent*/ 1024 && t7_value !== (t7_value = fmtBytes(/*egress*/ ctx[22].tx_bytes) + "")) set_data(t7, t7_value);
+			if (dirty & /*selectedAgent*/ 1024 && t9_value !== (t9_value = fmtBytes(/*egress*/ ctx[22].rx_bytes) + "")) set_data(t9, t9_value);
+		},
+		d(detaching) {
+			if (detaching) detach(tr);
 		}
 	};
 }
@@ -651,7 +977,8 @@ function create_fragment(ctx) {
 	let t19;
 	let current_block_type_index;
 	let if_block3;
-	let if_block3_anchor;
+	let t20;
+	let if_block4_anchor;
 	let current;
 	let mounted;
 	let dispose;
@@ -674,7 +1001,7 @@ function create_fragment(ctx) {
 		});
 
 	let if_block2 = /*error*/ ctx[2] && create_if_block_4(ctx);
-	const if_block_creators = [create_if_block, create_else_block];
+	const if_block_creators = [create_if_block_1, create_else_block];
 	const if_blocks = [];
 
 	function select_block_type(ctx, dirty) {
@@ -684,16 +1011,17 @@ function create_fragment(ctx) {
 
 	current_block_type_index = select_block_type(ctx, -1);
 	if_block3 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+	let if_block4 = /*selectedAgent*/ ctx[10] && create_if_block(ctx);
 
 	return {
 		c() {
 			div0 = element("div");
-			div0.innerHTML = `<h2 class="svelte-15keadm">节点</h2>`;
+			div0.innerHTML = `<h2 class="svelte-1kuztn1">节点</h2>`;
 			t1 = space();
 			div7 = element("div");
 			div3 = element("div");
 			div1 = element("div");
-			div1.innerHTML = `<strong>接入节点</strong><span class="svelte-15keadm">自动创建 3 个当地 WARP 出口</span>`;
+			div1.innerHTML = `<strong>接入节点</strong><span class="svelte-1kuztn1">自动创建 3 个当地 WARP 出口</span>`;
 			t4 = space();
 			div2 = element("div");
 			button0 = element("button");
@@ -727,27 +1055,29 @@ function create_fragment(ctx) {
 			if (if_block2) if_block2.c();
 			t19 = space();
 			if_block3.c();
-			if_block3_anchor = empty();
-			attr(div0, "class", "page-header compact-header svelte-15keadm");
-			attr(div1, "class", "enroll-head svelte-15keadm");
-			attr(button0, "class", "link-btn uninstall-btn svelte-15keadm");
+			t20 = space();
+			if (if_block4) if_block4.c();
+			if_block4_anchor = empty();
+			attr(div0, "class", "page-header compact-header svelte-1kuztn1");
+			attr(div1, "class", "enroll-head svelte-1kuztn1");
+			attr(button0, "class", "link-btn uninstall-btn svelte-1kuztn1");
 			button0.disabled = button0_disabled_value = !/*uninstallCommand*/ ctx[4];
-			attr(button1, "class", "link-btn svelte-15keadm");
+			attr(button1, "class", "link-btn svelte-1kuztn1");
 			button1.disabled = /*rotating*/ ctx[9];
-			attr(div2, "class", "enroll-actions svelte-15keadm");
-			attr(div3, "class", "enroll-toolbar svelte-15keadm");
-			attr(code0, "class", "cmd svelte-15keadm");
+			attr(div2, "class", "enroll-actions svelte-1kuztn1");
+			attr(div3, "class", "enroll-toolbar svelte-1kuztn1");
+			attr(code0, "class", "cmd svelte-1kuztn1");
 			attr(code0, "title", /*installCommand*/ ctx[3]);
-			attr(button2, "class", "copy-trigger command-copy svelte-15keadm");
+			attr(button2, "class", "copy-trigger command-copy svelte-1kuztn1");
 			attr(button2, "title", button2_title_value = /*copied*/ ctx[8] === 'install' ? '已复制' : '复制命令');
 			attr(button2, "aria-label", button2_aria_label_value = /*copied*/ ctx[8] === 'install' ? '已复制' : '复制命令');
 			button2.disabled = button2_disabled_value = !/*installCommand*/ ctx[3];
 			toggle_class(button2, "done", /*copied*/ ctx[8] === 'install');
-			attr(div4, "class", "cmd-row svelte-15keadm");
-			attr(code1, "class", "svelte-15keadm");
-			attr(div5, "class", "enroll-server svelte-15keadm");
-			attr(div6, "class", "enroll-body svelte-15keadm");
-			attr(div7, "class", "enroll-card svelte-15keadm");
+			attr(div4, "class", "cmd-row svelte-1kuztn1");
+			attr(code1, "class", "svelte-1kuztn1");
+			attr(div5, "class", "enroll-server svelte-1kuztn1");
+			attr(div6, "class", "enroll-body svelte-1kuztn1");
+			attr(div7, "class", "enroll-card svelte-1kuztn1");
 		},
 		m(target, anchor) {
 			insert(target, div0, anchor);
@@ -787,14 +1117,16 @@ function create_fragment(ctx) {
 			if (if_block2) if_block2.m(target, anchor);
 			insert(target, t19, anchor);
 			if_blocks[current_block_type_index].m(target, anchor);
-			insert(target, if_block3_anchor, anchor);
+			insert(target, t20, anchor);
+			if (if_block4) if_block4.m(target, anchor);
+			insert(target, if_block4_anchor, anchor);
 			current = true;
 
 			if (!mounted) {
 				dispose = [
-					listen(button0, "click", /*copyUninstall*/ ctx[11]),
-					listen(button1, "click", /*rotateToken*/ ctx[12]),
-					listen(button2, "click", /*copyInstall*/ ctx[10])
+					listen(button0, "click", /*copyUninstall*/ ctx[12]),
+					listen(button1, "click", /*rotateToken*/ ctx[13]),
+					listen(button2, "click", /*copyInstall*/ ctx[11])
 				];
 
 				mounted = true;
@@ -906,7 +1238,30 @@ function create_fragment(ctx) {
 				}
 
 				transition_in(if_block3, 1);
-				if_block3.m(if_block3_anchor.parentNode, if_block3_anchor);
+				if_block3.m(t20.parentNode, t20);
+			}
+
+			if (/*selectedAgent*/ ctx[10]) {
+				if (if_block4) {
+					if_block4.p(ctx, dirty);
+
+					if (dirty & /*selectedAgent*/ 1024) {
+						transition_in(if_block4, 1);
+					}
+				} else {
+					if_block4 = create_if_block(ctx);
+					if_block4.c();
+					transition_in(if_block4, 1);
+					if_block4.m(if_block4_anchor.parentNode, if_block4_anchor);
+				}
+			} else if (if_block4) {
+				group_outros();
+
+				transition_out(if_block4, 1, 1, () => {
+					if_block4 = null;
+				});
+
+				check_outros();
 			}
 		},
 		i(local) {
@@ -914,12 +1269,14 @@ function create_fragment(ctx) {
 			transition_in(icon0.$$.fragment, local);
 			transition_in(icon1.$$.fragment, local);
 			transition_in(if_block3);
+			transition_in(if_block4);
 			current = true;
 		},
 		o(local) {
 			transition_out(icon0.$$.fragment, local);
 			transition_out(icon1.$$.fragment, local);
 			transition_out(if_block3);
+			transition_out(if_block4);
 			current = false;
 		},
 		d(detaching) {
@@ -934,7 +1291,9 @@ function create_fragment(ctx) {
 			if (if_block2) if_block2.d(detaching);
 			if (detaching) detach(t19);
 			if_blocks[current_block_type_index].d(detaching);
-			if (detaching) detach(if_block3_anchor);
+			if (detaching) detach(t20);
+			if (if_block4) if_block4.d(detaching);
+			if (detaching) detach(if_block4_anchor);
 			mounted = false;
 			run_all(dispose);
 		}
@@ -973,17 +1332,6 @@ function fmtBytes(n) {
 	return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-function fmtSeen(ts) {
-	if (!ts) return '—';
-	const d = new Date(ts);
-	if (isNaN(d)) return '—';
-	const diff = (Date.now() - d.getTime()) / 1000;
-	if (diff < 60) return '刚刚';
-	if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
-	if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
-	return d.toLocaleString();
-}
-
 function displayInstallCommand(value) {
 	if (!value) return '生成中…';
 
@@ -994,9 +1342,11 @@ function displayInstallCommand(value) {
 }
 
 function instance($$self, $$props, $$invalidate) {
+	let selectedAgent;
 	let nodes = [];
 	let loading = true;
 	let error = '';
+	let selectedAgentID = '';
 	let installCommand = '';
 	let uninstallCommand = '';
 	let server = '';
@@ -1011,6 +1361,11 @@ function instance($$self, $$props, $$invalidate) {
 			if (!res.ok) throw new Error('加载失败');
 			const data = await res.json();
 			$$invalidate(0, nodes = data.nodes || []);
+
+			if (selectedAgentID && !nodes.some(node => node.node_id === selectedAgentID)) {
+				$$invalidate(16, selectedAgentID = '');
+			}
+
 			$$invalidate(2, error = '');
 		} catch(err) {
 			$$invalidate(2, error = err.message);
@@ -1040,7 +1395,7 @@ function instance($$self, $$props, $$invalidate) {
 	onMount(() => {
 		fetchNodes();
 		fetchEnroll();
-		timer = setInterval(fetchNodes, 5000);
+		timer = setInterval(fetchNodes, 3000);
 	});
 
 	onDestroy(() => clearInterval(timer));
@@ -1087,25 +1442,23 @@ function instance($$self, $$props, $$invalidate) {
 		}
 	}
 
-	async function removeNode(node) {
-		if (node.kind === 'local') return;
-		if (!confirm(`删除节点「${node.name}」？如果它还在线，重连后会重新登记；应先在该 VPS 上停止 pfagent 服务。`)) return;
-
-		try {
-			const res = await fetch('/api/nodes/delete', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ node_id: node.node_id })
-			});
-
-			if (!res.ok) throw new Error('删除失败');
-			await fetchNodes();
-		} catch(err) {
-			$$invalidate(2, error = err.message);
-		}
+	function showAgent(node) {
+		$$invalidate(16, selectedAgentID = node.node_id);
 	}
 
-	const click_handler = node => removeNode(node);
+	function closeAgent() {
+		$$invalidate(16, selectedAgentID = '');
+	}
+
+	const click_handler = node => showAgent(node);
+
+	$$self.$$.update = () => {
+		if ($$self.$$.dirty & /*selectedAgentID, nodes*/ 65537) {
+			$: $$invalidate(10, selectedAgent = selectedAgentID
+			? nodes.find(node => node.kind === 'agent' && node.node_id === selectedAgentID) || null
+			: null);
+		}
+	};
 
 	return [
 		nodes,
@@ -1118,10 +1471,13 @@ function instance($$self, $$props, $$invalidate) {
 		enrollError,
 		copied,
 		rotating,
+		selectedAgent,
 		copyInstall,
 		copyUninstall,
 		rotateToken,
-		removeNode,
+		showAgent,
+		closeAgent,
+		selectedAgentID,
 		click_handler
 	];
 }

@@ -37,12 +37,18 @@ const (
 
 // Meta 是 agent 连接时上报的自描述信息，来自握手 URL 的查询参数。
 type Meta struct {
-	NodeID   string
-	Name     string
-	PublicIP string
-	Country  string
-	Colo     string
-	Version  string
+	NodeID       string
+	Name         string
+	PublicIP     string
+	Country      string
+	Colo         string
+	Version      string
+	AgentID      string
+	AgentName    string
+	HostPublicIP string
+	HostCountry  string
+	HostColo     string
+	EgressIndex  int
 }
 
 // Hub 管理在线 agent 会话。它同时实现 proxy.AgentResolver，被注入到 proxy.Manager。

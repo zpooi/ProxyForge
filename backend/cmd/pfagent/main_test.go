@@ -22,6 +22,36 @@ func TestWarpNodeIdentity(t *testing.T) {
 	}
 }
 
+func TestBuildQueryIncludesAgentHostAndWarpEgress(t *testing.T) {
+	egress := &warpEgress{
+		index:     1,
+		agentID:   "agent-123",
+		agentName: "Malaysia VPS",
+		nodeID:    "agent-123-2",
+		name:      "MY WARP #2",
+	}
+	query := buildQuery(
+		"secret",
+		egress,
+		egressMeta{ip: "104.28.1.2", country: "MY", colo: "KUL"},
+		egressMeta{ip: "203.0.113.8", country: "MY", colo: "KUL"},
+	)
+
+	for key, want := range map[string]string{
+		"agent_id":     "agent-123",
+		"agent_name":   "Malaysia VPS",
+		"node_id":      "agent-123-2",
+		"egress_index": "2",
+		"ip":           "104.28.1.2",
+		"host_ip":      "203.0.113.8",
+		"host_country": "MY",
+	} {
+		if got := query.Get(key); got != want {
+			t.Fatalf("query[%s] = %q, want %q", key, got, want)
+		}
+	}
+}
+
 func TestWarpProfilePersistence(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "warp-profiles.json")
 	profiles := []warp.Account{{DeviceID: "device-1", AccessToken: "token-1"}}
