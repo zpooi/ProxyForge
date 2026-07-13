@@ -3,6 +3,7 @@ package proxy
 import (
 	"bufio"
 	"crypto/tls"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -69,7 +70,7 @@ func TestMixedServerCloseTerminatesAcceptedConnections(t *testing.T) {
 	wg.Wait()
 }
 
-func TestStrictTLSListenerRejectsPlaintext(t *testing.T) {
+func TestTLSCapableListenerAcceptsPlaintextHTTP(t *testing.T) {
 	tlsConfig, err := newSelfSignedTLSConfig("proxy.example.test")
 	if err != nil {
 		t.Fatal(err)
@@ -87,12 +88,45 @@ func TestStrictTLSListenerRejectsPlaintext(t *testing.T) {
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(time.Second))
 	_, _ = conn.Write([]byte("GET http://example.test/ HTTP/1.1\r\nHost: example.test\r\n\r\n"))
-	if _, err := conn.Read(make([]byte, 1)); err == nil {
-		t.Fatal("TLS listener accepted a plaintext HTTP proxy request")
+	line, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(line, "407") {
+		t.Fatalf("plaintext proxy response = %q, want 407", line)
 	}
 }
 
-func TestStrictTLSListenerAcceptsTLS(t *testing.T) {
+func TestTLSCapableListenerAcceptsPlaintextSOCKS5(t *testing.T) {
+	tlsConfig, err := newSelfSignedTLSConfig("proxy.example.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv, err := startProxy("127.0.0.1", 0, func(string, string, string) []Egress { return nil }, nil, tlsConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Close()
+
+	conn, err := net.Dial("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(srv.port())))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(time.Second))
+	if _, err := conn.Write([]byte{0x05, 0x01, 0x02}); err != nil {
+		t.Fatal(err)
+	}
+	reply := make([]byte, 2)
+	if _, err := io.ReadFull(conn, reply); err != nil {
+		t.Fatal(err)
+	}
+	if reply[0] != 0x05 || reply[1] != 0x02 {
+		t.Fatalf("SOCKS5 method reply = %v, want username/password", reply)
+	}
+}
+
+func TestTLSCapableListenerAcceptsTLS(t *testing.T) {
 	tlsConfig, err := newSelfSignedTLSConfig("proxy.example.test")
 	if err != nil {
 		t.Fatal(err)

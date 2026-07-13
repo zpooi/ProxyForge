@@ -73,7 +73,7 @@ When these variables are omitted and `Proxy public host` is a domain, ProxyForge
 
 ## Security defaults
 
-- Proxy TLS is strict when enabled: plaintext HTTP/SOCKS5 is rejected on that port.
+- The proxy port accepts HTTP and SOCKS5 directly; when TLS is enabled it also accepts HTTPS-proxy connections on the same port.
 - Empty global proxy passwords are replaced with a random password during startup; aliases never accept an empty password.
 - The web UI applies per-IP and global request throttles, temporary scanner bans, and a stricter failed-login ban.
 - Agent admission tokens use an `Authorization: Bearer` header instead of URL query parameters.

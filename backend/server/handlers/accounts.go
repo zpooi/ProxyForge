@@ -141,7 +141,6 @@ func (h *Handlers) AccountsJSON(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	proxyPassword, _, _ := h.DB.GetSetting(SettingProxyPassword)
-	proxyTLS, _, _ := h.DB.GetSetting(SettingProxyTLS)
 	agents := h.collectAgentProxyViews(agentProxyPassword(proxyPassword))
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
@@ -150,7 +149,6 @@ func (h *Handlers) AccountsJSON(w http.ResponseWriter, r *http.Request) {
 		"agents":     agents,
 		"proxy_host": proxyHost,
 		"proxy_port": proxyPort,
-		"proxy_tls":  proxyTLS != "off",
 	})
 }
 

@@ -152,12 +152,7 @@ func (s *mixedServer) handle(client net.Conn) {
 	// 客户端用 https 代理连接时，先在这一跳套一层 TLS，把明文的 CONNECT 主机名
 	// 藏进加密流里，避开审查中间盒基于主机名的连接重置。解密后按同样的方式
 	// 重新分发下层的 SOCKS5 / HTTP 代理协议。
-	if s.tlsConfig != nil {
-		// TLS-enabled listeners are strict: never downgrade to plaintext SOCKS5
-		// or HTTP on the same public port.
-		if first[0] != 0x16 {
-			return
-		}
+	if first[0] == 0x16 && s.tlsConfig != nil {
 		tlsConn := tls.Server(&peekedConn{Conn: client, br: br}, s.tlsConfig)
 		_ = tlsConn.SetDeadline(time.Now().Add(30 * time.Second))
 		if err := tlsConn.Handshake(); err != nil {

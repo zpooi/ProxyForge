@@ -41,36 +41,36 @@ function add_css(target) {
 
 function get_each_context_1(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[27] = list[i];
+	child_ctx[25] = list[i];
 	return child_ctx;
 }
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[27] = list[i];
+	child_ctx[25] = list[i];
 	return child_ctx;
 }
 
 function get_else_ctx(ctx) {
 	const child_ctx = ctx.slice();
-	const constants_0 = /*slots*/ child_ctx[0].find(s => s.username === /*menu*/ child_ctx[7].username) || /*agents*/ child_ctx[1].find(a => a.username === /*menu*/ child_ctx[7].username);
-	child_ctx[30] = constants_0;
+	const constants_0 = /*slots*/ child_ctx[0].find(s => s.username === /*menu*/ child_ctx[6].username) || /*agents*/ child_ctx[1].find(a => a.username === /*menu*/ child_ctx[6].username);
+	child_ctx[28] = constants_0;
 	return child_ctx;
 }
 
 function get_each_context_2(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[33] = list[i];
+	child_ctx[31] = list[i];
 	return child_ctx;
 }
 
 function get_each_context_3(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[30] = list[i];
+	child_ctx[28] = list[i];
 	return child_ctx;
 }
 
-// (213:2) {#if subUrl}
+// (210:2) {#if subUrl}
 function create_if_block_6(ctx) {
 	let p;
 
@@ -89,7 +89,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (216:2) {#if rotate && rotate.host}
+// (213:2) {#if rotate && rotate.host}
 function create_if_block_5(ctx) {
 	let div1;
 	let div0;
@@ -104,7 +104,7 @@ function create_if_block_5(ctx) {
 
 	icon0 = new Icon({
 			props: {
-				name: /*copied*/ ctx[4] === 'rotate-http' || /*copied*/ ctx[4] === 'rotate-socks5'
+				name: /*copied*/ ctx[3] === 'rotate-http' || /*copied*/ ctx[3] === 'rotate-socks5'
 				? 'check'
 				: 'copy',
 				size: 18
@@ -128,8 +128,8 @@ function create_if_block_5(ctx) {
 			attr(button, "class", "copy-trigger rotate-trigger svelte-11dir44");
 			attr(button, "title", "复制轮换链接");
 			attr(button, "aria-label", "复制轮换链接");
-			toggle_class(button, "done", /*copied*/ ctx[4] === 'rotate-http' || /*copied*/ ctx[4] === 'rotate-socks5');
-			toggle_class(button, "open", /*menu*/ ctx[7] && /*menu*/ ctx[7].kind === 'rotate');
+			toggle_class(button, "done", /*copied*/ ctx[3] === 'rotate-http' || /*copied*/ ctx[3] === 'rotate-socks5');
+			toggle_class(button, "open", /*menu*/ ctx[6] && /*menu*/ ctx[6].kind === 'rotate');
 			attr(div1, "class", "rotate-block svelte-11dir44");
 		},
 		m(target, anchor) {
@@ -143,25 +143,25 @@ function create_if_block_5(ctx) {
 			current = true;
 
 			if (!mounted) {
-				dispose = listen(button, "click", /*toggleRotateMenu*/ ctx[11]);
+				dispose = listen(button, "click", /*toggleRotateMenu*/ ctx[9]);
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
 			const icon0_changes = {};
 
-			if (dirty[0] & /*copied*/ 16) icon0_changes.name = /*copied*/ ctx[4] === 'rotate-http' || /*copied*/ ctx[4] === 'rotate-socks5'
+			if (dirty[0] & /*copied*/ 8) icon0_changes.name = /*copied*/ ctx[3] === 'rotate-http' || /*copied*/ ctx[3] === 'rotate-socks5'
 			? 'check'
 			: 'copy';
 
 			icon0.$set(icon0_changes);
 
-			if (!current || dirty[0] & /*copied*/ 16) {
-				toggle_class(button, "done", /*copied*/ ctx[4] === 'rotate-http' || /*copied*/ ctx[4] === 'rotate-socks5');
+			if (!current || dirty[0] & /*copied*/ 8) {
+				toggle_class(button, "done", /*copied*/ ctx[3] === 'rotate-http' || /*copied*/ ctx[3] === 'rotate-socks5');
 			}
 
-			if (!current || dirty[0] & /*menu*/ 128) {
-				toggle_class(button, "open", /*menu*/ ctx[7] && /*menu*/ ctx[7].kind === 'rotate');
+			if (!current || dirty[0] & /*menu*/ 64) {
+				toggle_class(button, "open", /*menu*/ ctx[6] && /*menu*/ ctx[6].kind === 'rotate');
 			}
 		},
 		i(local) {
@@ -185,7 +185,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (236:0) {#if error}
+// (233:0) {#if error}
 function create_if_block_4(ctx) {
 	let div;
 	let t0;
@@ -195,7 +195,7 @@ function create_if_block_4(ctx) {
 		c() {
 			div = element("div");
 			t0 = text("加载失败：");
-			t1 = text(/*error*/ ctx[3]);
+			t1 = text(/*error*/ ctx[2]);
 			attr(div, "class", "alert");
 		},
 		m(target, anchor) {
@@ -204,7 +204,7 @@ function create_if_block_4(ctx) {
 			append(div, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*error*/ 8) set_data(t1, /*error*/ ctx[3]);
+			if (dirty[0] & /*error*/ 4) set_data(t1, /*error*/ ctx[2]);
 		},
 		d(detaching) {
 			if (detaching) detach(div);
@@ -212,7 +212,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (328:6) {#if slots.length}
+// (325:6) {#if slots.length}
 function create_if_block_3(ctx) {
 	let each_1_anchor;
 	let current;
@@ -246,7 +246,7 @@ function create_if_block_3(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*copied, slots, menu, toggleMenu*/ 1169) {
+			if (dirty[0] & /*copied, slots, menu, toggleMenu*/ 329) {
 				each_value_3 = /*slots*/ ctx[0];
 				let i;
 
@@ -298,46 +298,46 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (329:8) {#each slots as slot}
+// (326:8) {#each slots as slot}
 function create_each_block_3(ctx) {
 	let tr;
 	let td0;
-	let t0_value = /*slot*/ ctx[30].username + "";
+	let t0_value = /*slot*/ ctx[28].username + "";
 	let t0;
 	let t1;
 	let td1;
 	let code;
-	let t2_value = /*slot*/ ctx[30].password + "";
+	let t2_value = /*slot*/ ctx[28].password + "";
 	let t2;
 	let t3;
 	let td2;
-	let t4_value = (/*slot*/ ctx[30].pinned_public_ip || /*slot*/ ctx[30].public_ip || (/*slot*/ ctx[30].account_tag ? '检测中' : '等待可用节点')) + "";
+	let t4_value = (/*slot*/ ctx[28].pinned_public_ip || /*slot*/ ctx[28].public_ip || (/*slot*/ ctx[28].account_tag ? '检测中' : '等待可用节点')) + "";
 	let t4;
 	let t5;
 	let td3;
-	let t6_value = countryLabel(/*slot*/ ctx[30].country) + "";
+	let t6_value = countryLabel(/*slot*/ ctx[28].country) + "";
 	let t6;
 	let t7;
 	let td4;
 
-	let t8_value = (/*slot*/ ctx[30].account_tag
-	? metric(/*slot*/ ctx[30].latency_ms, ' ms')
+	let t8_value = (/*slot*/ ctx[28].account_tag
+	? metric(/*slot*/ ctx[28].latency_ms, ' ms')
 	: '-') + "";
 
 	let t8;
 	let t9;
 	let td5;
 
-	let t10_value = (/*slot*/ ctx[30].speed_bps
-	? fmtBps(/*slot*/ ctx[30].speed_bps)
+	let t10_value = (/*slot*/ ctx[28].speed_bps
+	? fmtBps(/*slot*/ ctx[28].speed_bps)
 	: '-') + "";
 
 	let t10;
 	let t11;
 	let td6;
 
-	let t12_value = (/*slot*/ ctx[30].packet_loss
-	? (/*slot*/ ctx[30].packet_loss * 100).toFixed(0) + '%'
+	let t12_value = (/*slot*/ ctx[28].packet_loss
+	? (/*slot*/ ctx[28].packet_loss * 100).toFixed(0) + '%'
 	: '0%') + "";
 
 	let t12;
@@ -357,12 +357,12 @@ function create_each_block_3(ctx) {
 	let dispose;
 
 	statustag = new StatusTag({
-			props: { status: slotState(/*slot*/ ctx[30]) }
+			props: { status: slotState(/*slot*/ ctx[28]) }
 		});
 
 	icon0 = new Icon({
 			props: {
-				name: /*copied*/ ctx[4] === `${/*slot*/ ctx[30].username}-http` || /*copied*/ ctx[4] === `${/*slot*/ ctx[30].username}-socks5`
+				name: /*copied*/ ctx[3] === `${/*slot*/ ctx[28].username}-http` || /*copied*/ ctx[3] === `${/*slot*/ ctx[28].username}-socks5`
 				? 'check'
 				: 'copy',
 				size: 18
@@ -372,7 +372,7 @@ function create_each_block_3(ctx) {
 	icon1 = new Icon({ props: { name: "expand_more", size: 16 } });
 
 	function click_handler(...args) {
-		return /*click_handler*/ ctx[16](/*slot*/ ctx[30], ...args);
+		return /*click_handler*/ ctx[14](/*slot*/ ctx[28], ...args);
 	}
 
 	return {
@@ -409,13 +409,13 @@ function create_each_block_3(ctx) {
 			t15 = space();
 			create_component(icon1.$$.fragment);
 			t16 = space();
-			attr(td7, "title", td7_title_value = prettyError(/*slot*/ ctx[30].last_error));
+			attr(td7, "title", td7_title_value = prettyError(/*slot*/ ctx[28].last_error));
 			attr(button, "type", "button");
 			attr(button, "class", "icon-button copy-trigger");
 			attr(button, "title", "复制代理链接");
 			attr(button, "aria-label", "复制代理链接");
-			toggle_class(button, "done", /*copied*/ ctx[4] === `${/*slot*/ ctx[30].username}-http` || /*copied*/ ctx[4] === `${/*slot*/ ctx[30].username}-socks5`);
-			toggle_class(button, "open", /*menu*/ ctx[7] && /*menu*/ ctx[7].kind === 'slot' && /*menu*/ ctx[7].username === /*slot*/ ctx[30].username);
+			toggle_class(button, "done", /*copied*/ ctx[3] === `${/*slot*/ ctx[28].username}-http` || /*copied*/ ctx[3] === `${/*slot*/ ctx[28].username}-socks5`);
+			toggle_class(button, "open", /*menu*/ ctx[6] && /*menu*/ ctx[6].kind === 'slot' && /*menu*/ ctx[6].username === /*slot*/ ctx[28].username);
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
@@ -459,45 +459,45 @@ function create_each_block_3(ctx) {
 		},
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
-			if ((!current || dirty[0] & /*slots*/ 1) && t0_value !== (t0_value = /*slot*/ ctx[30].username + "")) set_data(t0, t0_value);
-			if ((!current || dirty[0] & /*slots*/ 1) && t2_value !== (t2_value = /*slot*/ ctx[30].password + "")) set_data(t2, t2_value);
-			if ((!current || dirty[0] & /*slots*/ 1) && t4_value !== (t4_value = (/*slot*/ ctx[30].pinned_public_ip || /*slot*/ ctx[30].public_ip || (/*slot*/ ctx[30].account_tag ? '检测中' : '等待可用节点')) + "")) set_data(t4, t4_value);
-			if ((!current || dirty[0] & /*slots*/ 1) && t6_value !== (t6_value = countryLabel(/*slot*/ ctx[30].country) + "")) set_data(t6, t6_value);
+			if ((!current || dirty[0] & /*slots*/ 1) && t0_value !== (t0_value = /*slot*/ ctx[28].username + "")) set_data(t0, t0_value);
+			if ((!current || dirty[0] & /*slots*/ 1) && t2_value !== (t2_value = /*slot*/ ctx[28].password + "")) set_data(t2, t2_value);
+			if ((!current || dirty[0] & /*slots*/ 1) && t4_value !== (t4_value = (/*slot*/ ctx[28].pinned_public_ip || /*slot*/ ctx[28].public_ip || (/*slot*/ ctx[28].account_tag ? '检测中' : '等待可用节点')) + "")) set_data(t4, t4_value);
+			if ((!current || dirty[0] & /*slots*/ 1) && t6_value !== (t6_value = countryLabel(/*slot*/ ctx[28].country) + "")) set_data(t6, t6_value);
 
-			if ((!current || dirty[0] & /*slots*/ 1) && t8_value !== (t8_value = (/*slot*/ ctx[30].account_tag
-			? metric(/*slot*/ ctx[30].latency_ms, ' ms')
+			if ((!current || dirty[0] & /*slots*/ 1) && t8_value !== (t8_value = (/*slot*/ ctx[28].account_tag
+			? metric(/*slot*/ ctx[28].latency_ms, ' ms')
 			: '-') + "")) set_data(t8, t8_value);
 
-			if ((!current || dirty[0] & /*slots*/ 1) && t10_value !== (t10_value = (/*slot*/ ctx[30].speed_bps
-			? fmtBps(/*slot*/ ctx[30].speed_bps)
+			if ((!current || dirty[0] & /*slots*/ 1) && t10_value !== (t10_value = (/*slot*/ ctx[28].speed_bps
+			? fmtBps(/*slot*/ ctx[28].speed_bps)
 			: '-') + "")) set_data(t10, t10_value);
 
-			if ((!current || dirty[0] & /*slots*/ 1) && t12_value !== (t12_value = (/*slot*/ ctx[30].packet_loss
-			? (/*slot*/ ctx[30].packet_loss * 100).toFixed(0) + '%'
+			if ((!current || dirty[0] & /*slots*/ 1) && t12_value !== (t12_value = (/*slot*/ ctx[28].packet_loss
+			? (/*slot*/ ctx[28].packet_loss * 100).toFixed(0) + '%'
 			: '0%') + "")) set_data(t12, t12_value);
 
 			const statustag_changes = {};
-			if (dirty[0] & /*slots*/ 1) statustag_changes.status = slotState(/*slot*/ ctx[30]);
+			if (dirty[0] & /*slots*/ 1) statustag_changes.status = slotState(/*slot*/ ctx[28]);
 			statustag.$set(statustag_changes);
 
-			if (!current || dirty[0] & /*slots*/ 1 && td7_title_value !== (td7_title_value = prettyError(/*slot*/ ctx[30].last_error))) {
+			if (!current || dirty[0] & /*slots*/ 1 && td7_title_value !== (td7_title_value = prettyError(/*slot*/ ctx[28].last_error))) {
 				attr(td7, "title", td7_title_value);
 			}
 
 			const icon0_changes = {};
 
-			if (dirty[0] & /*copied, slots*/ 17) icon0_changes.name = /*copied*/ ctx[4] === `${/*slot*/ ctx[30].username}-http` || /*copied*/ ctx[4] === `${/*slot*/ ctx[30].username}-socks5`
+			if (dirty[0] & /*copied, slots*/ 9) icon0_changes.name = /*copied*/ ctx[3] === `${/*slot*/ ctx[28].username}-http` || /*copied*/ ctx[3] === `${/*slot*/ ctx[28].username}-socks5`
 			? 'check'
 			: 'copy';
 
 			icon0.$set(icon0_changes);
 
-			if (!current || dirty[0] & /*copied, slots*/ 17) {
-				toggle_class(button, "done", /*copied*/ ctx[4] === `${/*slot*/ ctx[30].username}-http` || /*copied*/ ctx[4] === `${/*slot*/ ctx[30].username}-socks5`);
+			if (!current || dirty[0] & /*copied, slots*/ 9) {
+				toggle_class(button, "done", /*copied*/ ctx[3] === `${/*slot*/ ctx[28].username}-http` || /*copied*/ ctx[3] === `${/*slot*/ ctx[28].username}-socks5`);
 			}
 
-			if (!current || dirty[0] & /*menu, slots*/ 129) {
-				toggle_class(button, "open", /*menu*/ ctx[7] && /*menu*/ ctx[7].kind === 'slot' && /*menu*/ ctx[7].username === /*slot*/ ctx[30].username);
+			if (!current || dirty[0] & /*menu, slots*/ 65) {
+				toggle_class(button, "open", /*menu*/ ctx[6] && /*menu*/ ctx[6].kind === 'slot' && /*menu*/ ctx[6].username === /*slot*/ ctx[28].username);
 			}
 		},
 		i(local) {
@@ -524,43 +524,43 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (356:6) {#each agents as agent}
+// (353:6) {#each agents as agent}
 function create_each_block_2(ctx) {
 	let tr;
 	let td0;
-	let t0_value = /*agent*/ ctx[33].name + "";
+	let t0_value = /*agent*/ ctx[31].name + "";
 	let t0;
 	let t1;
 	let span;
 	let t2;
-	let t3_value = /*agent*/ ctx[33].agent_name + "";
+	let t3_value = /*agent*/ ctx[31].agent_name + "";
 	let t3;
 	let t4;
 	let td1;
 	let code;
-	let t5_value = /*agent*/ ctx[33].password + "";
+	let t5_value = /*agent*/ ctx[31].password + "";
 	let t5;
 	let t6;
 	let td2;
-	let t7_value = (/*agent*/ ctx[33].public_ip || '检测中') + "";
+	let t7_value = (/*agent*/ ctx[31].public_ip || '检测中') + "";
 	let t7;
 	let t8;
 	let td3;
-	let t9_value = countryLabel(/*agent*/ ctx[33].country) + "";
+	let t9_value = countryLabel(/*agent*/ ctx[31].country) + "";
 	let t9;
 	let t10;
 	let td4;
 
-	let t11_value = (/*agent*/ ctx[33].latency_ms
-	? metric(/*agent*/ ctx[33].latency_ms, ' ms')
+	let t11_value = (/*agent*/ ctx[31].latency_ms
+	? metric(/*agent*/ ctx[31].latency_ms, ' ms')
 	: '-') + "";
 
 	let t11;
 	let t12;
 	let td5;
 
-	let t13_value = (/*agent*/ ctx[33].speed_bps
-	? fmtBps(/*agent*/ ctx[33].speed_bps)
+	let t13_value = (/*agent*/ ctx[31].speed_bps
+	? fmtBps(/*agent*/ ctx[31].speed_bps)
 	: '0 B/s') + "";
 
 	let t13;
@@ -582,7 +582,7 @@ function create_each_block_2(ctx) {
 
 	icon0 = new Icon({
 			props: {
-				name: /*copied*/ ctx[4] === `${/*agent*/ ctx[33].username}-http` || /*copied*/ ctx[4] === `${/*agent*/ ctx[33].username}-socks5`
+				name: /*copied*/ ctx[3] === `${/*agent*/ ctx[31].username}-http` || /*copied*/ ctx[3] === `${/*agent*/ ctx[31].username}-socks5`
 				? 'check'
 				: 'copy',
 				size: 18
@@ -592,7 +592,7 @@ function create_each_block_2(ctx) {
 	icon1 = new Icon({ props: { name: "expand_more", size: 16 } });
 
 	function click_handler_1(...args) {
-		return /*click_handler_1*/ ctx[17](/*agent*/ ctx[33], ...args);
+		return /*click_handler_1*/ ctx[15](/*agent*/ ctx[31], ...args);
 	}
 
 	return {
@@ -637,8 +637,8 @@ function create_each_block_2(ctx) {
 			attr(button, "class", "icon-button copy-trigger");
 			attr(button, "title", "复制代理链接");
 			attr(button, "aria-label", "复制代理链接");
-			toggle_class(button, "done", /*copied*/ ctx[4] === `${/*agent*/ ctx[33].username}-http` || /*copied*/ ctx[4] === `${/*agent*/ ctx[33].username}-socks5`);
-			toggle_class(button, "open", /*menu*/ ctx[7] && /*menu*/ ctx[7].kind === 'slot' && /*menu*/ ctx[7].username === /*agent*/ ctx[33].username);
+			toggle_class(button, "done", /*copied*/ ctx[3] === `${/*agent*/ ctx[31].username}-http` || /*copied*/ ctx[3] === `${/*agent*/ ctx[31].username}-socks5`);
+			toggle_class(button, "open", /*menu*/ ctx[6] && /*menu*/ ctx[6].kind === 'slot' && /*menu*/ ctx[6].username === /*agent*/ ctx[31].username);
 		},
 		m(target, anchor) {
 			insert(target, tr, anchor);
@@ -684,34 +684,34 @@ function create_each_block_2(ctx) {
 		},
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
-			if ((!current || dirty[0] & /*agents*/ 2) && t0_value !== (t0_value = /*agent*/ ctx[33].name + "")) set_data(t0, t0_value);
-			if ((!current || dirty[0] & /*agents*/ 2) && t3_value !== (t3_value = /*agent*/ ctx[33].agent_name + "")) set_data(t3, t3_value);
-			if ((!current || dirty[0] & /*agents*/ 2) && t5_value !== (t5_value = /*agent*/ ctx[33].password + "")) set_data(t5, t5_value);
-			if ((!current || dirty[0] & /*agents*/ 2) && t7_value !== (t7_value = (/*agent*/ ctx[33].public_ip || '检测中') + "")) set_data(t7, t7_value);
-			if ((!current || dirty[0] & /*agents*/ 2) && t9_value !== (t9_value = countryLabel(/*agent*/ ctx[33].country) + "")) set_data(t9, t9_value);
+			if ((!current || dirty[0] & /*agents*/ 2) && t0_value !== (t0_value = /*agent*/ ctx[31].name + "")) set_data(t0, t0_value);
+			if ((!current || dirty[0] & /*agents*/ 2) && t3_value !== (t3_value = /*agent*/ ctx[31].agent_name + "")) set_data(t3, t3_value);
+			if ((!current || dirty[0] & /*agents*/ 2) && t5_value !== (t5_value = /*agent*/ ctx[31].password + "")) set_data(t5, t5_value);
+			if ((!current || dirty[0] & /*agents*/ 2) && t7_value !== (t7_value = (/*agent*/ ctx[31].public_ip || '检测中') + "")) set_data(t7, t7_value);
+			if ((!current || dirty[0] & /*agents*/ 2) && t9_value !== (t9_value = countryLabel(/*agent*/ ctx[31].country) + "")) set_data(t9, t9_value);
 
-			if ((!current || dirty[0] & /*agents*/ 2) && t11_value !== (t11_value = (/*agent*/ ctx[33].latency_ms
-			? metric(/*agent*/ ctx[33].latency_ms, ' ms')
+			if ((!current || dirty[0] & /*agents*/ 2) && t11_value !== (t11_value = (/*agent*/ ctx[31].latency_ms
+			? metric(/*agent*/ ctx[31].latency_ms, ' ms')
 			: '-') + "")) set_data(t11, t11_value);
 
-			if ((!current || dirty[0] & /*agents*/ 2) && t13_value !== (t13_value = (/*agent*/ ctx[33].speed_bps
-			? fmtBps(/*agent*/ ctx[33].speed_bps)
+			if ((!current || dirty[0] & /*agents*/ 2) && t13_value !== (t13_value = (/*agent*/ ctx[31].speed_bps
+			? fmtBps(/*agent*/ ctx[31].speed_bps)
 			: '0 B/s') + "")) set_data(t13, t13_value);
 
 			const icon0_changes = {};
 
-			if (dirty[0] & /*copied, agents*/ 18) icon0_changes.name = /*copied*/ ctx[4] === `${/*agent*/ ctx[33].username}-http` || /*copied*/ ctx[4] === `${/*agent*/ ctx[33].username}-socks5`
+			if (dirty[0] & /*copied, agents*/ 10) icon0_changes.name = /*copied*/ ctx[3] === `${/*agent*/ ctx[31].username}-http` || /*copied*/ ctx[3] === `${/*agent*/ ctx[31].username}-socks5`
 			? 'check'
 			: 'copy';
 
 			icon0.$set(icon0_changes);
 
-			if (!current || dirty[0] & /*copied, agents*/ 18) {
-				toggle_class(button, "done", /*copied*/ ctx[4] === `${/*agent*/ ctx[33].username}-http` || /*copied*/ ctx[4] === `${/*agent*/ ctx[33].username}-socks5`);
+			if (!current || dirty[0] & /*copied, agents*/ 10) {
+				toggle_class(button, "done", /*copied*/ ctx[3] === `${/*agent*/ ctx[31].username}-http` || /*copied*/ ctx[3] === `${/*agent*/ ctx[31].username}-socks5`);
 			}
 
-			if (!current || dirty[0] & /*menu, agents*/ 130) {
-				toggle_class(button, "open", /*menu*/ ctx[7] && /*menu*/ ctx[7].kind === 'slot' && /*menu*/ ctx[7].username === /*agent*/ ctx[33].username);
+			if (!current || dirty[0] & /*menu, agents*/ 66) {
+				toggle_class(button, "open", /*menu*/ ctx[6] && /*menu*/ ctx[6].kind === 'slot' && /*menu*/ ctx[6].username === /*agent*/ ctx[31].username);
 			}
 		},
 		i(local) {
@@ -738,7 +738,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (385:6) {#if !slots.length && !agents.length}
+// (382:6) {#if !slots.length && !agents.length}
 function create_if_block_2(ctx) {
 	let tr;
 
@@ -756,7 +756,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (392:0) {#if menu}
+// (389:0) {#if menu}
 function create_if_block(ctx) {
 	let div0;
 	let t0;
@@ -772,7 +772,7 @@ function create_if_block(ctx) {
 	const if_blocks = [];
 
 	function select_block_type(ctx, dirty) {
-		if (/*menu*/ ctx[7].kind === 'rotate') return 0;
+		if (/*menu*/ ctx[6].kind === 'rotate') return 0;
 		return 1;
 	}
 
@@ -796,8 +796,8 @@ function create_if_block(ctx) {
 			attr(div0, "class", "menu-backdrop");
 			attr(div1, "class", "copy-menu-title");
 			attr(div2, "class", "copy-menu");
-			set_style(div2, "right", /*menu*/ ctx[7].right + "px");
-			set_style(div2, "top", /*menu*/ ctx[7].y + "px");
+			set_style(div2, "right", /*menu*/ ctx[6].right + "px");
+			set_style(div2, "top", /*menu*/ ctx[6].y + "px");
 		},
 		m(target, anchor) {
 			insert(target, div0, anchor);
@@ -810,8 +810,8 @@ function create_if_block(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					listen(div0, "click", /*closeMenu*/ ctx[12]),
-					listen(div0, "contextmenu", prevent_default(/*closeMenu*/ ctx[12]))
+					listen(div0, "click", /*closeMenu*/ ctx[10]),
+					listen(div0, "contextmenu", prevent_default(/*closeMenu*/ ctx[10]))
 				];
 
 				mounted = true;
@@ -844,12 +844,12 @@ function create_if_block(ctx) {
 				if_block.m(div2, null);
 			}
 
-			if (!current || dirty[0] & /*menu*/ 128) {
-				set_style(div2, "right", /*menu*/ ctx[7].right + "px");
+			if (!current || dirty[0] & /*menu*/ 64) {
+				set_style(div2, "right", /*menu*/ ctx[6].right + "px");
 			}
 
-			if (!current || dirty[0] & /*menu*/ 128) {
-				set_style(div2, "top", /*menu*/ ctx[7].y + "px");
+			if (!current || dirty[0] & /*menu*/ 64) {
+				set_style(div2, "top", /*menu*/ ctx[6].y + "px");
 			}
 		},
 		i(local) {
@@ -872,15 +872,11 @@ function create_if_block(ctx) {
 	};
 }
 
-// (403:4) {:else}
+// (400:4) {:else}
 function create_else_block(ctx) {
 	let each_1_anchor;
 	let current;
-
-	let each_value_1 = /*proxyTLS*/ ctx[2]
-	? /*TLS_SCHEMES*/ ctx[9]
-	: /*PLAIN_SCHEMES*/ ctx[8];
-
+	let each_value_1 = /*SCHEMES*/ ctx[7];
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value_1.length; i += 1) {
@@ -910,11 +906,8 @@ function create_else_block(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*copyProxy, slots, menu, agents, proxyTLS, TLS_SCHEMES, PLAIN_SCHEMES*/ 9095) {
-				each_value_1 = /*proxyTLS*/ ctx[2]
-				? /*TLS_SCHEMES*/ ctx[9]
-				: /*PLAIN_SCHEMES*/ ctx[8];
-
+			if (dirty[0] & /*copyProxy, slots, menu, agents, SCHEMES*/ 2243) {
+				each_value_1 = /*SCHEMES*/ ctx[7];
 				let i;
 
 				for (i = 0; i < each_value_1.length; i += 1) {
@@ -965,15 +958,11 @@ function create_else_block(ctx) {
 	};
 }
 
-// (396:4) {#if menu.kind === 'rotate'}
+// (393:4) {#if menu.kind === 'rotate'}
 function create_if_block_1(ctx) {
 	let each_1_anchor;
 	let current;
-
-	let each_value = /*proxyTLS*/ ctx[2]
-	? /*TLS_SCHEMES*/ ctx[9]
-	: /*PLAIN_SCHEMES*/ ctx[8];
-
+	let each_value = /*SCHEMES*/ ctx[7];
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value.length; i += 1) {
@@ -1003,11 +992,8 @@ function create_if_block_1(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*copyRotate, proxyTLS, TLS_SCHEMES, PLAIN_SCHEMES*/ 33540) {
-				each_value = /*proxyTLS*/ ctx[2]
-				? /*TLS_SCHEMES*/ ctx[9]
-				: /*PLAIN_SCHEMES*/ ctx[8];
-
+			if (dirty[0] & /*copyRotate, SCHEMES*/ 8320) {
+				each_value = /*SCHEMES*/ ctx[7];
 				let i;
 
 				for (i = 0; i < each_value.length; i += 1) {
@@ -1058,13 +1044,13 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (405:6) {#each (proxyTLS ? TLS_SCHEMES : PLAIN_SCHEMES) as scheme}
+// (402:6) {#each SCHEMES as scheme}
 function create_each_block_1(ctx) {
 	let button;
 	let icon;
 	let t0;
 	let span;
-	let t1_value = /*scheme*/ ctx[27].label + "";
+	let t1_value = /*scheme*/ ctx[25].label + "";
 	let t1;
 	let t2;
 	let current;
@@ -1073,7 +1059,7 @@ function create_each_block_1(ctx) {
 	icon = new Icon({ props: { name: "copy", size: 16 } });
 
 	function click_handler_3() {
-		return /*click_handler_3*/ ctx[19](/*slot*/ ctx[30], /*scheme*/ ctx[27]);
+		return /*click_handler_3*/ ctx[17](/*slot*/ ctx[28], /*scheme*/ ctx[25]);
 	}
 
 	return {
@@ -1103,7 +1089,6 @@ function create_each_block_1(ctx) {
 		},
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
-			if ((!current || dirty[0] & /*proxyTLS*/ 4) && t1_value !== (t1_value = /*scheme*/ ctx[27].label + "")) set_data(t1, t1_value);
 		},
 		i(local) {
 			if (current) return;
@@ -1123,13 +1108,13 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (397:6) {#each (proxyTLS ? TLS_SCHEMES : PLAIN_SCHEMES) as scheme}
+// (394:6) {#each SCHEMES as scheme}
 function create_each_block(ctx) {
 	let button;
 	let icon;
 	let t0;
 	let span;
-	let t1_value = /*scheme*/ ctx[27].label + "";
+	let t1_value = /*scheme*/ ctx[25].label + "";
 	let t1;
 	let t2;
 	let current;
@@ -1138,7 +1123,7 @@ function create_each_block(ctx) {
 	icon = new Icon({ props: { name: "copy", size: 16 } });
 
 	function click_handler_2() {
-		return /*click_handler_2*/ ctx[18](/*scheme*/ ctx[27]);
+		return /*click_handler_2*/ ctx[16](/*scheme*/ ctx[25]);
 	}
 
 	return {
@@ -1168,7 +1153,6 @@ function create_each_block(ctx) {
 		},
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
-			if ((!current || dirty[0] & /*proxyTLS*/ 4) && t1_value !== (t1_value = /*scheme*/ ctx[27].label + "")) set_data(t1, t1_value);
 		},
 		i(local) {
 			if (current) return;
@@ -1194,7 +1178,7 @@ function create_fragment(ctx) {
 	let div1;
 	let div0;
 	let code;
-	let t2_value = displaySubscriptionURL(/*subUrl*/ ctx[5]) + "";
+	let t2_value = displaySubscriptionURL(/*subUrl*/ ctx[4]) + "";
 	let t2;
 	let t3;
 	let button;
@@ -1221,14 +1205,14 @@ function create_fragment(ctx) {
 
 	icon = new Icon({
 			props: {
-				name: /*copied*/ ctx[4] === 'subscription' ? 'check' : 'copy',
+				name: /*copied*/ ctx[3] === 'subscription' ? 'check' : 'copy',
 				size: 18
 			}
 		});
 
-	let if_block0 = /*subUrl*/ ctx[5] && create_if_block_6(ctx);
-	let if_block1 = /*rotate*/ ctx[6] && /*rotate*/ ctx[6].host && create_if_block_5(ctx);
-	let if_block2 = /*error*/ ctx[3] && create_if_block_4(ctx);
+	let if_block0 = /*subUrl*/ ctx[4] && create_if_block_6(ctx);
+	let if_block1 = /*rotate*/ ctx[5] && /*rotate*/ ctx[5].host && create_if_block_5(ctx);
+	let if_block2 = /*error*/ ctx[2] && create_if_block_4(ctx);
 	let if_block3 = /*slots*/ ctx[0].length && create_if_block_3(ctx);
 	let each_value_2 = /*agents*/ ctx[1];
 	let each_blocks = [];
@@ -1242,7 +1226,7 @@ function create_fragment(ctx) {
 	});
 
 	let if_block4 = !/*slots*/ ctx[0].length && !/*agents*/ ctx[1].length && create_if_block_2(ctx);
-	let if_block5 = /*menu*/ ctx[7] && create_if_block(ctx);
+	let if_block5 = /*menu*/ ctx[6] && create_if_block(ctx);
 
 	return {
 		c() {
@@ -1285,20 +1269,20 @@ function create_fragment(ctx) {
 			if (if_block5) if_block5.c();
 			if_block5_anchor = empty();
 			attr(code, "class", "subscription-url svelte-11dir44");
-			attr(code, "title", /*subUrl*/ ctx[5]);
+			attr(code, "title", /*subUrl*/ ctx[4]);
 			attr(button, "type", "button");
 			attr(button, "class", "copy-trigger subscription-copy svelte-11dir44");
 
-			attr(button, "title", button_title_value = /*copied*/ ctx[4] === 'subscription'
+			attr(button, "title", button_title_value = /*copied*/ ctx[3] === 'subscription'
 			? '已复制'
 			: '复制 Clash 订阅');
 
-			attr(button, "aria-label", button_aria_label_value = /*copied*/ ctx[4] === 'subscription'
+			attr(button, "aria-label", button_aria_label_value = /*copied*/ ctx[3] === 'subscription'
 			? '已复制'
 			: '复制 Clash 订阅');
 
-			button.disabled = button_disabled_value = !/*subUrl*/ ctx[5];
-			toggle_class(button, "done", /*copied*/ ctx[4] === 'subscription');
+			button.disabled = button_disabled_value = !/*subUrl*/ ctx[4];
+			toggle_class(button, "done", /*copied*/ ctx[3] === 'subscription');
 			attr(div0, "class", "subscription-row svelte-11dir44");
 			attr(div1, "class", "sub-bar");
 			attr(div2, "class", "table-wrap");
@@ -1342,42 +1326,42 @@ function create_fragment(ctx) {
 			current = true;
 
 			if (!mounted) {
-				dispose = listen(button, "click", /*copySubscription*/ ctx[14]);
+				dispose = listen(button, "click", /*copySubscription*/ ctx[12]);
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty[0] & /*subUrl*/ 32) && t2_value !== (t2_value = displaySubscriptionURL(/*subUrl*/ ctx[5]) + "")) set_data(t2, t2_value);
+			if ((!current || dirty[0] & /*subUrl*/ 16) && t2_value !== (t2_value = displaySubscriptionURL(/*subUrl*/ ctx[4]) + "")) set_data(t2, t2_value);
 
-			if (!current || dirty[0] & /*subUrl*/ 32) {
-				attr(code, "title", /*subUrl*/ ctx[5]);
+			if (!current || dirty[0] & /*subUrl*/ 16) {
+				attr(code, "title", /*subUrl*/ ctx[4]);
 			}
 
 			const icon_changes = {};
-			if (dirty[0] & /*copied*/ 16) icon_changes.name = /*copied*/ ctx[4] === 'subscription' ? 'check' : 'copy';
+			if (dirty[0] & /*copied*/ 8) icon_changes.name = /*copied*/ ctx[3] === 'subscription' ? 'check' : 'copy';
 			icon.$set(icon_changes);
 
-			if (!current || dirty[0] & /*copied*/ 16 && button_title_value !== (button_title_value = /*copied*/ ctx[4] === 'subscription'
+			if (!current || dirty[0] & /*copied*/ 8 && button_title_value !== (button_title_value = /*copied*/ ctx[3] === 'subscription'
 			? '已复制'
 			: '复制 Clash 订阅')) {
 				attr(button, "title", button_title_value);
 			}
 
-			if (!current || dirty[0] & /*copied*/ 16 && button_aria_label_value !== (button_aria_label_value = /*copied*/ ctx[4] === 'subscription'
+			if (!current || dirty[0] & /*copied*/ 8 && button_aria_label_value !== (button_aria_label_value = /*copied*/ ctx[3] === 'subscription'
 			? '已复制'
 			: '复制 Clash 订阅')) {
 				attr(button, "aria-label", button_aria_label_value);
 			}
 
-			if (!current || dirty[0] & /*subUrl*/ 32 && button_disabled_value !== (button_disabled_value = !/*subUrl*/ ctx[5])) {
+			if (!current || dirty[0] & /*subUrl*/ 16 && button_disabled_value !== (button_disabled_value = !/*subUrl*/ ctx[4])) {
 				button.disabled = button_disabled_value;
 			}
 
-			if (!current || dirty[0] & /*copied*/ 16) {
-				toggle_class(button, "done", /*copied*/ ctx[4] === 'subscription');
+			if (!current || dirty[0] & /*copied*/ 8) {
+				toggle_class(button, "done", /*copied*/ ctx[3] === 'subscription');
 			}
 
-			if (/*subUrl*/ ctx[5]) {
+			if (/*subUrl*/ ctx[4]) {
 				if (if_block0) {
 					
 				} else {
@@ -1390,11 +1374,11 @@ function create_fragment(ctx) {
 				if_block0 = null;
 			}
 
-			if (/*rotate*/ ctx[6] && /*rotate*/ ctx[6].host) {
+			if (/*rotate*/ ctx[5] && /*rotate*/ ctx[5].host) {
 				if (if_block1) {
 					if_block1.p(ctx, dirty);
 
-					if (dirty[0] & /*rotate*/ 64) {
+					if (dirty[0] & /*rotate*/ 32) {
 						transition_in(if_block1, 1);
 					}
 				} else {
@@ -1413,7 +1397,7 @@ function create_fragment(ctx) {
 				check_outros();
 			}
 
-			if (/*error*/ ctx[3]) {
+			if (/*error*/ ctx[2]) {
 				if (if_block2) {
 					if_block2.p(ctx, dirty);
 				} else {
@@ -1449,7 +1433,7 @@ function create_fragment(ctx) {
 				check_outros();
 			}
 
-			if (dirty[0] & /*copied, agents, menu, toggleMenu*/ 1170) {
+			if (dirty[0] & /*copied, agents, menu, toggleMenu*/ 330) {
 				each_value_2 = /*agents*/ ctx[1];
 				let i;
 
@@ -1489,11 +1473,11 @@ function create_fragment(ctx) {
 				if_block4 = null;
 			}
 
-			if (/*menu*/ ctx[7]) {
+			if (/*menu*/ ctx[6]) {
 				if (if_block5) {
 					if_block5.p(ctx, dirty);
 
-					if (dirty[0] & /*menu*/ 128) {
+					if (dirty[0] & /*menu*/ 64) {
 						transition_in(if_block5, 1);
 					}
 				} else {
@@ -1598,8 +1582,7 @@ function displaySubscriptionURL(value) {
 }
 
 function instance($$self, $$props, $$invalidate) {
-	const PLAIN_SCHEMES = [{ id: 'http', label: 'HTTP' }, { id: 'socks5', label: 'SOCKS5' }];
-	const TLS_SCHEMES = [{ id: 'https', label: 'HTTPS' }];
+	const SCHEMES = [{ id: 'http', label: 'HTTP' }, { id: 'socks5', label: 'SOCKS5' }];
 	let slots = [];
 
 	// 在线远程 agent 的 WARP 出口，和本机槽位共用代理端口，用户名 node-<id>。
@@ -1607,7 +1590,6 @@ function instance($$self, $$props, $$invalidate) {
 
 	let proxyHost = window.location.hostname;
 	let proxyPort = 7843;
-	let proxyTLS = true;
 	let error = '';
 	let copied = '';
 	let subUrl = '';
@@ -1625,10 +1607,9 @@ function instance($$self, $$props, $$invalidate) {
 			$$invalidate(1, agents = data.agents || []);
 			proxyHost = data.proxy_host || window.location.hostname;
 			proxyPort = data.proxy_port || 7843;
-			$$invalidate(2, proxyTLS = data.proxy_tls !== false);
-			$$invalidate(3, error = '');
+			$$invalidate(2, error = '');
 		} catch(err) {
-			$$invalidate(3, error = err.message);
+			$$invalidate(2, error = err.message);
 		}
 	}
 
@@ -1637,17 +1618,17 @@ function instance($$self, $$props, $$invalidate) {
 			const data = await fetchJSON('/api/subscription');
 
 			if (data.token) {
-				$$invalidate(5, subUrl = `${window.location.origin}${data.path}?token=${data.token}`);
+				$$invalidate(4, subUrl = `${window.location.origin}${data.path}?token=${data.token}`);
 			}
 		} catch(err) {
-			$$invalidate(3, error = err.message);
+			$$invalidate(2, error = err.message);
 		}
 	}
 
 	// 拉取统一轮换凭据的连接信息。非关键路径，失败不打断页面。
 	async function loadRotate() {
 		try {
-			$$invalidate(6, rotate = await fetchJSON('/api/nodes/rotate'));
+			$$invalidate(5, rotate = await fetchJSON('/api/nodes/rotate'));
 		} catch(err) {
 			
 		} // 忽略：没有节点或未配置时该卡片不显示
@@ -1655,14 +1636,14 @@ function instance($$self, $$props, $$invalidate) {
 
 	function toggleMenu(event, slot) {
 		if (menu && menu.kind === 'slot' && menu.username === slot.username) {
-			$$invalidate(7, menu = null);
+			$$invalidate(6, menu = null);
 			return;
 		}
 
 		const rect = event.currentTarget.getBoundingClientRect();
 
 		// 右对齐到按钮右边缘，用 right 偏移避免菜单往右溢出视口。
-		$$invalidate(7, menu = {
+		$$invalidate(6, menu = {
 			kind: 'slot',
 			username: slot.username,
 			right: window.innerWidth - rect.right,
@@ -1672,13 +1653,13 @@ function instance($$self, $$props, $$invalidate) {
 
 	function toggleRotateMenu(event) {
 		if (menu && menu.kind === 'rotate') {
-			$$invalidate(7, menu = null);
+			$$invalidate(6, menu = null);
 			return;
 		}
 
 		const rect = event.currentTarget.getBoundingClientRect();
 
-		$$invalidate(7, menu = {
+		$$invalidate(6, menu = {
 			kind: 'rotate',
 			right: window.innerWidth - rect.right,
 			y: rect.bottom + 4
@@ -1686,7 +1667,7 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	function closeMenu() {
-		$$invalidate(7, menu = null);
+		$$invalidate(6, menu = null);
 	}
 
 	onMount(() => {
@@ -1719,17 +1700,17 @@ function instance($$self, $$props, $$invalidate) {
 
 		try {
 			await writeClipboard(text);
-			$$invalidate(7, menu = null);
-			$$invalidate(4, copied = `${slot.username}-${scheme}`);
+			$$invalidate(6, menu = null);
+			$$invalidate(3, copied = `${slot.username}-${scheme}`);
 
 			setTimeout(
 				() => {
-					if (copied === `${slot.username}-${scheme}`) $$invalidate(4, copied = '');
+					if (copied === `${slot.username}-${scheme}`) $$invalidate(3, copied = '');
 				},
 				1600
 			);
 		} catch(err) {
-			$$invalidate(3, error = '复制失败：' + err.message);
+			$$invalidate(2, error = '复制失败：' + err.message);
 		}
 	}
 
@@ -1738,16 +1719,16 @@ function instance($$self, $$props, $$invalidate) {
 
 		try {
 			await writeClipboard(subUrl);
-			$$invalidate(4, copied = 'subscription');
+			$$invalidate(3, copied = 'subscription');
 
 			setTimeout(
 				() => {
-					if (copied === 'subscription') $$invalidate(4, copied = '');
+					if (copied === 'subscription') $$invalidate(3, copied = '');
 				},
 				1600
 			);
 		} catch(err) {
-			$$invalidate(3, error = '复制失败：' + err.message);
+			$$invalidate(2, error = '复制失败：' + err.message);
 		}
 	}
 
@@ -1769,17 +1750,17 @@ function instance($$self, $$props, $$invalidate) {
 
 		try {
 			await writeClipboard(text);
-			$$invalidate(7, menu = null);
-			$$invalidate(4, copied = `rotate-${scheme}`);
+			$$invalidate(6, menu = null);
+			$$invalidate(3, copied = `rotate-${scheme}`);
 
 			setTimeout(
 				() => {
-					if (copied === `rotate-${scheme}`) $$invalidate(4, copied = '');
+					if (copied === `rotate-${scheme}`) $$invalidate(3, copied = '');
 				},
 				1600
 			);
 		} catch(err) {
-			$$invalidate(3, error = '复制失败：' + err.message);
+			$$invalidate(2, error = '复制失败：' + err.message);
 		}
 	}
 
@@ -1791,14 +1772,12 @@ function instance($$self, $$props, $$invalidate) {
 	return [
 		slots,
 		agents,
-		proxyTLS,
 		error,
 		copied,
 		subUrl,
 		rotate,
 		menu,
-		PLAIN_SCHEMES,
-		TLS_SCHEMES,
+		SCHEMES,
 		toggleMenu,
 		toggleRotateMenu,
 		closeMenu,

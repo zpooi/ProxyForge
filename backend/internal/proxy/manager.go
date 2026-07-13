@@ -25,25 +25,26 @@ type Manager struct {
 	usageMu       sync.RWMutex
 	usageStopped  bool
 
-	mu             sync.Mutex
-	tunnels        map[string]*Tunnel
-	meta           map[string]selectionMeta
-	slots          map[string]slotBinding
-	bindAddr       string
-	password       string
-	proxyPort      int
-	transport      string
-	ipFamily       string
-	dnsMode        string
-	proxyTLS       bool
-	tlsServerName  string
-	tlsCertFile    string
-	tlsKeyFile     string
-	server         *mixedServer
-	serverTLS      bool
-	serverTLSName  string
-	serverCertFile string
-	serverKeyFile  string
+	mu                 sync.Mutex
+	tunnels            map[string]*Tunnel
+	meta               map[string]selectionMeta
+	slots              map[string]slotBinding
+	bindAddr           string
+	password           string
+	proxyPort          int
+	transport          string
+	ipFamily           string
+	dnsMode            string
+	proxyTLS           bool
+	tlsServerName      string
+	tlsCertFile        string
+	tlsKeyFile         string
+	server             *mixedServer
+	serverTLS          bool
+	serverTLSRequested bool
+	serverTLSName      string
+	serverCertFile     string
+	serverKeyFile      string
 
 	lastPicked   map[string]time.Time
 	lastPickedIP map[string]time.Time
@@ -601,7 +602,7 @@ func (m *Manager) startTunnels(toStart map[string]Config, desired map[string]Con
 func (m *Manager) reconcileServerLocked() error {
 	if m.server != nil {
 		// 端口变化或 TLS 开关变化都需要重启监听（TLS 配置在监听建立时固化）。
-		if m.proxyPort <= 0 || m.server.port() != m.proxyPort || m.serverTLS != m.proxyTLS ||
+		if m.proxyPort <= 0 || m.server.port() != m.proxyPort || m.serverTLSRequested != m.proxyTLS ||
 			m.serverTLSName != m.tlsServerName || m.serverCertFile != m.tlsCertFile || m.serverKeyFile != m.tlsKeyFile {
 			log.Printf("[proxy] stopping proxy on :%d", m.server.port())
 			m.server.Close()
@@ -617,7 +618,11 @@ func (m *Manager) reconcileServerLocked() error {
 		if m.proxyTLS {
 			cfg, err := newProxyTLSConfig(m.tlsServerName, m.tlsCertFile, m.tlsKeyFile)
 			if err != nil {
-				return fmt.Errorf("build proxy TLS config (plaintext fallback disabled): %w", err)
+				log.Printf("[proxy] trusted TLS config unavailable, using self-signed compatibility certificate: %v", err)
+				cfg, err = newDynamicProxyTLSConfig(m.tlsServerName)
+				if err != nil {
+					log.Printf("[proxy] TLS compatibility certificate unavailable; HTTP/SOCKS5 remain enabled: %v", err)
+				}
 			}
 			tlsConfig = cfg
 		}
@@ -628,11 +633,12 @@ func (m *Manager) reconcileServerLocked() error {
 		}
 		m.server = srv
 		m.serverTLS = tlsConfig != nil
+		m.serverTLSRequested = m.proxyTLS
 		m.serverTLSName = m.tlsServerName
 		m.serverCertFile = m.tlsCertFile
 		m.serverKeyFile = m.tlsKeyFile
 		if m.serverTLS {
-			log.Printf("[proxy] proxy listening on :%d with strict TLS (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
+			log.Printf("[proxy] proxy listening on :%d with HTTP/SOCKS5 and optional TLS (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
 		} else {
 			log.Printf("[proxy] proxy listening on :%d (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
 		}
