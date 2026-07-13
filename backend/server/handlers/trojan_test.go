@@ -48,4 +48,7 @@ func TestTrojanWebSocketRequiresSubscriptionToken(t *testing.T) {
 	if err == nil || resp == nil || resp.StatusCode != 404 {
 		t.Fatalf("invalid token response = %#v, err=%v; want hidden 404", resp, err)
 	}
+	if strings.Contains(trojanWebSocketPath("token123"), "token123") {
+		t.Fatal("Trojan WebSocket path leaked the subscription token")
+	}
 }
