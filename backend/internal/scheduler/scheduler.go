@@ -45,6 +45,9 @@ type Scheduler struct {
 	mu       sync.Mutex
 	running  bool
 	manualCh chan string
+	// generationGate serializes WARP registration batches triggered by
+	// auto-refill, slot healing, and the manual API.
+	generationGate chan struct{}
 
 	lastRunAt          time.Time
 	refillBackoffUntil time.Time
@@ -52,10 +55,11 @@ type Scheduler struct {
 
 func New(database *db.DB, manager *proxy.Manager, warpClient *warp.Client) *Scheduler {
 	return &Scheduler{
-		db:       database,
-		manager:  manager,
-		warp:     warpClient,
-		manualCh: make(chan string, 8),
+		db:             database,
+		manager:        manager,
+		warp:           warpClient,
+		manualCh:       make(chan string, 8),
+		generationGate: make(chan struct{}, 1),
 	}
 }
 
@@ -78,11 +82,11 @@ func (s *Scheduler) Run(ctx context.Context) {
 		case kind := <-s.manualCh:
 			timer.Stop()
 			if s.execute(ctx, kind) {
-				s.lastRunAt = time.Now()
+				s.setLastRunAt(time.Now())
 			}
 		case <-timer.C:
 			if s.execute(ctx, "dedup") {
-				s.lastRunAt = time.Now()
+				s.setLastRunAt(time.Now())
 			}
 		}
 	}
@@ -376,7 +380,15 @@ func (s *Scheduler) IsRunning() bool {
 }
 
 func (s *Scheduler) LastRunAt() time.Time {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.lastRunAt
+}
+
+func (s *Scheduler) setLastRunAt(at time.Time) {
+	s.mu.Lock()
+	s.lastRunAt = at
+	s.mu.Unlock()
 }
 
 func (s *Scheduler) RunningTunnels() int {
@@ -596,6 +608,12 @@ func (s *Scheduler) Reconcile() error {
 func (s *Scheduler) GenerateAccounts(ctx context.Context, n int) (int, error) {
 	if n <= 0 {
 		return 0, nil
+	}
+	select {
+	case s.generationGate <- struct{}{}:
+		defer func() { <-s.generationGate }()
+	case <-ctx.Done():
+		return 0, ctx.Err()
 	}
 	inserted := 0
 	insertedAccounts := make([]*models.Account, 0, n)
@@ -1433,10 +1451,11 @@ func (s *Scheduler) dedupInterval() int {
 }
 
 func (s *Scheduler) nextRunTime(interval int) time.Time {
-	if s.lastRunAt.IsZero() {
+	lastRunAt := s.LastRunAt()
+	if lastRunAt.IsZero() {
 		return time.Now().Add(30 * time.Second)
 	}
-	return s.lastRunAt.Add(time.Duration(interval) * time.Second)
+	return lastRunAt.Add(time.Duration(interval) * time.Second)
 }
 
 func (s *Scheduler) trafficLoop(ctx context.Context) {

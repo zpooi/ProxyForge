@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -277,8 +278,8 @@ func writePlain(w http.ResponseWriter, list []*proxyExport) {
 		if country == "" {
 			country = "-"
 		}
-		fmt.Fprintf(w, "%s:%s@%s:%d  (%s / %s / %s / score %s)\n",
-			p.Username, p.Password, p.ProxyHost, p.ProxyPort, tag, ip, country, score)
+		fmt.Fprintf(w, "%s:%s@%s  (%s / %s / %s / score %s)\n",
+			p.Username, p.Password, net.JoinHostPort(p.ProxyHost, strconv.Itoa(p.ProxyPort)), tag, ip, country, score)
 	}
 }
 
@@ -361,13 +362,14 @@ func writeClashDNS(w http.ResponseWriter, list []*proxyExport) {
 	fmt.Fprintf(w, "\n")
 }
 
-// writeClashGroups 输出代理组。除了让用户手动挑节点的 PROXYFORGE 外，还提供两个自动组：
+// writeClashGroups 输出代理组。除了让用户手动挑节点的 PROXYFORGE 外，还提供三个自动组：
+//   - 「🔒 会话稳定」(consistent-hashing)：同一目标域名稳定落到同一节点，节点故障才重映射；
 //   - 「♻️ 自动选择」(url-test)：定时对所有节点测速，自动选中延迟最低的一个；
 //   - 「🔀 故障转移」(fallback)：按顺序使用节点，当前节点健康检查失败时自动切到下一个。
 //
-// PROXYFORGE 的第一个成员就是「自动选择」，Clash 里 select 组默认选中首项，
-// 所以订阅装上开箱即用就是「自动挑最快 + 出故障自动转移」。用户想手动锁某个节点
-// 或改用严格故障转移，也能在 PROXYFORGE 里切换。
+// PROXYFORGE 的第一个成员是「会话稳定」，Clash 里 select 组默认选中首项。这样
+// Codex/Claude 等长连接客户端不必硬编码某个 pf 编号，也不会因 url-test 重选最快节点
+// 而在会话中途更换出口 IP；普通用户仍可切到自动选择、故障转移或任一固定节点。
 func writeClashGroups(w http.ResponseWriter, list []*proxyExport) {
 	fmt.Fprintf(w, "\nproxy-groups:\n")
 
@@ -382,7 +384,19 @@ func writeClashGroups(w http.ResponseWriter, list []*proxyExport) {
 	}
 
 	// gstatic 的 generate_204 是各家 Clash 通用的连通性探测地址，返回 204 且体积极小。
-	const healthURL = "http://www.gstatic.com/generate_204"
+	// 使用 HTTPS，避免 HTTP HEAD 被出口或中间网络劫持/复用异常；mihomo 也明确建议
+	// provider 和 group 的健康检查使用 HTTPS。
+	const healthURL = "https://www.gstatic.com/generate_204"
+
+	fmt.Fprintf(w, "  - name: 🔒 会话稳定\n")
+	fmt.Fprintf(w, "    type: load-balance\n")
+	fmt.Fprintf(w, "    strategy: consistent-hashing\n")
+	fmt.Fprintf(w, "    url: %s\n", healthURL)
+	fmt.Fprintf(w, "    interval: 300\n")
+	fmt.Fprintf(w, "    proxies:\n")
+	for _, p := range list {
+		fmt.Fprintf(w, "      - %s\n", clashScalar(p.NodeName()))
+	}
 
 	fmt.Fprintf(w, "  - name: ♻️ 自动选择\n")
 	fmt.Fprintf(w, "    type: url-test\n")
@@ -406,6 +420,7 @@ func writeClashGroups(w http.ResponseWriter, list []*proxyExport) {
 	fmt.Fprintf(w, "  - name: PROXYFORGE\n")
 	fmt.Fprintf(w, "    type: select\n")
 	fmt.Fprintf(w, "    proxies:\n")
+	fmt.Fprintf(w, "      - 🔒 会话稳定\n")
 	fmt.Fprintf(w, "      - ♻️ 自动选择\n")
 	fmt.Fprintf(w, "      - 🔀 故障转移\n")
 	for _, p := range list {
@@ -418,6 +433,11 @@ func writeClashGroups(w http.ResponseWriter, list []*proxyExport) {
 // 内网/回环直连，其余全部经 PROXYFORGE，并以 MATCH 兜底保证规则模式可用。
 func writeClashRules(w http.ResponseWriter) {
 	rules := []string{
+		// ProxyForge 默认只建立 IPv4 WARP 隧道。Windows NCSI 会密集请求这两个纯 IPv6
+		// 域名来判断 IPv6 可用性；让请求进入代理只会得到 502，并诱发 url-test 对所有
+		// 节点做无意义的健康检查。明确拒绝后 Windows 会正确判定“无 IPv6”，不影响 IPv4。
+		"DOMAIN,ipv6.msftconnecttest.com,REJECT",
+		"DOMAIN,ipv6.msftncsi.com,REJECT",
 		"IP-CIDR,127.0.0.0/8,DIRECT,no-resolve",
 		"IP-CIDR,10.0.0.0/8,DIRECT,no-resolve",
 		"IP-CIDR,172.16.0.0/12,DIRECT,no-resolve",
@@ -437,10 +457,10 @@ func writeClashRules(w http.ResponseWriter) {
 func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	fmt.Fprintf(w, "  - name: %s\n", clashScalar(p.NodeName()))
 	fmt.Fprintf(w, "    type: http\n")
-	fmt.Fprintf(w, "    server: %s\n", p.ClashServer())
+	fmt.Fprintf(w, "    server: %s\n", clashScalar(p.ClashServer()))
 	fmt.Fprintf(w, "    port: %d\n", p.ProxyPort)
-	fmt.Fprintf(w, "    username: %s\n", p.Username)
-	fmt.Fprintf(w, "    password: %s\n", p.Password)
+	fmt.Fprintf(w, "    username: %s\n", clashScalar(p.Username))
+	fmt.Fprintf(w, "    password: %s\n", clashScalar(p.Password))
 	// TLS 开启时，客户端对「客户端↔代理」这一跳套 TLS，把明文 CONNECT 主机名藏进
 	// 加密流。证书是内存自签，故 skip-cert-verify；威胁模型是审查中间盒被动读主机名，
 	// 而非定向 MITM，账号密码仍然鉴权。
@@ -448,7 +468,7 @@ func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 		fmt.Fprintf(w, "    tls: true\n")
 		fmt.Fprintf(w, "    skip-cert-verify: true\n")
 		if p.ProxyHost != "" {
-			fmt.Fprintf(w, "    sni: %s\n", p.ProxyHost)
+			fmt.Fprintf(w, "    sni: %s\n", clashScalar(p.ProxyHost))
 		}
 	}
 }

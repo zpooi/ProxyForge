@@ -17,6 +17,13 @@ import (
 type Manager struct {
 	db *db.DB
 
+	usageQueue    chan ProxyUsage
+	usageDone     chan struct{}
+	usageWG       sync.WaitGroup
+	usageStopOnce sync.Once
+	usageMu       sync.RWMutex
+	usageStopped  bool
+
 	mu            sync.Mutex
 	tunnels       map[string]*Tunnel
 	meta          map[string]selectionMeta
@@ -83,7 +90,7 @@ type selectionMeta struct {
 }
 
 func NewManager(database *db.DB) *Manager {
-	return &Manager{
+	m := &Manager{
 		db:           database,
 		tunnels:      make(map[string]*Tunnel),
 		meta:         make(map[string]selectionMeta),
@@ -94,6 +101,13 @@ func NewManager(database *db.DB) *Manager {
 		ipPickCount:  make(map[string]int64),
 		rotateSticky: make(map[string]rotateAssignment),
 	}
+	if database != nil {
+		m.usageQueue = make(chan ProxyUsage, 1024)
+		m.usageDone = make(chan struct{})
+		m.usageWG.Add(1)
+		go m.runUsageWriter()
+	}
+	return m
 }
 
 func (m *Manager) SetPassword(password string) {
@@ -600,19 +614,47 @@ func (m *Manager) reconcileServerLocked() {
 }
 
 func (m *Manager) recordUsage(usage ProxyUsage) {
-	if usage.ClientIP == "" || (usage.UpBytes <= 0 && usage.DownBytes <= 0) {
+	if m.usageQueue == nil || usage.ClientIP == "" || (usage.UpBytes <= 0 && usage.DownBytes <= 0) {
 		return
 	}
-	go func() {
-		if err := m.db.AddClientUsage(usage.ClientIP, usage.Username, usage.AccountTag, usage.UpBytes, usage.DownBytes); err != nil {
-			log.Printf("[proxy] record client usage %s failed: %v", usage.ClientIP, err)
+	m.usageMu.RLock()
+	defer m.usageMu.RUnlock()
+	if m.usageStopped {
+		return
+	}
+	select {
+	case m.usageQueue <- usage:
+	case <-m.usageDone:
+	}
+}
+
+func (m *Manager) runUsageWriter() {
+	defer m.usageWG.Done()
+	for {
+		select {
+		case usage := <-m.usageQueue:
+			m.persistUsage(usage)
+		case <-m.usageDone:
+			for {
+				select {
+				case usage := <-m.usageQueue:
+					m.persistUsage(usage)
+				default:
+					return
+				}
+			}
 		}
-	}()
+	}
+}
+
+func (m *Manager) persistUsage(usage ProxyUsage) {
+	if err := m.db.AddClientUsage(usage.ClientIP, usage.Username, usage.AccountTag, usage.UpBytes, usage.DownBytes); err != nil {
+		log.Printf("[proxy] record client usage %s failed: %v", usage.ClientIP, err)
+	}
 }
 
 func (m *Manager) Stop() {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	if m.server != nil {
 		m.server.Close()
 		m.server = nil
@@ -621,6 +663,18 @@ func (m *Manager) Stop() {
 		t.Close()
 		delete(m.tunnels, tag)
 	}
+	m.mu.Unlock()
+
+	m.usageStopOnce.Do(func() {
+		if m.usageDone == nil {
+			return
+		}
+		m.usageMu.Lock()
+		m.usageStopped = true
+		close(m.usageDone)
+		m.usageMu.Unlock()
+		m.usageWG.Wait()
+	})
 }
 
 func (m *Manager) StopTunnel(tag string) bool {

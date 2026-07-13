@@ -38,7 +38,10 @@ func (s *Service) Login(username, password string) (string, error) {
 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
 		return "", errors.New("invalid credentials")
 	}
-	token := randomToken(32)
+	token, err := randomToken(32)
+	if err != nil {
+		return "", err
+	}
 	if err := s.db.CreateSession(token, u.ID, SessionTTL); err != nil {
 		return "", err
 	}
@@ -137,25 +140,29 @@ func (s *Service) ChangeCredentials(userID int64, oldPassword, username, newPass
 	return nil
 }
 
-func (s *Service) SetSessionCookie(w http.ResponseWriter, token string) {
+func (s *Service) SetSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionCookie,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   requestIsHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(SessionTTL.Seconds()),
+		Expires:  time.Now().Add(SessionTTL),
 	})
 }
 
-func (s *Service) ClearSessionCookie(w http.ResponseWriter) {
+func (s *Service) ClearSessionCookie(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionCookie,
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   requestIsHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
+		Expires:  time.Unix(1, 0),
 	})
 }
 
@@ -166,10 +173,29 @@ type AuthUser struct {
 	Token              string
 }
 
-func randomToken(n int) string {
+func randomToken(n int) (string, error) {
+	if n <= 0 {
+		return "", fmt.Errorf("invalid token size %d", n)
+	}
 	b := make([]byte, n)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate session token: %w", err)
+	}
+	return hex.EncodeToString(b), nil
+}
+
+func requestIsHTTPS(r *http.Request) bool {
+	if r != nil && r.TLS != nil {
+		return true
+	}
+	if r == nil {
+		return false
+	}
+	proto := r.Header.Get("X-Forwarded-Proto")
+	if first, _, ok := strings.Cut(proto, ","); ok {
+		proto = first
+	}
+	return strings.EqualFold(strings.TrimSpace(proto), "https")
 }
 
 // Middleware 强制登录；放行 /login 和前端静态资源。

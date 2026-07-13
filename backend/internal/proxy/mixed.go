@@ -24,9 +24,13 @@ type mixedServer struct {
 
 	tlsConfig *tls.Config
 
-	ln     net.Listener
-	closed chan struct{}
-	wg     sync.WaitGroup
+	ln        net.Listener
+	closed    chan struct{}
+	wg        sync.WaitGroup
+	closeOnce sync.Once
+
+	connMu sync.Mutex
+	conns  map[net.Conn]struct{}
 }
 
 type proxySession struct {
@@ -57,6 +61,7 @@ func startProxy(bindAddr string, port int, resolve func(string, string, string) 
 		tlsConfig: tlsConfig,
 		ln:        ln,
 		closed:    make(chan struct{}),
+		conns:     make(map[net.Conn]struct{}),
 	}
 	s.wg.Add(1)
 	go s.acceptLoop()
@@ -86,22 +91,50 @@ func (s *mixedServer) acceptLoop() {
 				continue
 			}
 		}
+		if !s.trackConn(c) {
+			_ = c.Close()
+			return
+		}
 		s.wg.Add(1)
-		go func() {
+		go func(conn net.Conn) {
 			defer s.wg.Done()
-			s.handle(c)
-		}()
+			defer s.untrackConn(conn)
+			s.handle(conn)
+		}(c)
 	}
 }
 
 func (s *mixedServer) Close() {
+	s.closeOnce.Do(func() {
+		close(s.closed)
+		_ = s.ln.Close()
+		// 仅关闭 listener 不会影响已经 Accept 的连接。主动关闭所有存量连接，避免
+		// 配置重载或优雅退出被 CONNECT / SSE / WebSocket 等长连接无限阻塞。
+		s.connMu.Lock()
+		for conn := range s.conns {
+			_ = conn.Close()
+		}
+		s.connMu.Unlock()
+		s.wg.Wait()
+	})
+}
+
+func (s *mixedServer) trackConn(conn net.Conn) bool {
+	s.connMu.Lock()
+	defer s.connMu.Unlock()
 	select {
 	case <-s.closed:
+		return false
 	default:
-		close(s.closed)
+		s.conns[conn] = struct{}{}
+		return true
 	}
-	_ = s.ln.Close()
-	s.wg.Wait()
+}
+
+func (s *mixedServer) untrackConn(conn net.Conn) {
+	s.connMu.Lock()
+	delete(s.conns, conn)
+	s.connMu.Unlock()
 }
 
 func (s *mixedServer) handle(client net.Conn) {

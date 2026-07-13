@@ -1,16 +1,20 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sort"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
 
-	"github.com/zpooi/ProxyForge/backend/internal/auth"
 	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 )
+
+const manualAccountGenerationTimeout = 2 * time.Hour
 
 type accountView struct {
 	ID             int64   `json:"id"`
@@ -268,10 +272,12 @@ func (h *Handlers) AccountsGenerate(w http.ResponseWriter, r *http.Request) {
 	if n > 50 {
 		n = 50
 	}
-	_ = auth.FromRequest(r)
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), manualAccountGenerationTimeout)
 	go func() {
-		_, err := h.Scheduler.GenerateAccounts(r.Context(), n)
-		_ = err
+		defer cancel()
+		if _, err := h.Scheduler.GenerateAccounts(ctx, n); err != nil {
+			log.Printf("[accounts] background account generation failed: %v", err)
+		}
 	}()
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{"status": "started", "n": n})

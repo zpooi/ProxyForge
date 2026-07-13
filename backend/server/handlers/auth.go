@@ -37,7 +37,7 @@ func (h *Handlers) LoginSubmit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login?error="+url.QueryEscape("用户名或密码错误"), http.StatusFound)
 		return
 	}
-	h.Auth.SetSessionCookie(w, token)
+	h.Auth.SetSessionCookie(w, r, token)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -71,7 +71,7 @@ func (h *Handlers) SetupSubmit(w http.ResponseWriter, r *http.Request) {
 		redirectSetupError(w, r, err.Error())
 		return
 	}
-	h.Auth.SetSessionCookie(w, token)
+	h.Auth.SetSessionCookie(w, r, token)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -79,7 +79,7 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(auth.SessionCookie); err == nil {
 		_ = h.Auth.Logout(c.Value)
 	}
-	h.Auth.ClearSessionCookie(w)
+	h.Auth.ClearSessionCookie(w, r)
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 

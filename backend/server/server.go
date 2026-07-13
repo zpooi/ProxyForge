@@ -3,6 +3,7 @@ package server
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -23,6 +24,7 @@ type Server struct {
 
 func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
+	r.Use(responseHeaders)
 
 	h := &handlers.Handlers{
 		DB:        s.DB,
@@ -101,6 +103,25 @@ func (s *Server) Router() http.Handler {
 	})
 
 	return r
+}
+
+// responseHeaders 防止包含代理密码、订阅 token 的管理 API/订阅响应落入浏览器或
+// 中间代理缓存，同时为所有页面补上基础浏览器安全边界。静态资源文件名不带内容哈希，
+// 使用 no-cache 让客户端可复用但每次重新验证，避免升级后加载旧 JS。
+func responseHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		if strings.HasPrefix(r.URL.Path, "/assets/") || r.URL.Path == "/style.css" {
+			w.Header().Set("Cache-Control", "no-cache")
+		} else {
+			w.Header().Set("Cache-Control", "no-store, max-age=0")
+			w.Header().Set("Pragma", "no-cache")
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func redirectHome(w http.ResponseWriter, r *http.Request) {

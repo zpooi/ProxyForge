@@ -133,6 +133,25 @@ func (d *DB) SetSetting(key, value string) error {
 	return err
 }
 
+// SetSettings 原子写入一组设置，避免端口、TLS、槽位数等关联配置只保存一半。
+func (d *DB) SetSettings(values map[string]string) error {
+	if len(values) == 0 {
+		return nil
+	}
+	tx, err := d.conn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for key, value := range values {
+		if _, err := tx.Exec(`INSERT INTO settings(key, value) VALUES(?, ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, value); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 func (d *DB) AllSettings() (map[string]string, error) {
 	rows, err := d.conn.Query("SELECT key, value FROM settings")
 	if err != nil {

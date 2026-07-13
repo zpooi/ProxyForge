@@ -46,18 +46,40 @@ func TestWriteClashAgentNode(t *testing.T) {
 	if !strings.Contains(out, `- name: "日本 节点"`) {
 		t.Errorf("agent node should use region as name:\n%s", out)
 	}
-	if !strings.Contains(out, "username: node-abc123") {
+	if !strings.Contains(out, `username: "node-abc123"`) {
 		t.Errorf("agent node should authenticate as node-<id>:\n%s", out)
 	}
-	// 三个组都应引用节点显示名（带引号）。
-	if n := strings.Count(out, `- "日本 节点"`); n != 3 {
-		t.Errorf("agent node should appear in 3 groups (url-test/fallback/select), got %d:\n%s", n, out)
+	// 四个组都应引用节点显示名（带引号）。
+	if n := strings.Count(out, `- "日本 节点"`); n != 4 {
+		t.Errorf("agent node should appear in 4 groups (stable/url-test/fallback/select), got %d:\n%s", n, out)
 	}
-	// 自动选择与故障转移组都存在。
-	for _, want := range []string{"type: url-test", "type: fallback", "MATCH,PROXYFORGE"} {
+	// 会话稳定、自动选择与故障转移组都存在。
+	for _, want := range []string{
+		"name: 🔒 会话稳定",
+		"type: load-balance",
+		"strategy: consistent-hashing",
+		"type: url-test",
+		"type: fallback",
+		"url: https://www.gstatic.com/generate_204",
+		"DOMAIN,ipv6.msftconnecttest.com,REJECT",
+		"DOMAIN,ipv6.msftncsi.com,REJECT",
+		"MATCH,PROXYFORGE",
+	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in output:\n%s", want, out)
 		}
+	}
+
+	// PROXYFORGE 默认选中会话稳定组，而不是某个写死的 pf 编号或会动态换 IP 的 url-test。
+	groupAt := strings.LastIndex(out, "  - name: PROXYFORGE\n")
+	if groupAt < 0 {
+		t.Fatalf("missing PROXYFORGE group:\n%s", out)
+	}
+	group := out[groupAt:]
+	stableAt := strings.Index(group, "      - 🔒 会话稳定\n")
+	autoAt := strings.Index(group, "      - ♻️ 自动选择\n")
+	if stableAt < 0 || autoAt < 0 || stableAt > autoAt {
+		t.Errorf("stable group should be the first PROXYFORGE choice:\n%s", group)
 	}
 }
 
@@ -103,8 +125,8 @@ func TestWriteClashUsesResolvedServerAndKeepsTLSSNI(t *testing.T) {
 	}})
 	out := rec.Body.String()
 	for _, want := range []string{
-		"server: 203.0.113.9",
-		"sni: proxy.example.com",
+		`server: "203.0.113.9"`,
+		`sni: "proxy.example.com"`,
 		"skip-cert-verify: true",
 	} {
 		if !strings.Contains(out, want) {
@@ -113,6 +135,29 @@ func TestWriteClashUsesResolvedServerAndKeepsTLSSNI(t *testing.T) {
 	}
 	if strings.Contains(out, "dns:") {
 		t.Errorf("IP-based Clash export should not depend on a DNS section:\n%s", out)
+	}
+}
+
+func TestWriteClashQuotesCredentialScalars(t *testing.T) {
+	rec := httptest.NewRecorder()
+	writeClash(rec, []*proxyExport{{
+		Name:      "special",
+		Username:  "node:user",
+		Password:  "p:# yes",
+		ProxyHost: "proxy.example.com",
+		ProxyPort: 7843,
+		TLS:       true,
+	}})
+	out := rec.Body.String()
+	for _, want := range []string{
+		`server: "proxy.example.com"`,
+		`username: "node:user"`,
+		`password: "p:# yes"`,
+		`sni: "proxy.example.com"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing safely quoted scalar %q:\n%s", want, out)
+		}
 	}
 }
 

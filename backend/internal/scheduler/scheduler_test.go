@@ -1,11 +1,25 @@
 package scheduler
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/zpooi/ProxyForge/backend/internal/models"
 )
+
+func TestGenerateAccountsHonorsContextWhileAnotherBatchRuns(t *testing.T) {
+	s := &Scheduler{generationGate: make(chan struct{}, 1)}
+	s.generationGate <- struct{}{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	inserted, err := s.GenerateAccounts(ctx, 1)
+	if inserted != 0 || !errors.Is(err, context.Canceled) {
+		t.Fatalf("GenerateAccounts() = %d, %v; want 0, context canceled", inserted, err)
+	}
+}
 
 func TestRequiredAccountRegistrationsIncludesUniqueIPGap(t *testing.T) {
 	accounts := []*models.Account{
