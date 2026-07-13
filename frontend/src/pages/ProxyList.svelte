@@ -12,6 +12,8 @@
   ];
 
   let slots = [];
+  // 在线远程 agent 的 WARP 出口，和本机槽位共用代理端口，用户名 node-<id>。
+  let agents = [];
   let proxyHost = window.location.hostname;
   let proxyPort = 7843;
   let error = '';
@@ -26,6 +28,7 @@
     try {
       const data = await fetchJSON('/api/accounts/json');
       slots = data.slots || [];
+      agents = data.agents || [];
       proxyHost = data.proxy_host || window.location.hostname;
       proxyPort = data.proxy_port || 7843;
       error = '';
@@ -296,6 +299,12 @@
       gap: 1px;
     }
   }
+  .row-sub {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-3);
+    font-size: 12px;
+  }
 </style>
 <div class="table-wrap">
   <table>
@@ -333,7 +342,37 @@
             </td>
           </tr>
         {/each}
-      {:else}
+      {/if}
+      {#each agents as agent}
+        <tr>
+          <td>
+            {agent.name}
+            <span class="row-sub">Agent WARP 出口 · {agent.agent_name}</span>
+          </td>
+          <td><code>{agent.password}</code></td>
+          <td>{agent.public_ip || '检测中'}</td>
+          <td>{countryLabel(agent.country)}</td>
+          <td>{agent.latency_ms ? metric(agent.latency_ms, ' ms') : '-'}</td>
+          <td>-</td>
+          <td>-</td>
+          <td><StatusTag status="ok" /></td>
+          <td>
+            <button
+              type="button"
+              class="icon-button copy-trigger"
+              class:done={copied === `${agent.username}-http` || copied === `${agent.username}-socks5`}
+              class:open={menu && menu.kind === 'slot' && menu.username === agent.username}
+              title="复制代理链接"
+              aria-label="复制代理链接"
+              on:click={(e) => toggleMenu(e, agent)}
+            >
+              <Icon name={copied === `${agent.username}-http` || copied === `${agent.username}-socks5` ? 'check' : 'copy'} size={18} />
+              <Icon name="expand_more" size={16} />
+            </button>
+          </td>
+        </tr>
+      {/each}
+      {#if !slots.length && !agents.length}
         <tr><td colspan="9">暂无代理账号，后台会根据设置自动创建</td></tr>
       {/if}
     </tbody>
@@ -352,7 +391,7 @@
         </button>
       {/each}
     {:else}
-      {@const slot = slots.find((s) => s.username === menu.username)}
+      {@const slot = slots.find((s) => s.username === menu.username) || agents.find((a) => a.username === menu.username)}
       {#each SCHEMES as scheme}
         <button type="button" class="copy-menu-item" on:click={() => copyProxy(slot, scheme.id)}>
           <Icon name="copy" size={16} />

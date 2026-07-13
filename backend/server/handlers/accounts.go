@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/zpooi/ProxyForge/backend/internal/auth"
+	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 )
 
 type accountView struct {
@@ -45,6 +46,25 @@ type slotView struct {
 	LastError       string  `json:"last_error"`
 	ProbeFailures   int     `json:"probe_failures"`
 	IPDriftFailures int     `json:"ip_drift_failures"`
+}
+
+// agentProxyView 是一个在线远程 agent WARP 出口在代理列表里的一行。它和本机
+// 槽位共用代理端口，但鉴权用户名是 node-<id>（在 proxy.resolve 里被解析成对应
+// agent 出口），密码是全局共享代理密码。前端复制出来的链接可直接连、也和 Clash
+// 订阅里的 agent 节点完全一致。
+type agentProxyView struct {
+	NodeID    string `json:"node_id"`
+	AgentName string `json:"agent_name"`
+	Name      string `json:"name"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	PublicIP  string `json:"public_ip"`
+	HostIP    string `json:"host_ip"`
+	Country   string `json:"country"`
+	Colo      string `json:"colo"`
+	LatencyMs int    `json:"latency_ms"`
+	TrafficUp int64  `json:"traffic_up"`
+	TrafficDn int64  `json:"traffic_down"`
 }
 
 func (h *Handlers) AccountsPage(w http.ResponseWriter, r *http.Request) {
@@ -115,13 +135,59 @@ func (h *Handlers) AccountsJSON(w http.ResponseWriter, r *http.Request) {
 			proxyHost = v
 		}
 	}
+	proxyPassword, _, _ := h.DB.GetSetting(SettingProxyPassword)
+	agents := h.collectAgentProxyViews(proxyPassword)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"accounts":   views,
 		"slots":      slotViews,
+		"agents":     agents,
 		"proxy_host": proxyHost,
 		"proxy_port": proxyPort,
 	})
+}
+
+// collectAgentProxyViews 把当前在线的远程 agent WARP 出口拍平成代理列表行。
+// 每条在线会话（Hub 快照的一项）就是一个 WARP 出口，用户名 node-<id>、密码是
+// 全局共享代理密码，和 Clash 订阅里的 agent 节点一一对应。离线出口不返回。
+func (h *Handlers) collectAgentProxyViews(proxyPassword string) []agentProxyView {
+	if h.Hub == nil {
+		return nil
+	}
+	snapshot := h.Hub.Snapshot()
+	views := make([]agentProxyView, 0, len(snapshot))
+	for _, o := range snapshot {
+		agentID := agentBaseID(o.Meta.AgentID, o.NodeID)
+		host := agentHostDisplayName(o.Meta.AgentName, o.Meta.HostCountry, agentID)
+		egressName := strings.TrimSpace(o.Meta.Name)
+		if egressName == "" {
+			egressName = host
+			if o.Meta.EgressIndex > 0 {
+				egressName = fmt.Sprintf("%s #%d", host, o.Meta.EgressIndex)
+			}
+		}
+		views = append(views, agentProxyView{
+			NodeID:    o.NodeID,
+			AgentName: host,
+			Name:      egressName,
+			Username:  proxy.AgentUsername(o.NodeID),
+			Password:  proxyPassword,
+			PublicIP:  o.Meta.PublicIP,
+			HostIP:    o.Meta.HostPublicIP,
+			Country:   o.Meta.Country,
+			Colo:      o.Meta.Colo,
+			LatencyMs: o.LatencyMs,
+			TrafficUp: o.TxBytes,
+			TrafficDn: o.RxBytes,
+		})
+	}
+	sort.SliceStable(views, func(i, j int) bool {
+		if views[i].AgentName != views[j].AgentName {
+			return views[i].AgentName < views[j].AgentName
+		}
+		return views[i].Name < views[j].Name
+	})
+	return views
 }
 
 func tagSet(tags []string) map[string]bool {
