@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/zpooi/ProxyForge/backend/internal/proxy"
@@ -236,6 +237,7 @@ func writePlain(w http.ResponseWriter, list []*proxyExport) {
 
 func writeClash(w http.ResponseWriter, list []*proxyExport) {
 	fmt.Fprintf(w, "# ProxyForge - Clash 固定代理账号\n")
+	writeClashDNS(w, list)
 	fmt.Fprintf(w, "proxies:\n")
 	for _, p := range list {
 		writeClashProxy(w, p)
@@ -243,6 +245,67 @@ func writeClash(w http.ResponseWriter, list []*proxyExport) {
 
 	writeClashGroups(w, list)
 	writeClashRules(w)
+}
+
+// proxyServerDomains 收集导出节点里所有「域名形式」的代理服务器地址（去重、稳定排序）。
+// IP 形式的 server 客户端直接 TCP 连、无需 DNS，故跳过。返回为空表示所有节点都用 IP，
+// 不需要为解析代理域名做任何 DNS 特殊处理。
+func proxyServerDomains(list []*proxyExport) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, p := range list {
+		host := strings.TrimSpace(p.ProxyHost)
+		if host == "" || net.ParseIP(host) != nil {
+			continue // 空或 IP 无需解析
+		}
+		if seen[host] {
+			continue
+		}
+		seen[host] = true
+		out = append(out, host)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// writeClashDNS 在代理服务器用域名时输出一个 DNS 段，专治 OpenClash / mihomo 的 fake-ip
+// 死锁：默认 fake-ip 模式会把代理服务器域名也解析成不可路由的 198.18.x 假 IP，或让解析
+// 依赖尚未连上的代理，导致「dns resolve failed」。这里把代理域名加入 fake-ip-filter（返回
+// 真实 IP），并用 nameserver-policy 强制它们走明文公共 DNS，绕开任何进代理的解析回环。
+// 所有节点都用 IP 时不输出 DNS 段，保持配置最小、不干扰用户既有 DNS 设置。
+func writeClashDNS(w http.ResponseWriter, list []*proxyExport) {
+	domains := proxyServerDomains(list)
+	if len(domains) == 0 {
+		return
+	}
+	// 明文公共 DNS：解析代理域名时直连这些服务器，不经过代理，避免先有鸡还是先有蛋。
+	resolvers := []string{"223.5.5.5", "119.29.29.29", "1.1.1.1", "8.8.8.8"}
+
+	fmt.Fprintf(w, "dns:\n")
+	fmt.Fprintf(w, "  enable: true\n")
+	fmt.Fprintf(w, "  ipv6: false\n")
+	fmt.Fprintf(w, "  enhanced-mode: fake-ip\n")
+	fmt.Fprintf(w, "  fake-ip-range: 198.18.0.1/16\n")
+	fmt.Fprintf(w, "  fake-ip-filter:\n")
+	for _, d := range domains {
+		fmt.Fprintf(w, "    - %s\n", clashScalar(d))
+	}
+	fmt.Fprintf(w, "  default-nameserver:\n")
+	for _, r := range resolvers {
+		fmt.Fprintf(w, "    - %s\n", r)
+	}
+	fmt.Fprintf(w, "  nameserver:\n")
+	for _, r := range resolvers {
+		fmt.Fprintf(w, "    - %s\n", r)
+	}
+	// nameserver-policy 把代理域名钉死在明文公共 DNS 上，即便用户改了上游也不会把
+	// 代理域名的解析导进代理，从根上断掉解析回环。
+	fmt.Fprintf(w, "  nameserver-policy:\n")
+	joined := strings.Join(resolvers, ",")
+	for _, d := range domains {
+		fmt.Fprintf(w, "    %s: %s\n", clashScalar(d), clashScalar(joined))
+	}
+	fmt.Fprintf(w, "\n")
 }
 
 // writeClashGroups 输出代理组。除了让用户手动挑节点的 PROXYFORGE 外，还提供两个自动组：
