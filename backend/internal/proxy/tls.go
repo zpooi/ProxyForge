@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -45,6 +46,28 @@ func newSelfSignedTLSConfig(serverName string) (*tls.Config, error) {
 	cert := tls.Certificate{
 		Certificate: [][]byte{der},
 		PrivateKey:  priv,
+	}
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
+	}, nil
+}
+
+// newProxyTLSConfig loads a trusted certificate when file paths are supplied.
+// With no files configured it keeps the self-signed compatibility mode, but
+// the listener still requires TLS; callers must never fall back to plaintext.
+func newProxyTLSConfig(serverName, certFile, keyFile string) (*tls.Config, error) {
+	certFile = strings.TrimSpace(certFile)
+	keyFile = strings.TrimSpace(keyFile)
+	if certFile == "" && keyFile == "" {
+		return newSelfSignedTLSConfig(serverName)
+	}
+	if certFile == "" || keyFile == "" {
+		return nil, fmt.Errorf("both proxy TLS certificate and key files are required")
+	}
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, fmt.Errorf("load proxy TLS certificate: %w", err)
 	}
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},

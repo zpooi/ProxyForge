@@ -20,11 +20,13 @@ const (
 )
 
 type Service struct {
-	db *db.DB
+	db                *db.DB
+	dummyPasswordHash []byte
 }
 
 func New(database *db.DB) *Service {
-	return &Service{db: database}
+	dummyHash, _ := bcrypt.GenerateFromPassword([]byte("proxyforge-invalid-user"), bcrypt.DefaultCost)
+	return &Service{db: database, dummyPasswordHash: dummyHash}
 }
 
 func (s *Service) Login(username, password string) (string, error) {
@@ -33,6 +35,9 @@ func (s *Service) Login(username, password string) (string, error) {
 		return "", err
 	}
 	if u == nil {
+		// Keep unknown-user and wrong-password paths similarly expensive so the
+		// management username cannot be enumerated by response timing.
+		_ = bcrypt.CompareHashAndPassword(s.dummyPasswordHash, []byte(password))
 		return "", errors.New("invalid credentials")
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
@@ -242,8 +247,8 @@ func validateCredentials(username, password string) error {
 	if strings.ContainsAny(username, " \t\r\n:/@") {
 		return errors.New("用户名不能包含空格、冒号、斜杠或 @")
 	}
-	if len(password) < 8 {
-		return errors.New("密码至少 8 位")
+	if len(password) < 12 {
+		return errors.New("密码至少 12 位")
 	}
 	return nil
 }

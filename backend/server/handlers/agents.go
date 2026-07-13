@@ -31,7 +31,7 @@ func (h *Handlers) AgentLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	if !h.agentTokenValid(q.Get("token")) {
+	if !h.agentTokenValid(requestAgentToken(r)) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -227,7 +227,7 @@ func (h *Handlers) NodeEnroll(w http.ResponseWriter, r *http.Request) {
 	base := h.panelBaseURL(r)
 	// 一行安装命令：从主控自身下载安装脚本并执行，脚本再拉对应架构的 agent 二进制。
 	// 脚本内联 token 与主控地址，用户粘贴即用，无需手填参数。
-	install := fmt.Sprintf("curl -fsSL '%s/agent/install.sh?token=%s' | sudo bash", base, token)
+	install := fmt.Sprintf("curl -fsSL -H 'Authorization: Bearer %s' '%s/agent/install.sh' | sudo bash", token, base)
 	uninstall := agentUninstallCommand()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -241,7 +241,7 @@ func (h *Handlers) NodeEnroll(w http.ResponseWriter, r *http.Request) {
 }
 
 func agentUninstallCommand() string {
-	return "sudo sh -c 'systemctl disable --now pfagent.service 2>/dev/null || true; rm -f /etc/systemd/system/pfagent.service /usr/local/bin/pfagent; rm -rf /var/lib/pfagent; systemctl daemon-reload'"
+	return "sudo sh -c 'systemctl disable --now pfagent.service 2>/dev/null || true; rm -f /etc/systemd/system/pfagent.service /etc/pfagent.env /usr/local/bin/pfagent; rm -rf /var/lib/pfagent; systemctl daemon-reload'"
 }
 
 // NodeRotateInfo 返回「统一轮换凭据」的连接信息，供前端一键复制。用户在客户端
@@ -307,10 +307,10 @@ func (h *Handlers) NodesPage(w http.ResponseWriter, r *http.Request) {
 	h.AppPage(w, r)
 }
 
-// AgentInstallScript 是免登录的安装脚本端点，靠 URL token 鉴权。输出一段 bash：
+// AgentInstallScript 是免登录的安装脚本端点，靠 Authorization Bearer token 鉴权。输出一段 bash：
 // 探测架构 → 从主控下载对应 agent 二进制 → 装成 systemd 服务常驻自启。
 func (h *Handlers) AgentInstallScript(w http.ResponseWriter, r *http.Request) {
-	if !h.agentTokenValid(r.URL.Query().Get("token")) {
+	if !h.agentTokenValid(requestAgentToken(r)) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -321,9 +321,9 @@ func (h *Handlers) AgentInstallScript(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, agentInstallScript(base, token))
 }
 
-// AgentDownload 免登录下发对应架构的 agent 二进制，靠 URL token 鉴权。
+// AgentDownload 免登录下发对应架构的 agent 二进制，靠 Authorization Bearer token 鉴权。
 func (h *Handlers) AgentDownload(w http.ResponseWriter, r *http.Request) {
-	if !h.agentTokenValid(r.URL.Query().Get("token")) {
+	if !h.agentTokenValid(requestAgentToken(r)) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -351,6 +351,15 @@ func (h *Handlers) agentTokenValid(got string) bool {
 	want, _, _ := h.DB.GetSetting(SettingAgentToken)
 	got = strings.TrimSpace(got)
 	return want != "" && got != "" && subtle.ConstantTimeCompare([]byte(want), []byte(got)) == 1
+}
+
+func requestAgentToken(r *http.Request) string {
+	authz := strings.TrimSpace(r.Header.Get("Authorization"))
+	scheme, value, ok := strings.Cut(authz, " ")
+	if !ok || !strings.EqualFold(scheme, "Bearer") {
+		return ""
+	}
+	return strings.TrimSpace(value)
 }
 
 func (h *Handlers) ensureAgentToken() (string, error) {
@@ -589,8 +598,13 @@ esac
 echo "[pfagent] 下载 agent ($ARCH)..."
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
-curl -fsSL "$SERVER/agent/download?token=$TOKEN&os=linux&arch=$ARCH" -o "$TMP"
+curl -fsSL -H "Authorization: Bearer $TOKEN" "$SERVER/agent/download?os=linux&arch=$ARCH" -o "$TMP"
 install -m 0755 "$TMP" "$BIN"
+
+ENV_FILE=/etc/pfagent.env
+umask 077
+printf 'PF_SERVER=%%s\nPF_TOKEN=%%s\n' "$SERVER" "$TOKEN" >"$ENV_FILE"
+chmod 0600 "$ENV_FILE"
 
 echo "[pfagent] 安装 systemd 服务..."
 cat >/etc/systemd/system/pfagent.service <<EOF
@@ -601,7 +615,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=$BIN -server '$SERVER' -token '$TOKEN' -state '$STATE' -warp-count 3
+EnvironmentFile=/etc/pfagent.env
+ExecStart=$BIN -state '$STATE' -warp-count 3
 Restart=always
 RestartSec=5
 DynamicUser=yes

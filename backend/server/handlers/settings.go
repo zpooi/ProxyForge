@@ -150,8 +150,8 @@ func validatedSettings(form url.Values) (map[string]string, error) {
 	}
 	if raw, ok := value(SettingProxyPassword); ok {
 		v := strings.TrimSpace(raw)
-		if len(v) > 256 || strings.ContainsAny(v, "\x00\r\n") {
-			return nil, fmt.Errorf("全局代理密码不能超过 256 字符或包含换行")
+		if len(v) < 16 || len(v) > 256 || strings.ContainsAny(v, "\x00\r\n") {
+			return nil, fmt.Errorf("全局代理密码必须为 16 到 256 个字符且不能包含换行")
 		}
 		out[SettingProxyPassword] = v
 	}

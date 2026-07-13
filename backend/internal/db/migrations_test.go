@@ -3,10 +3,30 @@ package db
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/zpooi/ProxyForge/backend/internal/models"
 )
+
+func TestOpenRestrictsDatabaseFilePermissions(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "data.db")
+	database, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	if runtime.GOOS == "windows" {
+		return
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Fatalf("database permissions = %o, want 600", got)
+	}
+}
 
 func TestSeedDefaultsImportsWarpAccountMetadata(t *testing.T) {
 	root := t.TempDir()
@@ -79,6 +99,14 @@ func TestSeedDefaultsUseProxyIPCountTwenty(t *testing.T) {
 	}
 	if err := database.SeedDefaultsIfEmpty(t.TempDir()); err != nil {
 		t.Fatal(err)
+	}
+	proxyPassword, ok, err := database.GetSetting(SettingProxyPassword)
+	if err != nil || !ok || len(proxyPassword) < 16 {
+		t.Fatalf("secure proxy password was not generated: ok=%v len=%d err=%v", ok, len(proxyPassword), err)
+	}
+	dnsMode, ok, err := database.GetSetting(SettingProxyDNSMode)
+	if err != nil || !ok || dnsMode != "tunnel" {
+		t.Fatalf("proxy DNS mode = %q, ok=%v, err=%v; want tunnel", dnsMode, ok, err)
 	}
 	slotCount, ok, err := database.GetSetting(SettingProxySlotCount)
 	if err != nil {

@@ -57,10 +57,10 @@ function create_fragment(ctx) {
     <input type="text" name="username" minlength="3"/></label> 
   <label>旧密码
     <input type="password" name="old_password" required=""/></label> 
-  <label>新密码（至少 8 位）
-    <input type="password" name="new_password" required="" minlength="8"/></label> 
+  <label>新密码（至少 12 位）
+    <input type="password" name="new_password" required="" minlength="12" autocomplete="new-password"/></label>
   <label>确认新密码
-    <input type="password" name="confirm_password" required="" minlength="8"/></label> 
+    <input type="password" name="confirm_password" required="" minlength="12" autocomplete="new-password"/></label>
   <button type="submit">保存账号</button>`;
 
 			attr(form, "method", "post");

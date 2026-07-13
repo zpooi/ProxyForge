@@ -240,7 +240,9 @@ function create_fragment(ctx) {
 			option3.__value = "127.0.0.1";
 			option3.value = option3.__value;
 			if (/*settings*/ ctx[0].proxy_listen_addr === void 0) add_render_callback(() => /*select1_change_handler*/ ctx[8].call(select1));
-			attr(input2, "type", "text");
+			attr(input2, "type", "password");
+			attr(input2, "minlength", "16");
+			attr(input2, "autocomplete", "new-password");
 			attr(input3, "type", "text");
 			attr(input3, "placeholder", "留空则用当前访问域名");
 			attr(p1, "class", "hint");

@@ -18,7 +18,7 @@ func TestValidatedSettingsNormalizesAndMirrorsValues(t *testing.T) {
 		SettingProxyDNSMode:         {"warp"},
 		SettingProxyListenAddr:      {"127.0.0.1"},
 		SettingProxyPublicHost:      {"Proxy.Example.COM"},
-		SettingProxyPassword:        {"  p:# safe  "},
+		SettingProxyPassword:        {"  p:# safe password  "},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +35,7 @@ func TestValidatedSettingsNormalizesAndMirrorsValues(t *testing.T) {
 		SettingProxyDNSMode:         "tunnel",
 		SettingProxyListenAddr:      "127.0.0.1",
 		SettingProxyPublicHost:      "proxy.example.com",
-		SettingProxyPassword:        "p:# safe",
+		SettingProxyPassword:        "p:# safe password",
 	}
 	for key, value := range want {
 		if got[key] != value {
@@ -67,6 +67,8 @@ func TestValidatedSettingsRejectsUnsafeOrUnboundedValues(t *testing.T) {
 		{SettingProxyPublicHost: {"https://proxy.example.com:7843/path"}},
 		{SettingProxyPublicHost: {"proxy.example.com\nserver: evil"}},
 		{SettingProxyPassword: {"hello\nworld"}},
+		{SettingProxyPassword: {"too-short"}},
+		{SettingProxyPassword: {""}},
 		{SettingProxyTLS: {"maybe"}},
 	}
 	for _, form := range tests {

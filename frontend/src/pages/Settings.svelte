@@ -79,7 +79,7 @@
       </select>
     </label>
     <label>全局密码
-      <input type="text" bind:value={settings.proxy_password}>
+      <input type="password" minlength="16" autocomplete="new-password" bind:value={settings.proxy_password}>
     </label>
     <label>代理对外地址
       <input type="text" placeholder="留空则用当前访问域名" bind:value={settings.proxy_public_host}>

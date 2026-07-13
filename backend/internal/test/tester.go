@@ -3,6 +3,7 @@ package test
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -39,13 +40,15 @@ type Result struct {
 type Tester struct {
 	proxyPort int
 	password  string
+	proxyTLS  bool
 }
 
-func NewTester(proxyPort int, password string) *Tester {
+func NewTester(proxyPort int, password string, proxyTLS ...bool) *Tester {
 	if proxyPort <= 0 {
 		proxyPort = defaultProxyPort
 	}
-	return &Tester{proxyPort: proxyPort, password: password}
+	tlsEnabled := len(proxyTLS) > 0 && proxyTLS[0]
+	return &Tester{proxyPort: proxyPort, password: password, proxyTLS: tlsEnabled}
 }
 
 func (t *Tester) TestAccount(ctx context.Context, a *models.Account) Result {
@@ -99,9 +102,16 @@ func (t *Tester) proxyClient(username, password string, timeout time.Duration) *
 		User:   url.UserPassword(username, password),
 		Host:   fmt.Sprintf("127.0.0.1:%d", t.proxyPort),
 	}
+	if t.proxyTLS {
+		proxyURL.Scheme = "https"
+	}
 	return &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyURL(proxyURL),
+			TLSClientConfig: &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: t.proxyTLS, // loopback health probe; public clients still verify
+			},
 			DialContext: (&net.Dialer{
 				Timeout: 5 * time.Second,
 			}).DialContext,

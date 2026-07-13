@@ -23,6 +23,12 @@ func TestResponseHeadersProtectSensitiveRoutes(t *testing.T) {
 		if got := rec.Header().Get("X-Frame-Options"); got != "DENY" {
 			t.Errorf("%s X-Frame-Options = %q", path, got)
 		}
+		if got := rec.Header().Get("Content-Security-Policy"); got == "" {
+			t.Errorf("%s missing Content-Security-Policy", path)
+		}
+		if got := rec.Header().Get("Strict-Transport-Security"); got == "" {
+			t.Errorf("%s missing Strict-Transport-Security", path)
+		}
 	}
 }
 

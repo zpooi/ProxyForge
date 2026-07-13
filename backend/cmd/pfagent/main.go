@@ -147,11 +147,13 @@ func runLoop(ctx context.Context, linkURL, token string, egress *warpEgress, hos
 func connectOnce(ctx context.Context, linkURL, token string, egress *warpEgress, hostMeta egressMeta) error {
 	// 每次重连都通过对应 WARP 隧道重新探测出口信息，主控据此刷新节点。
 	meta := probeMeta(ctx, egress.tunnel.DialContext)
-	full := linkURL + "?" + buildQuery(token, egress, meta, hostMeta).Encode()
+	full := linkURL + "?" + buildQuery(egress, meta, hostMeta).Encode()
 
 	dialCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	c, _, err := websocket.Dial(dialCtx, full, nil)
+	c, _, err := websocket.Dial(dialCtx, full, &websocket.DialOptions{
+		HTTPHeader: http.Header{"Authorization": []string{"Bearer " + token}},
+	})
 	if err != nil {
 		return fmt.Errorf("wss 拨号失败: %w", err)
 	}
@@ -486,9 +488,8 @@ func probeMeta(ctx context.Context, dial func(context.Context, string, string) (
 	return m
 }
 
-func buildQuery(token string, egress *warpEgress, m, host egressMeta) url.Values {
+func buildQuery(egress *warpEgress, m, host egressMeta) url.Values {
 	q := url.Values{}
-	q.Set("token", token)
 	q.Set("node_id", egress.nodeID)
 	q.Set("agent_id", egress.agentID)
 	q.Set("egress_index", strconv.Itoa(egress.index+1))

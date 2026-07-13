@@ -31,11 +31,13 @@ func TestBuildQueryIncludesAgentHostAndWarpEgress(t *testing.T) {
 		name:      "MY WARP #2",
 	}
 	query := buildQuery(
-		"secret",
 		egress,
 		egressMeta{ip: "104.28.1.2", country: "MY", colo: "KUL"},
 		egressMeta{ip: "203.0.113.8", country: "MY", colo: "KUL"},
 	)
+	if query.Get("token") != "" {
+		t.Fatal("agent token must not be placed in URL query")
+	}
 
 	for key, want := range map[string]string{
 		"agent_id":     "agent-123",

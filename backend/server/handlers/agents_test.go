@@ -1,12 +1,24 @@
 package handlers
 
 import (
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
 	"github.com/zpooi/ProxyForge/backend/internal/models"
 )
+
+func TestRequestAgentTokenRequiresBearerHeader(t *testing.T) {
+	req := httptest.NewRequest("GET", "/agent/link?token=query-secret", nil)
+	if got := requestAgentToken(req); got != "" {
+		t.Fatalf("query token accepted: %q", got)
+	}
+	req.Header.Set("Authorization", "Bearer header-secret")
+	if got := requestAgentToken(req); got != "header-secret" {
+		t.Fatalf("bearer token = %q", got)
+	}
+}
 
 func TestSummarizeLocalNodeMultipleEgresses(t *testing.T) {
 	accounts := []*models.Account{
@@ -30,10 +42,15 @@ func TestAgentInstallScriptUsesThreeWarpEgressesAndRestarts(t *testing.T) {
 		"-warp-count 3",
 		"systemctl restart pfagent.service",
 		"install -m 0755",
+		"Authorization: Bearer $TOKEN",
+		"EnvironmentFile=/etc/pfagent.env",
 	} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("install script missing %q", want)
 		}
+	}
+	if strings.Contains(script, "?token=") || strings.Contains(script, "-token '$TOKEN'") {
+		t.Fatal("agent token leaked into URL or process arguments")
 	}
 }
 

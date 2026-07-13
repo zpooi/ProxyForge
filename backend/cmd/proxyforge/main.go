@@ -24,7 +24,7 @@ func main() {
 
 	dbPath := envOr("DB_PATH", "data.db")
 	projectRoot := envOr("PROJECT_ROOT", ".")
-	listenAddr := envOr("LISTEN_ADDR", ":7800")
+	listenAddr := envOr("LISTEN_ADDR", "127.0.0.1:7800")
 
 	database, err := db.Open(dbPath)
 	if err != nil {
@@ -73,6 +73,8 @@ func main() {
 		Addr:              listenAddr,
 		Handler:           srv.Router(),
 		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    32 << 10,
 	}
 
 	go func() {

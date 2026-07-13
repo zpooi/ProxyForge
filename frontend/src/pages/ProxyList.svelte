@@ -6,16 +6,18 @@
   import { fmtBps, metric, prettyError } from '../lib/format.js';
   import { slotState } from '../lib/status.js';
 
-  const SCHEMES = [
+  const PLAIN_SCHEMES = [
     { id: 'http', label: 'HTTP' },
     { id: 'socks5', label: 'SOCKS5' },
   ];
+  const TLS_SCHEMES = [{ id: 'https', label: 'HTTPS' }];
 
   let slots = [];
   // 在线远程 agent 的 WARP 出口，和本机槽位共用代理端口，用户名 node-<id>。
   let agents = [];
   let proxyHost = window.location.hostname;
   let proxyPort = 7843;
+  let proxyTLS = true;
   let error = '';
   let copied = '';
   let subUrl = '';
@@ -31,6 +33,7 @@
       agents = data.agents || [];
       proxyHost = data.proxy_host || window.location.hostname;
       proxyPort = data.proxy_port || 7843;
+      proxyTLS = data.proxy_tls !== false;
       error = '';
     } catch (err) {
       error = err.message;
@@ -391,7 +394,7 @@
   <div class="copy-menu" style="right: {menu.right}px; top: {menu.y}px;">
     <div class="copy-menu-title">复制为</div>
     {#if menu.kind === 'rotate'}
-      {#each SCHEMES as scheme}
+      {#each (proxyTLS ? TLS_SCHEMES : PLAIN_SCHEMES) as scheme}
         <button type="button" class="copy-menu-item" on:click={() => copyRotate(scheme.id)}>
           <Icon name="copy" size={16} />
           <span>{scheme.label}</span>
@@ -399,7 +402,7 @@
       {/each}
     {:else}
       {@const slot = slots.find((s) => s.username === menu.username) || agents.find((a) => a.username === menu.username)}
-      {#each SCHEMES as scheme}
+      {#each (proxyTLS ? TLS_SCHEMES : PLAIN_SCHEMES) as scheme}
         <button type="button" class="copy-menu-item" on:click={() => copyProxy(slot, scheme.id)}>
           <Icon name="copy" size={16} />
           <span>{scheme.label}</span>

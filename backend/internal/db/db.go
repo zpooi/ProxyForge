@@ -25,9 +25,29 @@ type DB struct {
 }
 
 func Open(path string) (*DB, error) {
+	if strings.TrimSpace(path) == "" {
+		return nil, fmt.Errorf("database path is empty")
+	}
 	if dir := filepath.Dir(path); dir != "" && dir != "." {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
 			return nil, fmt.Errorf("create db dir: %w", err)
+		}
+		if err := os.Chmod(dir, 0o700); err != nil {
+			return nil, fmt.Errorf("secure db dir: %w", err)
+		}
+	}
+	// Pre-create the database with owner-only permissions before SQLite opens
+	// it. This also tightens an existing file on Unix hosts.
+	if path != ":memory:" {
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+		if err != nil {
+			return nil, fmt.Errorf("create db file: %w", err)
+		}
+		if err := f.Close(); err != nil {
+			return nil, fmt.Errorf("close db file: %w", err)
+		}
+		if err := os.Chmod(path, 0o600); err != nil {
+			return nil, fmt.Errorf("secure db file: %w", err)
 		}
 	}
 	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)"

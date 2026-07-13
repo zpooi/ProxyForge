@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -81,7 +82,7 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 	// ProxyForge 主机先解析一次公网域名并写入直连 IP，从根上移除客户端侧 DNS 依赖；
 	// 原域名仍保留给 TLS SNI 和普通文本导出。解析失败时才回退到域名 + DNS 段。
 	clashHost := resolveProxyDialHost(host)
-	// TLS 默认开启（opportunistic）。开启时导出的 Clash 节点带 tls + skip-cert-verify，
+	// TLS 默认开启且服务端拒绝明文。使用内存自签证书时导出 skip-cert-verify；
 	// 让客户端把 CONNECT 主机名藏进加密流，避开审查中间盒基于主机名的连接重置。
 	proxyTLS := ep.TLS
 	var active []*proxyExport
@@ -461,16 +462,22 @@ func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	fmt.Fprintf(w, "    port: %d\n", p.ProxyPort)
 	fmt.Fprintf(w, "    username: %s\n", clashScalar(p.Username))
 	fmt.Fprintf(w, "    password: %s\n", clashScalar(p.Password))
-	// TLS 开启时，客户端对「客户端↔代理」这一跳套 TLS，把明文 CONNECT 主机名藏进
-	// 加密流。证书是内存自签，故 skip-cert-verify；威胁模型是审查中间盒被动读主机名，
-	// 而非定向 MITM，账号密码仍然鉴权。
+	// TLS 开启时，客户端对「客户端↔代理」这一跳套 TLS。配置可信证书文件后客户端
+	// 正常校验证书；仅自签兼容模式需要 skip-cert-verify。
 	if p.TLS {
 		fmt.Fprintf(w, "    tls: true\n")
-		fmt.Fprintf(w, "    skip-cert-verify: true\n")
+		if !trustedProxyTLSConfigured() {
+			fmt.Fprintf(w, "    skip-cert-verify: true\n")
+		}
 		if p.ProxyHost != "" {
 			fmt.Fprintf(w, "    sni: %s\n", clashScalar(p.ProxyHost))
 		}
 	}
+}
+
+func trustedProxyTLSConfigured() bool {
+	return strings.TrimSpace(os.Getenv("PROXY_TLS_CERT_FILE")) != "" &&
+		strings.TrimSpace(os.Getenv("PROXY_TLS_KEY_FILE")) != ""
 }
 
 // SubscriptionToken 返回（首次调用时生成）免登录订阅所用的 token。

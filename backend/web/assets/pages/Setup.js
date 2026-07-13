@@ -75,13 +75,13 @@ function create_fragment(ctx) {
 			label1 = element("label");
 
 			label1.innerHTML = `密码
-      <input type="password" name="password" required="" minlength="8"/>`;
+      <input type="password" name="password" required="" minlength="12" autocomplete="new-password"/>`;
 
 			t8 = space();
 			label2 = element("label");
 
 			label2.innerHTML = `确认密码
-      <input type="password" name="confirm_password" required="" minlength="8"/>`;
+      <input type="password" name="confirm_password" required="" minlength="12" autocomplete="new-password"/>`;
 
 			t10 = space();
 			button = element("button");

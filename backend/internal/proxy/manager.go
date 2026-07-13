@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"crypto/subtle"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -24,20 +25,25 @@ type Manager struct {
 	usageMu       sync.RWMutex
 	usageStopped  bool
 
-	mu            sync.Mutex
-	tunnels       map[string]*Tunnel
-	meta          map[string]selectionMeta
-	slots         map[string]slotBinding
-	bindAddr      string
-	password      string
-	proxyPort     int
-	transport     string
-	ipFamily      string
-	dnsMode       string
-	proxyTLS      bool
-	tlsServerName string
-	server        *mixedServer
-	serverTLS     bool
+	mu             sync.Mutex
+	tunnels        map[string]*Tunnel
+	meta           map[string]selectionMeta
+	slots          map[string]slotBinding
+	bindAddr       string
+	password       string
+	proxyPort      int
+	transport      string
+	ipFamily       string
+	dnsMode        string
+	proxyTLS       bool
+	tlsServerName  string
+	tlsCertFile    string
+	tlsKeyFile     string
+	server         *mixedServer
+	serverTLS      bool
+	serverTLSName  string
+	serverCertFile string
+	serverKeyFile  string
 
 	lastPicked   map[string]time.Time
 	lastPickedIP map[string]time.Time
@@ -153,6 +159,20 @@ func (m *Manager) SetProxyTLS(enabled bool, serverName string) {
 	m.mu.Unlock()
 }
 
+func (m *Manager) SetProxyTLSCredentials(certFile, keyFile string) {
+	m.mu.Lock()
+	m.tlsCertFile = strings.TrimSpace(certFile)
+	m.tlsKeyFile = strings.TrimSpace(keyFile)
+	m.mu.Unlock()
+}
+
+func requiredPasswordMatches(want, got string) bool {
+	if want == "" || got == "" || len(want) != len(got) {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(want), []byte(got)) == 1
+}
+
 // SetAgentResolver 注入远程 agent 节点的解析器。agenthub 启动后调用一次。
 func (m *Manager) SetAgentResolver(r AgentResolver) {
 	m.mu.Lock()
@@ -171,7 +191,7 @@ func (m *Manager) resolve(username, password, clientIP string) []Egress {
 	// 所以不接入 WARP 池排序，也不做跨地区兜底——离线就返回空，交给客户端的
 	// 自动选择/故障转移组切到别的地区节点。鉴权仍走统一的代理密码。
 	if strings.HasPrefix(username, NodeUsernamePrefix) {
-		if m.password != "" && password != m.password {
+		if !requiredPasswordMatches(m.password, password) {
 			return nil
 		}
 		if m.agentResolver == nil {
@@ -187,26 +207,26 @@ func (m *Manager) resolve(username, password, clientIP string) []Egress {
 	// agent 各算一个）之间轮转。用一个凭据即可自动摊到不同地区/出口，客户端无需
 	// 逐个复制节点。选中节点排在候选链首位，其余作为故障转移兜底。
 	if strings.EqualFold(username, RotateUsername) {
-		if m.password != "" && password != m.password {
+		if !requiredPasswordMatches(m.password, password) {
 			return nil
 		}
 		return m.rotateCandidatesLocked(clientIP)
 	}
 
 	if username == "" || strings.EqualFold(username, "random") || strings.EqualFold(username, "stable") {
-		if m.password != "" && password != m.password {
+		if !requiredPasswordMatches(m.password, password) {
 			return nil
 		}
 		return tunnelsAsEgress(m.stableCandidatesLocked())
 	}
 	if slot, ok := m.slots[username]; ok {
-		if password != slot.Password {
+		if !requiredPasswordMatches(slot.Password, password) {
 			return nil
 		}
 		return tunnelsAsEgress(m.slotCandidatesLocked(slot.AccountTag))
 	}
 	if t, ok := m.tunnels[username]; ok {
-		if m.password != "" && password != m.password {
+		if !requiredPasswordMatches(m.password, password) {
 			return nil
 		}
 		m.notePickLocked(username)
@@ -514,7 +534,10 @@ func (m *Manager) Reconcile() error {
 			toStart[tag] = cfg
 		}
 	}
-	m.reconcileServerLocked()
+	if err := m.reconcileServerLocked(); err != nil {
+		m.mu.Unlock()
+		return err
+	}
 	m.mu.Unlock()
 
 	return m.startTunnels(toStart, desired)
@@ -575,10 +598,11 @@ func (m *Manager) startTunnels(toStart map[string]Config, desired map[string]Con
 	return firstErr
 }
 
-func (m *Manager) reconcileServerLocked() {
+func (m *Manager) reconcileServerLocked() error {
 	if m.server != nil {
 		// 端口变化或 TLS 开关变化都需要重启监听（TLS 配置在监听建立时固化）。
-		if m.proxyPort <= 0 || m.server.port() != m.proxyPort || m.serverTLS != m.proxyTLS {
+		if m.proxyPort <= 0 || m.server.port() != m.proxyPort || m.serverTLS != m.proxyTLS ||
+			m.serverTLSName != m.tlsServerName || m.serverCertFile != m.tlsCertFile || m.serverKeyFile != m.tlsKeyFile {
 			log.Printf("[proxy] stopping proxy on :%d", m.server.port())
 			m.server.Close()
 			m.server = nil
@@ -591,26 +615,29 @@ func (m *Manager) reconcileServerLocked() {
 		}
 		var tlsConfig *tls.Config
 		if m.proxyTLS {
-			cfg, err := newSelfSignedTLSConfig(m.tlsServerName)
+			cfg, err := newProxyTLSConfig(m.tlsServerName, m.tlsCertFile, m.tlsKeyFile)
 			if err != nil {
-				log.Printf("[proxy] build TLS config failed, falling back to plaintext: %v", err)
-			} else {
-				tlsConfig = cfg
+				return fmt.Errorf("build proxy TLS config (plaintext fallback disabled): %w", err)
 			}
+			tlsConfig = cfg
 		}
 		srv, err := startProxy(bindAddr, m.proxyPort, m.resolve, m.recordUsage, tlsConfig)
 		if err != nil {
 			log.Printf("[proxy] start proxy on :%d failed: %v", m.proxyPort, err)
-			return
+			return err
 		}
 		m.server = srv
 		m.serverTLS = tlsConfig != nil
+		m.serverTLSName = m.tlsServerName
+		m.serverCertFile = m.tlsCertFile
+		m.serverKeyFile = m.tlsKeyFile
 		if m.serverTLS {
-			log.Printf("[proxy] proxy listening on :%d with opportunistic TLS (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
+			log.Printf("[proxy] proxy listening on :%d with strict TLS (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
 		} else {
 			log.Printf("[proxy] proxy listening on :%d (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
 		}
 	}
+	return nil
 }
 
 func (m *Manager) recordUsage(usage ProxyUsage) {

@@ -18,7 +18,7 @@ Windows PowerShell:
 
 ```powershell
 $env:DB_PATH="data.db"
-$env:LISTEN_ADDR=":7800"
+$env:LISTEN_ADDR="127.0.0.1:7800"
 node frontend/scripts/build.mjs
 go run ./backend/cmd/proxyforge
 ```
@@ -27,7 +27,7 @@ Linux/macOS:
 
 ```bash
 node frontend/scripts/build.mjs
-DB_PATH=./data.db LISTEN_ADDR=:7800 go run ./backend/cmd/proxyforge
+DB_PATH=./data.db LISTEN_ADDR=127.0.0.1:7800 go run ./backend/cmd/proxyforge
 ```
 
 Open `http://127.0.0.1:7800`. On a fresh database, ProxyForge opens a setup page where you create the management username and password. The proxy listener defaults to port `7843`.
@@ -64,7 +64,17 @@ docker buildx build \
 Runtime environment variables:
 
 - `DB_PATH`: SQLite database path, default `/data/data.db` in Docker.
-- `LISTEN_ADDR`: web UI listen address, default `:7800`.
+- `LISTEN_ADDR`: web UI listen address, default `127.0.0.1:7800`. Set an explicit public/container address only behind a trusted reverse proxy.
 - `PROJECT_ROOT`: optional import root for old `warp-accounts` folders.
+- `PROXY_TLS_CERT_FILE`: optional PEM certificate/full-chain for the proxy listener.
+- `PROXY_TLS_KEY_FILE`: matching PEM private key. Supplying only one file fails closed.
+
+## Security defaults
+
+- Proxy TLS is strict when enabled: plaintext HTTP/SOCKS5 is rejected on that port.
+- Empty global proxy passwords are replaced with a random password during startup; aliases never accept an empty password.
+- The web UI applies per-IP and global request throttles, temporary scanner bans, and a stricter failed-login ban.
+- Agent admission tokens use an `Authorization: Bearer` header instead of URL query parameters.
+- New database directories/files are restricted to the service account on Unix hosts.
 
 The WARP tunnels use userspace WireGuard netstack, so Docker does not need a kernel TUN device.

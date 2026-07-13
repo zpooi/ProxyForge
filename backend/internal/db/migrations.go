@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/zpooi/ProxyForge/backend/internal/wgcf"
@@ -30,13 +31,12 @@ func (d *DB) SeedDefaultsIfEmpty(projectRoot string) error {
 	defaults := map[string]string{
 		SettingTargetAccountCount:   fmt.Sprint(DefaultProxyIPCount),
 		SettingAutoGeneration:       "on",
-		SettingProxyPassword:        "",
 		SettingDedupIntervalSeconds: "600",
 		SettingProxyListenAddr:      "0.0.0.0",
 		SettingProxyPort:            "7843",
 		SettingWarpTransport:        "auto",
 		SettingTunnelIPFamily:       "ipv4",
-		SettingProxyDNSMode:         "system",
+		SettingProxyDNSMode:         "tunnel",
 		SettingProxyTLS:             "on",
 	}
 	for k, v := range defaults {
@@ -48,6 +48,22 @@ func (d *DB) SeedDefaultsIfEmpty(projectRoot string) error {
 			if err := d.SetSetting(k, v); err != nil {
 				return err
 			}
+		}
+	}
+	// Global aliases (auto/random/stable and agent routes) share this password.
+	// Never leave it empty: an empty value used to turn those aliases into an
+	// internet-accessible open proxy. Existing empty databases are repaired too.
+	proxyPassword, _, err := d.GetSetting(SettingProxyPassword)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(proxyPassword) == "" {
+		proxyPassword, err = randomPassword()
+		if err != nil {
+			return fmt.Errorf("generate proxy password: %w", err)
+		}
+		if err := d.SetSetting(SettingProxyPassword, proxyPassword); err != nil {
+			return err
 		}
 	}
 	if _, ok, err := d.GetSetting(SettingProxySlotCount); err != nil {

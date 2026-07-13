@@ -136,7 +136,7 @@
 
   function displayInstallCommand(value) {
     if (!value) return '生成中…';
-    return value.replace(/(token=)([^'&\s]+)/, (_, prefix, token) => {
+    return value.replace(/(Bearer\s+)([a-f0-9]+)/i, (_, prefix, token) => {
       if (token.length <= 16) return prefix + token;
       return `${prefix}${token.slice(0, 8)}…${token.slice(-4)}`;
     });

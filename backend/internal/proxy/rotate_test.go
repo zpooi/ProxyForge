@@ -13,11 +13,11 @@ type fakeEgress struct{ tag string }
 func (f *fakeEgress) DialContext(context.Context, string, string) (net.Conn, error) {
 	return nil, net.ErrClosed
 }
-func (f *fakeEgress) Tag() string                    { return f.tag }
-func (f *fakeEgress) Kind() string                   { return "agent" }
-func (f *fakeEgress) NoteDial(time.Duration, error)  {}
-func (f *fakeEgress) AddTx(int64)                     {}
-func (f *fakeEgress) AddRx(int64)                     {}
+func (f *fakeEgress) Tag() string                   { return f.tag }
+func (f *fakeEgress) Kind() string                  { return "agent" }
+func (f *fakeEgress) NoteDial(time.Duration, error) {}
+func (f *fakeEgress) AddTx(int64)                   {}
+func (f *fakeEgress) AddRx(int64)                   {}
 
 // fakeResolver 返回一组固定的在线 agent 出口。
 type fakeResolver struct{ egresses []Egress }
@@ -27,6 +27,7 @@ func (r *fakeResolver) OnlineEgresses() []Egress    { return r.egresses }
 
 func newRotateManager(tags ...string) *Manager {
 	m := NewManager(nil)
+	m.password = "secret"
 	egs := make([]Egress, 0, len(tags))
 	for _, t := range tags {
 		egs = append(egs, &fakeEgress{tag: t})
@@ -42,7 +43,7 @@ func TestRotateRoundRobinAcrossClients(t *testing.T) {
 	got := make([]string, 0, 6)
 	for i := 0; i < 6; i++ {
 		// 用不同 clientIP，避免粘滞，纯看游标轮转。
-		out := m.resolve(RotateUsername, "", "client-"+string(rune('0'+i)))
+		out := m.resolve(RotateUsername, "secret", "client-"+string(rune('0'+i)))
 		if len(out) == 0 {
 			t.Fatalf("resolve returned no egress")
 		}
@@ -65,14 +66,14 @@ func TestRotateRoundRobinAcrossClients(t *testing.T) {
 func TestRotateStickyPerClient(t *testing.T) {
 	m := newRotateManager("node-a", "node-b", "node-c")
 
-	first := m.resolve(RotateUsername, "", "1.2.3.4")
+	first := m.resolve(RotateUsername, "secret", "1.2.3.4")
 	if len(first) == 0 {
 		t.Fatal("no egress")
 	}
 	want := first[0].Tag()
 
 	for i := 0; i < 5; i++ {
-		out := m.resolve(RotateUsername, "", "1.2.3.4")
+		out := m.resolve(RotateUsername, "secret", "1.2.3.4")
 		if out[0].Tag() != want {
 			t.Errorf("sticky broken: got %s, want %s", out[0].Tag(), want)
 		}
@@ -83,7 +84,7 @@ func TestRotateStickyPerClient(t *testing.T) {
 func TestRotateStickyExpires(t *testing.T) {
 	m := newRotateManager("node-a", "node-b", "node-c")
 
-	first := m.resolve(RotateUsername, "", "1.2.3.4")
+	first := m.resolve(RotateUsername, "secret", "1.2.3.4")
 	firstTag := first[0].Tag()
 
 	// 手动把该客户端的粘滞分配时间往前拨，超出窗口。
@@ -93,7 +94,7 @@ func TestRotateStickyExpires(t *testing.T) {
 	m.rotateSticky["1.2.3.4"] = a
 	m.mu.Unlock()
 
-	second := m.resolve(RotateUsername, "", "1.2.3.4")
+	second := m.resolve(RotateUsername, "secret", "1.2.3.4")
 	if second[0].Tag() == firstTag {
 		t.Errorf("after window expiry expected a different node, still %s", firstTag)
 	}
@@ -103,7 +104,7 @@ func TestRotateStickyExpires(t *testing.T) {
 func TestRotateIncludesFailoverChain(t *testing.T) {
 	m := newRotateManager("node-a", "node-b", "node-c")
 
-	out := m.resolve(RotateUsername, "", "1.2.3.4")
+	out := m.resolve(RotateUsername, "secret", "1.2.3.4")
 	if len(out) != 3 {
 		t.Fatalf("expected 3 egresses (1 primary + 2 fallback), got %d", len(out))
 	}
@@ -132,8 +133,9 @@ func TestRotateRejectsWrongPassword(t *testing.T) {
 // 无任何在线节点时 auto 返回空，交给客户端层切换。
 func TestRotateNoNodes(t *testing.T) {
 	m := NewManager(nil)
+	m.password = "secret"
 	m.agentResolver = &fakeResolver{}
-	if out := m.resolve(RotateUsername, "", "1.2.3.4"); out != nil {
+	if out := m.resolve(RotateUsername, "secret", "1.2.3.4"); out != nil {
 		t.Errorf("expected nil with no nodes, got %v", out)
 	}
 }

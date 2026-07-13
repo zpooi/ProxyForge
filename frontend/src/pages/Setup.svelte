@@ -13,10 +13,10 @@
       <input type="text" name="username" required minlength="3" autofocus>
     </label>
     <label>密码
-      <input type="password" name="password" required minlength="8">
+      <input type="password" name="password" required minlength="12" autocomplete="new-password">
     </label>
     <label>确认密码
-      <input type="password" name="confirm_password" required minlength="8">
+      <input type="password" name="confirm_password" required minlength="12" autocomplete="new-password">
     </label>
     <button type="submit">初始化并登录</button>
   </form>

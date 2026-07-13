@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -174,7 +175,7 @@ func (s *Scheduler) probeProxySlots(ctx context.Context) {
 		return
 	}
 	password, _, _ := s.db.GetSetting(db.SettingProxyPassword)
-	tester := test.NewTester(s.proxyPort(), password)
+	tester := test.NewTester(s.proxyPort(), password, s.proxyTLSEnabled())
 	running := s.runningTagSet()
 
 	checked := 0
@@ -540,7 +541,7 @@ func (s *Scheduler) TestOne(id int64) {
 			return
 		}
 		password, _, _ := s.db.GetSetting(db.SettingProxyPassword)
-		tester := test.NewTester(s.proxyPort(), password)
+		tester := test.NewTester(s.proxyPort(), password, s.proxyTLSEnabled())
 		r := tester.TestAccount(ctx, a)
 		if r.Err != nil {
 			_ = s.db.UpdateAccountTestError(id, r.Err.Error())
@@ -1225,7 +1226,7 @@ func (s *Scheduler) testActiveAndDedupe(ctx context.Context) (tested, disabled i
 
 func (s *Scheduler) testAccounts(ctx context.Context, accounts []*models.Account) map[int64]test.Result {
 	password, _, _ := s.db.GetSetting(db.SettingProxyPassword)
-	tester := test.NewTester(s.proxyPort(), password)
+	tester := test.NewTester(s.proxyPort(), password, s.proxyTLSEnabled())
 	results := tester.RunBatch(ctx, accounts, 2)
 	for id, r := range results {
 		if r.Err != nil {
@@ -1342,6 +1343,7 @@ func (s *Scheduler) reconcileManager() error {
 	// 客户端用 skip-cert-verify 连接。IP 形式会写成 IP SAN。
 	tlsServerName, _, _ := s.db.GetSetting(db.SettingProxyPublicHost)
 	s.manager.SetProxyTLS(tlsEnabled, strings.TrimSpace(tlsServerName))
+	s.manager.SetProxyTLSCredentials(os.Getenv("PROXY_TLS_CERT_FILE"), os.Getenv("PROXY_TLS_KEY_FILE"))
 	return s.manager.Reconcile()
 }
 
@@ -1438,6 +1440,11 @@ func (s *Scheduler) proxyPort() int {
 		fmt.Sscanf(v, "%d", &proxyPort)
 	}
 	return proxyPort
+}
+
+func (s *Scheduler) proxyTLSEnabled() bool {
+	v, _, _ := s.db.GetSetting(db.SettingProxyTLS)
+	return v != "off"
 }
 
 func (s *Scheduler) dedupInterval() int {
