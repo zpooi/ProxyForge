@@ -466,7 +466,7 @@ func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	// 正常校验证书；仅自签兼容模式需要 skip-cert-verify。
 	if p.TLS {
 		fmt.Fprintf(w, "    tls: true\n")
-		if !trustedProxyTLSConfigured() {
+		if !trustedProxyTLSConfigured(p.ProxyHost) {
 			fmt.Fprintf(w, "    skip-cert-verify: true\n")
 		}
 		if p.ProxyHost != "" {
@@ -475,9 +475,9 @@ func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	}
 }
 
-func trustedProxyTLSConfigured() bool {
-	return strings.TrimSpace(os.Getenv("PROXY_TLS_CERT_FILE")) != "" &&
-		strings.TrimSpace(os.Getenv("PROXY_TLS_KEY_FILE")) != ""
+func trustedProxyTLSConfigured(serverName string) bool {
+	certFile, keyFile := proxy.ResolveTLSCredentialFiles(serverName, os.Getenv("PROXY_TLS_CERT_FILE"), os.Getenv("PROXY_TLS_KEY_FILE"))
+	return certFile != "" && keyFile != ""
 }
 
 // SubscriptionToken 返回（首次调用时生成）免登录订阅所用的 token。

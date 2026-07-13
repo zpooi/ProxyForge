@@ -1339,11 +1339,13 @@ func (s *Scheduler) reconcileManager() error {
 	s.manager.SetDNSMode(dnsMode)
 	tlsSetting, _, _ := s.db.GetSetting(db.SettingProxyTLS)
 	tlsEnabled := tlsSetting != "off"
-	// TLS 证书的 SAN 用「代理对外地址」，方便按主机名校验的客户端；留空也没关系，
-	// 客户端用 skip-cert-verify 连接。IP 形式会写成 IP SAN。
+	// TLS 证书优先取显式文件，其次按对外域名发现宝塔/certbot 证书；留空时
+	// TLS ClientHello 的 SNI 仍可触发动态发现，最后才回退到自签兼容证书。
 	tlsServerName, _, _ := s.db.GetSetting(db.SettingProxyPublicHost)
-	s.manager.SetProxyTLS(tlsEnabled, strings.TrimSpace(tlsServerName))
-	s.manager.SetProxyTLSCredentials(os.Getenv("PROXY_TLS_CERT_FILE"), os.Getenv("PROXY_TLS_KEY_FILE"))
+	tlsServerName = strings.TrimSpace(tlsServerName)
+	s.manager.SetProxyTLS(tlsEnabled, tlsServerName)
+	certFile, keyFile := proxy.ResolveTLSCredentialFiles(tlsServerName, os.Getenv("PROXY_TLS_CERT_FILE"), os.Getenv("PROXY_TLS_KEY_FILE"))
+	s.manager.SetProxyTLSCredentials(certFile, keyFile)
 	return s.manager.Reconcile()
 }
 

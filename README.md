@@ -69,6 +69,8 @@ Runtime environment variables:
 - `PROXY_TLS_CERT_FILE`: optional PEM certificate/full-chain for the proxy listener.
 - `PROXY_TLS_KEY_FILE`: matching PEM private key. Supplying only one file fails closed.
 
+When these variables are omitted and `Proxy public host` is a domain, ProxyForge automatically discovers the matching certificate from BaoTa's `/www/server/panel/vhost/cert/<domain>/` directory (or certbot's `/etc/letsencrypt/live/<domain>/`) and hot-reloads renewed files.
+
 ## Security defaults
 
 - Proxy TLS is strict when enabled: plaintext HTTP/SOCKS5 is rejected on that port.
