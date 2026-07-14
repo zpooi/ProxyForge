@@ -95,4 +95,4 @@ proxy_read_timeout 86400s;
 proxy_buffering off;
 ```
 
-The WARP tunnels use userspace WireGuard netstack, so Docker does not need a kernel TUN device.
+The WARP tunnels use userspace WireGuard netstack, so Docker does not need a kernel TUN device. In `auto` mode ProxyForge tries a bounded WireGuard fast path first and falls back to MASQUE when WireGuard is blocked. The Compose file also raises the container's UDP socket-buffer ceiling to 7 MiB so sustained transfers do not overflow the WARP socket queues.

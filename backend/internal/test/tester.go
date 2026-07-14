@@ -188,14 +188,18 @@ func (t *Tester) fetchTrace(ctx context.Context, client *http.Client) (string, s
 }
 
 func measureSpeed(ctx context.Context, client *http.Client) int {
-	best := 0
+	// Two short Cloudflare-edge samples are intentionally conservative: taking
+	// the best value advertised the initial burst as sustained bandwidth. Keep
+	// the lower successful sample so nodes whose speed immediately collapses are
+	// ranked behind genuinely stable ones without increasing test traffic.
+	stable := 0
 	for i := 0; i < speedProbes; i++ {
 		speed := measureSpeedOnce(ctx, client)
-		if speed > best {
-			best = speed
+		if speed > 0 && (stable == 0 || speed < stable) {
+			stable = speed
 		}
 	}
-	return best
+	return stable
 }
 
 func measureSpeedOnce(ctx context.Context, client *http.Client) int {

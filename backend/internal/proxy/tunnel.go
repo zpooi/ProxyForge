@@ -63,8 +63,10 @@ type Tunnel struct {
 }
 
 const (
-	tunnelProbeURL     = "https://www.cloudflare.com/cdn-cgi/trace"
-	tunnelProbeTimeout = 4 * time.Second
+	tunnelProbeURL                = "https://www.cloudflare.com/cdn-cgi/trace"
+	tunnelProbeTimeout            = 4 * time.Second
+	autoWireGuardProbeTimeout     = 2500 * time.Millisecond
+	autoWireGuardProbeMaxAttempts = 3
 
 	// 可疑拨号失败达到该阈值后，只触发固定 trace 健康确认；确认失败才会
 	// 原地重建。目标本身的错误已被排除，因此两次即可快速发现真实断线。
@@ -83,23 +85,28 @@ func newTunnel(cfg Config) (*Tunnel, error) {
 		return newMasqueTunnel(cfg)
 	}
 	if mode == "auto" {
-		// 先试 MASQUE（QUIC/UDP 443，最稳、最不易被墙），失败再降级到
-		// WireGuard UDP。任一条通路能建起来，节点就不会死。
-		if cfg.hasMasqueConfig() {
-			t, err := newMasqueTunnel(cfg)
-			if err == nil {
-				return t, nil
-			}
-			log.Printf("[proxy] tunnel %s: MASQUE failed, falling back to WireGuard: %v", cfg.Tag, err)
-			wg, wgErr := newWireGuardTunnel(cfg)
-			if wgErr == nil {
-				return wg, nil
-			}
-			return nil, fmt.Errorf("tunnel %s: MASQUE failed (%v) and WireGuard fallback failed (%w)", cfg.Tag, err, wgErr)
+		// Older imported accounts may not have MASQUE credentials yet. With no
+		// compatibility fallback available, keep the exhaustive WireGuard endpoint
+		// search so those accounts do not lose reachability.
+		if !cfg.hasMasqueConfig() {
+			return newWireGuardTunnel(cfg)
 		}
-		// 没有 MASQUE 凭据时直接走 WireGuard，而不是让节点起不来。
-		log.Printf("[proxy] tunnel %s: MASQUE config missing, using WireGuard", cfg.Tag)
-		return newWireGuardTunnel(cfg)
+		// WireGuard is the sustained-throughput fast path: it leaves loss recovery
+		// and congestion control to the inner TCP connection. MASQUE adds an outer
+		// QUIC congestion controller around TCP, which is easier to reach on
+		// restricted networks but can amplify loss on long downloads.
+		// Keep this probe bounded so blocked WireGuard never delays startup for
+		// long; MASQUE remains the automatic compatibility fallback.
+		wg, wgErr := newWireGuardTunnelWithPolicy(cfg, autoWireGuardProbeMaxAttempts, autoWireGuardProbeTimeout)
+		if wgErr == nil {
+			return wg, nil
+		}
+		log.Printf("[proxy] tunnel %s: WireGuard fast path unavailable, falling back to MASQUE: %v", cfg.Tag, wgErr)
+		masqueTunnel, masqueErr := newMasqueTunnel(cfg)
+		if masqueErr == nil {
+			return masqueTunnel, nil
+		}
+		return nil, fmt.Errorf("tunnel %s: WireGuard fast path failed (%v) and MASQUE fallback failed (%w)", cfg.Tag, wgErr, masqueErr)
 	}
 	if mode == "wireguard" {
 		return newWireGuardTunnel(cfg)
@@ -134,6 +141,10 @@ func (cfg Config) hasMasqueConfig() bool {
 }
 
 func newWireGuardTunnel(cfg Config) (*Tunnel, error) {
+	return newWireGuardTunnelWithPolicy(cfg, 0, tunnelProbeTimeout)
+}
+
+func newWireGuardTunnelWithPolicy(cfg Config, maxAttempts int, probeTimeout time.Duration) (*Tunnel, error) {
 	if wait := endpointProbeBackoff(); wait > 0 {
 		return nil, fmt.Errorf("tunnel %s: WARP endpoints recently failed; retry probing in %.0fs", cfg.Tag, wait.Seconds())
 	}
@@ -142,6 +153,12 @@ func newWireGuardTunnel(cfg Config) (*Tunnel, error) {
 		return nil, err
 	}
 	candidates = prioritizeEndpointCandidates(candidates)
+	if maxAttempts > 0 && len(candidates) > maxAttempts {
+		candidates = candidates[:maxAttempts]
+	}
+	if probeTimeout <= 0 {
+		probeTimeout = tunnelProbeTimeout
+	}
 
 	failures := make([]string, 0, len(candidates))
 	for _, candidate := range candidates {
@@ -151,7 +168,7 @@ func newWireGuardTunnel(cfg Config) (*Tunnel, error) {
 			continue
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), tunnelProbeTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), probeTimeout)
 		err = t.probe(ctx)
 		cancel()
 		if err == nil {

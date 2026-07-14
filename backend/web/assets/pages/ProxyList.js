@@ -1258,7 +1258,7 @@ function create_fragment(ctx) {
 			thead = element("thead");
 
 			thead.innerHTML = `<tr><th class="name-col svelte-1tvfdd7">账号</th><th class="pw-col svelte-1tvfdd7">密码</th><th>稳定出口 IP</th><th>国家</th>
-        <th>延迟</th><th>速度</th><th>丢包</th><th>状态</th><th>复制代理</th></tr>`;
+        <th>延迟</th><th title="本机到 Cloudflare 测速点的短时保守值；实际速度还受客户端到服务器链路影响">短时速度</th><th>丢包</th><th>状态</th><th>复制代理</th></tr>`;
 
 			t18 = space();
 			tbody = element("tbody");

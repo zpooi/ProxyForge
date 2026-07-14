@@ -737,7 +737,7 @@ func (m *Manager) StopTunnel(tag string) bool {
 }
 
 // HealthCheck 原地重建持续拨号失败的隧道。相比慢速的换绑账号路径，
-// 这里重跑 auto 回退（MASQUE→WireGuard）把同一个账号的隧道拉起来，
+// 这里重跑 auto 快速通道与回退（WireGuard→MASQUE）把同一个账号的隧道拉起来，
 // 既能快速自愈，又不会改变用户看到的出口 IP。返回重建成功的隧道数。
 func (m *Manager) HealthCheck() int {
 	m.mu.Lock()

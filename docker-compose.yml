@@ -14,6 +14,12 @@ services:
     ports:
       - "7800:7800"
       - "7843:7843"
+    # Let the userspace WireGuard socket use its 7 MiB queues instead of the
+    # small kernel default. This is namespaced to the container and needs no
+    # privileged mode or NET_ADMIN capability.
+    sysctls:
+      net.core.rmem_max: "7340032"
+      net.core.wmem_max: "7340032"
     volumes:
       - proxyforge-data:/data
 

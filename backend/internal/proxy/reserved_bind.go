@@ -90,6 +90,11 @@ func listenUDP(network string, port int) (*net.UDPConn, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
+	// Match wireguard-go's native bind. The reserved-byte wrapper used for
+	// Cloudflare WARP must not fall back to the OS's much smaller default UDP
+	// queues: short bursts can fill them, drop encrypted packets, and make the
+	// inner TCP connection collapse to a low congestion window.
+	tuneUDPSocketBuffers(c)
 	local := c.LocalAddr().(*net.UDPAddr)
 	return c, local.Port, nil
 }

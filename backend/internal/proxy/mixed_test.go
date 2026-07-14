@@ -12,6 +12,51 @@ import (
 	"time"
 )
 
+type fullChunkReader struct{ remaining int }
+
+func (r *fullChunkReader) Read(p []byte) (int, error) {
+	if r.remaining == 0 {
+		return 0, io.EOF
+	}
+	n := len(p)
+	if n > r.remaining {
+		n = r.remaining
+	}
+	for i := 0; i < n; i++ {
+		p[i] = byte(i)
+	}
+	r.remaining -= n
+	return n, nil
+}
+
+type writeStats struct {
+	calls int
+	max   int
+}
+
+func (w *writeStats) Write(p []byte) (int, error) {
+	w.calls++
+	if len(p) > w.max {
+		w.max = len(p)
+	}
+	return len(p), nil
+}
+
+func TestCopyRelayUsesLargeChunks(t *testing.T) {
+	src := &fullChunkReader{remaining: relayCopyBufferSize * 2}
+	dst := &writeStats{}
+	n, err := copyRelay(dst, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != int64(relayCopyBufferSize*2) {
+		t.Fatalf("copied %d bytes", n)
+	}
+	if dst.max != relayCopyBufferSize || dst.calls != 2 {
+		t.Fatalf("write chunks: max=%d calls=%d, want %d/2", dst.max, dst.calls, relayCopyBufferSize)
+	}
+}
+
 func TestMixedServerCloseTerminatesAcceptedConnections(t *testing.T) {
 	srv, err := startProxy("127.0.0.1", 0, func(string, string, string) []Egress {
 		return nil

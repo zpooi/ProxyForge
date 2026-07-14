@@ -39,6 +39,12 @@ type proxySession struct {
 	egresses []Egress
 }
 
+const relayCopyBufferSize = 256 << 10
+
+var relayCopyBufferPool = sync.Pool{New: func() any {
+	return make([]byte, relayCopyBufferSize)
+}}
+
 type ProxyUsage struct {
 	ClientIP   string
 	Username   string
@@ -471,7 +477,7 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 	var downBytes int64
 
 	go func() {
-		n, _ := io.Copy(remote, br)
+		n, _ := copyRelay(remote, br)
 		eg.AddTx(n)
 		upBytes = n
 		if tc, ok := remote.(interface{ CloseWrite() error }); ok {
@@ -481,7 +487,7 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 	}()
 
 	go func() {
-		n, _ := io.Copy(client, remote)
+		n, _ := copyRelay(client, remote)
 		eg.AddRx(n)
 		downBytes = n
 		if tc, ok := client.(interface{ CloseWrite() error }); ok {
@@ -506,6 +512,16 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 			DownBytes:  downBytes,
 		})
 	}
+}
+
+// copyRelay uses substantially larger chunks than io.Copy's default 32 KiB.
+// This matters for Trojan over WebSocket because every Write becomes a WS
+// message; larger chunks reduce framing, locking, and nginx forwarding overhead
+// during sustained downloads without changing stream semantics.
+func copyRelay(dst io.Writer, src io.Reader) (int64, error) {
+	buf := relayCopyBufferPool.Get().([]byte)
+	defer relayCopyBufferPool.Put(buf)
+	return io.CopyBuffer(dst, src, buf)
 }
 
 func remoteIP(addr net.Addr) string {
