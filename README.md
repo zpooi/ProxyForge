@@ -66,6 +66,7 @@ Runtime environment variables:
 - `DB_PATH`: SQLite database path, default `/data/data.db` in Docker.
 - `LISTEN_ADDR`: web UI listen address, default `127.0.0.1:7800`. Set an explicit public/container address only behind a trusted reverse proxy.
 - `PROJECT_ROOT`: optional import root for old `warp-accounts` folders.
+- `LOG_DIR`: directory for the current day's application log. It defaults to a `logs` directory beside `DB_PATH`; previous-day ProxyForge logs are removed automatically.
 - `PROXY_TLS_CERT_FILE`: optional PEM certificate/full-chain for the proxy listener.
 - `PROXY_TLS_KEY_FILE`: matching PEM private key. Supplying only one file fails closed.
 
@@ -78,7 +79,7 @@ When these variables are omitted and `Proxy public host` is a domain, ProxyForge
 - The Trojan WebSocket path is derived one-way from the random subscription token so nginx logs do not contain the token itself. TLS certificate verification stays enabled, and BaoTa/nginx must forward WebSocket upgrades to the application.
 - Clash DNS uses encrypted DoH for ordinary target lookups, and Mihomo is asked to use a Chrome TLS fingerprint. Only the proxy domain's bootstrap lookup may use direct DNS.
 - Empty global proxy passwords are replaced with a random password during startup; aliases never accept an empty password.
-- The web UI applies per-IP and global request throttles, temporary scanner bans, and a stricter failed-login ban.
+- The web UI keeps only aggregate request throttles. It never bans a client IP for scanner-like paths, request bursts, or failed logins, so devices sharing one NAT exit cannot lock each other out.
 - Agent admission tokens use an `Authorization: Bearer` header instead of URL query parameters.
 - New database directories/files are restricted to the service account on Unix hosts.
 

@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
+	"github.com/zpooi/ProxyForge/backend/internal/applog"
 	"github.com/zpooi/ProxyForge/backend/internal/auth"
 	"github.com/zpooi/ProxyForge/backend/internal/db"
 	"github.com/zpooi/ProxyForge/backend/internal/proxy"
@@ -25,6 +28,14 @@ func main() {
 	dbPath := envOr("DB_PATH", "data.db")
 	projectRoot := envOr("PROJECT_ROOT", ".")
 	listenAddr := envOr("LISTEN_ADDR", "127.0.0.1:7800")
+	logDir := envOr("LOG_DIR", filepath.Join(filepath.Dir(dbPath), "logs"))
+
+	logStore, err := applog.New(logDir)
+	if err != nil {
+		log.Fatalf("open daily log: %v", err)
+	}
+	defer logStore.Close()
+	log.SetOutput(io.MultiWriter(os.Stderr, logStore))
 
 	database, err := db.Open(dbPath)
 	if err != nil {
@@ -68,6 +79,7 @@ func main() {
 		Scheduler: sched,
 		Hub:       agentHub,
 		Manager:   manager,
+		LogStore:  logStore,
 	}
 
 	httpServer := &http.Server{

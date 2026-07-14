@@ -33,7 +33,7 @@ function get_each_context(ctx, list, i) {
 	return child_ctx;
 }
 
-// (54:6) {#each navItems as item}
+// (55:6) {#each navItems as item}
 function create_each_block(ctx) {
 	let a;
 	let t_value = /*item*/ ctx[10].label + "";
@@ -77,7 +77,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (68:0) {#if mobileOpen}
+// (69:0) {#if mobileOpen}
 function create_if_block(ctx) {
 	let button;
 	let mounted;
@@ -320,7 +320,8 @@ function instance($$self, $$props, $$invalidate) {
 		{ href: '/', label: '仪表盘' },
 		{ href: '/accounts', label: '代理列表' },
 		{ href: '/nodes', label: '节点' },
-		{ href: '/settings', label: '代理设置' }
+		{ href: '/settings', label: '代理设置' },
+		{ href: '/logs', label: '实时日志' }
 	];
 
 	function navigate(event, href) {

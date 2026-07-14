@@ -8,6 +8,7 @@
   import Login from './pages/Login.svelte';
   import Setup from './pages/Setup.svelte';
   import Password from './pages/Password.svelte';
+  import Logs from './pages/Logs.svelte';
 
   let path = window.location.pathname;
   let search = window.location.search;
@@ -30,7 +31,7 @@
     return () => window.removeEventListener('popstate', syncLocation);
   });
 
-  $: route = path === '/accounts' || path === '/settings' || path === '/settings/password' || path === '/nodes' || path === '/login' || path === '/setup' ? path : '/';
+  $: route = path === '/accounts' || path === '/settings' || path === '/settings/password' || path === '/nodes' || path === '/logs' || path === '/login' || path === '/setup' ? path : '/';
   $: authPage = route === '/login' || route === '/setup';
 </script>
 
@@ -52,6 +53,8 @@
         <Password {search} />
       {:else if route === '/nodes'}
         <Nodes />
+      {:else if route === '/logs'}
+        <Logs />
       {:else}
         <Dashboard />
       {/if}

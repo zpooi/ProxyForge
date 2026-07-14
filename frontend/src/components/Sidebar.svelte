@@ -11,6 +11,7 @@
     { href: '/accounts', label: '代理列表' },
     { href: '/nodes', label: '节点' },
     { href: '/settings', label: '代理设置' },
+    { href: '/logs', label: '实时日志' },
   ];
 
   function navigate(event, href) {

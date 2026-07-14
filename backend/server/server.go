@@ -9,6 +9,7 @@ import (
 
 	"github.com/zpooi/ProxyForge/backend"
 	"github.com/zpooi/ProxyForge/backend/internal/agenthub"
+	"github.com/zpooi/ProxyForge/backend/internal/applog"
 	"github.com/zpooi/ProxyForge/backend/internal/auth"
 	"github.com/zpooi/ProxyForge/backend/internal/db"
 	"github.com/zpooi/ProxyForge/backend/internal/proxy"
@@ -22,14 +23,15 @@ type Server struct {
 	Scheduler *scheduler.Scheduler
 	Hub       *agenthub.Hub
 	Manager   *proxy.Manager
+	LogStore  *applog.Store
 }
 
 func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 	r.Use(responseHeaders)
 	r.Use(limitRequestBody(1 << 20))
-	r.Use(newAdaptiveRequestGuard().Middleware)
-	r.Use(newAuthAttemptGuard().Middleware)
+	r.Use(newRequestGuard().Middleware)
+	r.Use(newAuthRequestGuard().Middleware)
 
 	h := &handlers.Handlers{
 		DB:        s.DB,
@@ -37,6 +39,7 @@ func (s *Server) Router() http.Handler {
 		Scheduler: s.Scheduler,
 		Hub:       s.Hub,
 		Manager:   s.Manager,
+		LogStore:  s.LogStore,
 	}
 	if err := h.Init(backend.Web()); err != nil {
 		log.Fatalf("init handlers: %v", err)
@@ -76,7 +79,7 @@ func (s *Server) Router() http.Handler {
 		r.Get("/nodes", h.NodesPage)
 		r.Get("/ippool", redirectHome)
 		r.Get("/traffic", redirectHome)
-		r.Get("/logs", redirectHome)
+		r.Get("/logs", h.AppPage)
 
 		// JSON API
 		r.Get("/api/accounts/json", h.AccountsJSON)
@@ -85,6 +88,8 @@ func (s *Server) Router() http.Handler {
 		r.Get("/api/traffic/json", h.TrafficJSON)
 		r.Get("/api/dashboard/json", h.DashboardJSON)
 		r.Get("/api/logs/json", h.LogsJSON)
+		r.Get("/api/logs/live", h.LiveLogsJSON)
+		r.Get("/api/logs/download", h.DownloadLogs)
 		r.Get("/api/settings/json", h.SettingsJSON)
 		r.Post("/api/settings", h.SettingsSaveJSON)
 		r.Get("/api/export", h.ExportProxies)
@@ -106,8 +111,8 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/run", h.RunNow)
 	})
 
-	// Unknown paths return a real 404. Redirecting every scanner probe to the
-	// dashboard hid the signal needed by the adaptive abuse guard.
+	// Unknown paths return a real 404 instead of masking mistakes with a
+	// dashboard redirect.
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	})

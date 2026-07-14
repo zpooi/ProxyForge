@@ -29,6 +29,7 @@ import Nodes from './pages/Nodes.js';
 import Login from './pages/Login.js';
 import Setup from './pages/Setup.js';
 import Password from './pages/Password.js';
+import Logs from './pages/Logs.js';
 
 function create_else_block_1(ctx) {
 	let div;
@@ -51,6 +52,7 @@ function create_else_block_1(ctx) {
 		create_if_block_3,
 		create_if_block_4,
 		create_if_block_5,
+		create_if_block_6,
 		create_else_block_2
 	];
 
@@ -61,7 +63,8 @@ function create_else_block_1(ctx) {
 		if (/*route*/ ctx[0] === '/settings') return 1;
 		if (/*route*/ ctx[0] === '/settings/password') return 2;
 		if (/*route*/ ctx[0] === '/nodes') return 3;
-		return 4;
+		if (/*route*/ ctx[0] === '/logs') return 4;
+		return 5;
 	}
 
 	current_block_type_index = select_block_type_2(ctx, -1);
@@ -134,7 +137,7 @@ function create_else_block_1(ctx) {
 	};
 }
 
-// (37:0) {#if authPage}
+// (38:0) {#if authPage}
 function create_if_block(ctx) {
 	let current_block_type_index;
 	let if_block;
@@ -204,7 +207,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (55:6) {:else}
+// (58:6) {:else}
 function create_else_block_2(ctx) {
 	let dashboard;
 	let current;
@@ -234,7 +237,37 @@ function create_else_block_2(ctx) {
 	};
 }
 
-// (53:35) 
+// (56:34)
+function create_if_block_6(ctx) {
+	let logs;
+	let current;
+	logs = new Logs({});
+
+	return {
+		c() {
+			create_component(logs.$$.fragment);
+		},
+		m(target, anchor) {
+			mount_component(logs, target, anchor);
+			current = true;
+		},
+		p: noop,
+		i(local) {
+			if (current) return;
+			transition_in(logs.$$.fragment, local);
+			current = true;
+		},
+		o(local) {
+			transition_out(logs.$$.fragment, local);
+			current = false;
+		},
+		d(detaching) {
+			destroy_component(logs, detaching);
+		}
+	};
+}
+
+// (54:35)
 function create_if_block_5(ctx) {
 	let nodes;
 	let current;
@@ -264,7 +297,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (51:47) 
+// (52:47)
 function create_if_block_4(ctx) {
 	let password;
 	let current;
@@ -298,7 +331,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (49:38) 
+// (50:38)
 function create_if_block_3(ctx) {
 	let settings;
 	let current;
@@ -328,7 +361,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (47:6) {#if route === '/accounts'}
+// (48:6) {#if route === '/accounts'}
 function create_if_block_2(ctx) {
 	let proxylist;
 	let current;
@@ -358,7 +391,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (40:2) {:else}
+// (41:2) {:else}
 function create_else_block(ctx) {
 	let login;
 	let current;
@@ -392,7 +425,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (38:2) {#if route === '/setup'}
+// (39:2) {#if route === '/setup'}
 function create_if_block_1(ctx) {
 	let setup;
 	let current;
@@ -522,7 +555,7 @@ function instance($$self, $$props, $$invalidate) {
 
 	$$self.$$.update = () => {
 		if ($$self.$$.dirty & /*path*/ 16) {
-			$: $$invalidate(0, route = path === '/accounts' || path === '/settings' || path === '/settings/password' || path === '/nodes' || path === '/login' || path === '/setup'
+			$: $$invalidate(0, route = path === '/accounts' || path === '/settings' || path === '/settings/password' || path === '/nodes' || path === '/logs' || path === '/login' || path === '/setup'
 			? path
 			: '/');
 		}

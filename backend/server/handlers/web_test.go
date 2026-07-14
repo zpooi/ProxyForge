@@ -10,7 +10,7 @@ import (
 
 func TestWebAssetsAvailable(t *testing.T) {
 	webFS := backend.Web()
-	for _, name := range []string{"index.html", "style.css", "assets/main.js", "assets/App.js"} {
+	for _, name := range []string{"index.html", "style.css", "assets/main.js", "assets/App.js", "assets/pages/Logs.js"} {
 		if _, err := fs.Stat(webFS, name); err != nil {
 			t.Fatalf("expected built web asset %s: %v", name, err)
 		}
