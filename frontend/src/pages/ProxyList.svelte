@@ -305,12 +305,21 @@
     color: var(--text-3);
     font-size: 12px;
   }
-  /* 账号列限宽，让密码列整体左移、更靠近账号；密码不换行避免撑高行。 */
+  /* 缩窄账号列，让密码整体左移；密码列预留完整凭据宽度并禁止断行。 */
   .name-col {
-    width: 160px;
+    width: 124px;
+    min-width: 124px;
   }
   .pw-col {
-    width: 200px;
+    width: 260px;
+    min-width: 260px;
+    white-space: nowrap;
+  }
+  .password-value {
+    display: inline-block;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 </style>
 <div class="table-wrap">
@@ -325,8 +334,8 @@
       {#if slots.length}
         {#each slots as slot}
           <tr>
-            <td>{slot.username}</td>
-            <td><code>{slot.password}</code></td>
+            <td class="name-col">{slot.username}</td>
+            <td class="pw-col"><code class="password-value">{slot.password}</code></td>
             <td>{slot.pinned_public_ip || slot.public_ip || (slot.account_tag ? '检测中' : '等待可用节点')}</td>
             <td>{countryLabel(slot.country)}</td>
             <td>{slot.account_tag ? metric(slot.latency_ms, ' ms') : '-'}</td>
@@ -352,11 +361,11 @@
       {/if}
       {#each agents as agent}
         <tr>
-          <td>
+          <td class="name-col">
             {agent.name}
             <span class="row-sub">Agent WARP 出口 · {agent.agent_name}</span>
           </td>
-          <td><code>{agent.password}</code></td>
+          <td class="pw-col"><code class="password-value">{agent.password}</code></td>
           <td>{agent.public_ip || '检测中'}</td>
           <td>{countryLabel(agent.country)}</td>
           <td>{agent.latency_ms ? metric(agent.latency_ms, ' ms') : '-'}</td>

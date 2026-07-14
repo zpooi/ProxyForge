@@ -36,7 +36,7 @@ import { fmtBps, metric, prettyError } from '../lib/format.js';
 import { slotState } from '../lib/status.js';
 
 function add_css(target) {
-	append_styles(target, "svelte-11dir44", ".subscription-row.svelte-11dir44.svelte-11dir44{display:grid;grid-template-columns:minmax(0, 1fr) 40px;align-items:center;gap:8px}.subscription-url.svelte-11dir44.svelte-11dir44{display:block;min-width:0;padding:10px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#0f172a;color:#e2e8f0;border-radius:8px;font-size:13px}.subscription-copy.svelte-11dir44.svelte-11dir44{width:40px;min-height:40px;padding:8px}.rotate-block.svelte-11dir44.svelte-11dir44{display:flex;align-items:center;justify-content:space-between;width:100%;gap:16px;margin-top:6px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-sm)}.rotate-summary.svelte-11dir44.svelte-11dir44{display:flex;align-items:baseline;gap:10px;min-width:0}.rotate-summary.svelte-11dir44 strong.svelte-11dir44{color:var(--text);font-size:14px}.rotate-summary.svelte-11dir44 span.svelte-11dir44{color:var(--text-3);font-size:12px;white-space:nowrap}.rotate-trigger.svelte-11dir44.svelte-11dir44{min-width:42px;min-height:34px;margin-left:auto;flex-shrink:0}@media(max-width: 620px){.rotate-summary.svelte-11dir44.svelte-11dir44{align-items:flex-start;flex-direction:column;gap:1px}}.row-sub.svelte-11dir44.svelte-11dir44{display:block;margin-top:2px;color:var(--text-3);font-size:12px}.name-col.svelte-11dir44.svelte-11dir44{width:160px}.pw-col.svelte-11dir44.svelte-11dir44{width:200px}");
+	append_styles(target, "svelte-1tvfdd7", ".subscription-row.svelte-1tvfdd7.svelte-1tvfdd7{display:grid;grid-template-columns:minmax(0, 1fr) 40px;align-items:center;gap:8px}.subscription-url.svelte-1tvfdd7.svelte-1tvfdd7{display:block;min-width:0;padding:10px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#0f172a;color:#e2e8f0;border-radius:8px;font-size:13px}.subscription-copy.svelte-1tvfdd7.svelte-1tvfdd7{width:40px;min-height:40px;padding:8px}.rotate-block.svelte-1tvfdd7.svelte-1tvfdd7{display:flex;align-items:center;justify-content:space-between;width:100%;gap:16px;margin-top:6px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-sm)}.rotate-summary.svelte-1tvfdd7.svelte-1tvfdd7{display:flex;align-items:baseline;gap:10px;min-width:0}.rotate-summary.svelte-1tvfdd7 strong.svelte-1tvfdd7{color:var(--text);font-size:14px}.rotate-summary.svelte-1tvfdd7 span.svelte-1tvfdd7{color:var(--text-3);font-size:12px;white-space:nowrap}.rotate-trigger.svelte-1tvfdd7.svelte-1tvfdd7{min-width:42px;min-height:34px;margin-left:auto;flex-shrink:0}@media(max-width: 620px){.rotate-summary.svelte-1tvfdd7.svelte-1tvfdd7{align-items:flex-start;flex-direction:column;gap:1px}}.row-sub.svelte-1tvfdd7.svelte-1tvfdd7{display:block;margin-top:2px;color:var(--text-3);font-size:12px}.name-col.svelte-1tvfdd7.svelte-1tvfdd7{width:124px;min-width:124px}.pw-col.svelte-1tvfdd7.svelte-1tvfdd7{width:260px;min-width:260px;white-space:nowrap}.password-value.svelte-1tvfdd7.svelte-1tvfdd7{display:inline-block;white-space:nowrap;overflow-wrap:normal;word-break:normal}");
 }
 
 function get_each_context_1(ctx, list, i) {
@@ -117,20 +117,20 @@ function create_if_block_5(ctx) {
 		c() {
 			div1 = element("div");
 			div0 = element("div");
-			div0.innerHTML = `<strong class="svelte-11dir44">统一轮换</strong><span class="svelte-11dir44">3 分钟粘滞 · 故障切换</span>`;
+			div0.innerHTML = `<strong class="svelte-1tvfdd7">统一轮换</strong><span class="svelte-1tvfdd7">3 分钟粘滞 · 故障切换</span>`;
 			t2 = space();
 			button = element("button");
 			create_component(icon0.$$.fragment);
 			t3 = space();
 			create_component(icon1.$$.fragment);
-			attr(div0, "class", "rotate-summary svelte-11dir44");
+			attr(div0, "class", "rotate-summary svelte-1tvfdd7");
 			attr(button, "type", "button");
-			attr(button, "class", "copy-trigger rotate-trigger svelte-11dir44");
+			attr(button, "class", "copy-trigger rotate-trigger svelte-1tvfdd7");
 			attr(button, "title", "复制轮换链接");
 			attr(button, "aria-label", "复制轮换链接");
 			toggle_class(button, "done", /*copied*/ ctx[3] === 'rotate-http' || /*copied*/ ctx[3] === 'rotate-socks5');
 			toggle_class(button, "open", /*menu*/ ctx[6] && /*menu*/ ctx[6].kind === 'rotate');
-			attr(div1, "class", "rotate-block svelte-11dir44");
+			attr(div1, "class", "rotate-block svelte-1tvfdd7");
 		},
 		m(target, anchor) {
 			insert(target, div1, anchor);
@@ -212,7 +212,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (325:6) {#if slots.length}
+// (334:6) {#if slots.length}
 function create_if_block_3(ctx) {
 	let each_1_anchor;
 	let current;
@@ -298,7 +298,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (326:8) {#each slots as slot}
+// (335:8) {#each slots as slot}
 function create_each_block_3(ctx) {
 	let tr;
 	let td0;
@@ -409,6 +409,9 @@ function create_each_block_3(ctx) {
 			t15 = space();
 			create_component(icon1.$$.fragment);
 			t16 = space();
+			attr(td0, "class", "name-col svelte-1tvfdd7");
+			attr(code, "class", "password-value svelte-1tvfdd7");
+			attr(td1, "class", "pw-col svelte-1tvfdd7");
 			attr(td7, "title", td7_title_value = prettyError(/*slot*/ ctx[28].last_error));
 			attr(button, "type", "button");
 			attr(button, "class", "icon-button copy-trigger");
@@ -524,7 +527,7 @@ function create_each_block_3(ctx) {
 	};
 }
 
-// (353:6) {#each agents as agent}
+// (362:6) {#each agents as agent}
 function create_each_block_2(ctx) {
 	let tr;
 	let td0;
@@ -632,7 +635,10 @@ function create_each_block_2(ctx) {
 			create_component(icon0.$$.fragment);
 			t18 = space();
 			create_component(icon1.$$.fragment);
-			attr(span, "class", "row-sub svelte-11dir44");
+			attr(span, "class", "row-sub svelte-1tvfdd7");
+			attr(td0, "class", "name-col svelte-1tvfdd7");
+			attr(code, "class", "password-value svelte-1tvfdd7");
+			attr(td1, "class", "pw-col svelte-1tvfdd7");
 			attr(button, "type", "button");
 			attr(button, "class", "icon-button copy-trigger");
 			attr(button, "title", "复制代理链接");
@@ -738,7 +744,7 @@ function create_each_block_2(ctx) {
 	};
 }
 
-// (382:6) {#if !slots.length && !agents.length}
+// (391:6) {#if !slots.length && !agents.length}
 function create_if_block_2(ctx) {
 	let tr;
 
@@ -756,7 +762,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (389:0) {#if menu}
+// (398:0) {#if menu}
 function create_if_block(ctx) {
 	let div0;
 	let t0;
@@ -872,7 +878,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (400:4) {:else}
+// (409:4) {:else}
 function create_else_block(ctx) {
 	let each_1_anchor;
 	let current;
@@ -958,7 +964,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (393:4) {#if menu.kind === 'rotate'}
+// (402:4) {#if menu.kind === 'rotate'}
 function create_if_block_1(ctx) {
 	let each_1_anchor;
 	let current;
@@ -1044,7 +1050,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (402:6) {#each SCHEMES as scheme}
+// (411:6) {#each SCHEMES as scheme}
 function create_each_block_1(ctx) {
 	let button;
 	let icon;
@@ -1108,7 +1114,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (394:6) {#each SCHEMES as scheme}
+// (403:6) {#each SCHEMES as scheme}
 function create_each_block(ctx) {
 	let button;
 	let icon;
@@ -1251,7 +1257,7 @@ function create_fragment(ctx) {
 			table = element("table");
 			thead = element("thead");
 
-			thead.innerHTML = `<tr><th class="name-col svelte-11dir44">账号</th><th class="pw-col svelte-11dir44">密码</th><th>稳定出口 IP</th><th>国家</th> 
+			thead.innerHTML = `<tr><th class="name-col svelte-1tvfdd7">账号</th><th class="pw-col svelte-1tvfdd7">密码</th><th>稳定出口 IP</th><th>国家</th>
         <th>延迟</th><th>速度</th><th>丢包</th><th>状态</th><th>复制代理</th></tr>`;
 
 			t18 = space();
@@ -1268,10 +1274,10 @@ function create_fragment(ctx) {
 			t21 = space();
 			if (if_block5) if_block5.c();
 			if_block5_anchor = empty();
-			attr(code, "class", "subscription-url svelte-11dir44");
+			attr(code, "class", "subscription-url svelte-1tvfdd7");
 			attr(code, "title", /*subUrl*/ ctx[4]);
 			attr(button, "type", "button");
-			attr(button, "class", "copy-trigger subscription-copy svelte-11dir44");
+			attr(button, "class", "copy-trigger subscription-copy svelte-1tvfdd7");
 
 			attr(button, "title", button_title_value = /*copied*/ ctx[3] === 'subscription'
 			? '已复制'
@@ -1283,7 +1289,7 @@ function create_fragment(ctx) {
 
 			button.disabled = button_disabled_value = !/*subUrl*/ ctx[4];
 			toggle_class(button, "done", /*copied*/ ctx[3] === 'subscription');
-			attr(div0, "class", "subscription-row svelte-11dir44");
+			attr(div0, "class", "subscription-row svelte-1tvfdd7");
 			attr(div1, "class", "sub-bar");
 			attr(div2, "class", "table-wrap");
 		},
