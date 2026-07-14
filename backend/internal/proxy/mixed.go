@@ -418,15 +418,30 @@ func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.R
 // ---------- shared ----------
 
 func (s *mixedServer) dialVia(egresses []Egress, target string) (net.Conn, Egress, error) {
+	return s.dialViaWithPolicy(egresses, target, maxProxyDialAttempts, proxyDialAttemptTTL, proxyDialTotalTTL)
+}
+
+func (s *mixedServer) dialViaWithPolicy(egresses []Egress, target string, maxAttempts int, attemptTTL, totalTTL time.Duration) (net.Conn, Egress, error) {
 	if len(egresses) == 0 {
 		return nil, nil, fmt.Errorf("no egress")
 	}
+	if maxAttempts < 1 {
+		maxAttempts = 1
+	}
+	overallCtx, overallCancel := context.WithTimeout(context.Background(), totalTTL)
+	defer overallCancel()
+
 	var lastErr error
+	attempts := 0
 	for _, eg := range egresses {
+		if attempts >= maxAttempts || overallCtx.Err() != nil {
+			break
+		}
 		if eg == nil {
 			continue
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		attempts++
+		ctx, cancel := context.WithTimeout(overallCtx, attemptTTL)
 		start := time.Now()
 		conn, err := eg.DialContext(ctx, "tcp", target)
 		cancel()
@@ -436,9 +451,16 @@ func (s *mixedServer) dialVia(egresses []Egress, target string) (net.Conn, Egres
 		}
 		lastErr = err
 		log.Printf("[proxy] dial %s via %s/%s failed: %v", target, eg.Tag(), eg.Kind(), err)
+		if isPermanentTargetDialError(err) {
+			break
+		}
 	}
 	if lastErr == nil {
-		lastErr = fmt.Errorf("no usable egress")
+		if err := overallCtx.Err(); err != nil {
+			lastErr = err
+		} else {
+			lastErr = fmt.Errorf("no usable egress")
+		}
 	}
 	return nil, nil, lastErr
 }

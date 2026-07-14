@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"crypto/subtle"
 	"crypto/tls"
 	"fmt"
@@ -17,6 +18,8 @@ import (
 
 type Manager struct {
 	db *db.DB
+	// healthProbe is replaceable in tests; production falls back to Tunnel.probe.
+	healthProbe func(context.Context, *Tunnel) error
 
 	usageQueue    chan ProxyUsage
 	usageDone     chan struct{}
@@ -243,8 +246,8 @@ const rotateStickyWindow = 3 * time.Minute
 
 // rotateCandidatesLocked 实现 auto 统一轮换凭据的选路：把 WARP 池当作一个逻辑节点、
 // 每个在线 agent 各当一个逻辑节点，按客户端 IP 粘滞地 round-robin 选一个作为主出口，
-// 其余节点作为故障转移兜底跟在后面。这样一条链接会自动跑遍不同节点（错开、不挤在
-// 一个上），但单个客户端在粘滞窗口内出口稳定（不乱飘），选中节点故障时又能自动转移。
+// 再取少量跨节点/本机出口作为故障兜底。这样不同连接会自动铺到不同节点，但单条连接
+// 不会因目标不可达遍历整个池；客户端在粘滞窗口内也保持逻辑节点稳定。
 func (m *Manager) rotateCandidatesLocked(clientIP string) []Egress {
 	// 收集逻辑节点：warp 排在最前（若有可用隧道），随后是按 NodeID 稳定排序的在线 agent。
 	type node struct {
@@ -291,18 +294,25 @@ func (m *Manager) rotateCandidatesLocked(clientIP string) []Egress {
 		m.pruneRotateStickyLocked(now)
 	}
 
-	// 选中节点的候选链在前（本身就带故障转移），其余节点各取首个出口作为跨节点兜底。
+	// 每个逻辑节点先取一个出口，让跨地区故障转移不会排在几十条本机 WARP 之后；
+	// 若仍有名额，再补选中节点内部的备用出口。候选总数严格受拨号策略限制。
 	selected := nodes[pick]
-	out := make([]Egress, 0, len(selected.chain)+len(nodes)-1)
-	out = append(out, selected.chain...)
+	out := make([]Egress, 0, maxProxyDialAttempts)
+	out = append(out, selected.chain[0])
 	if selected.key == "warp" {
 		m.notePickLocked(selected.chain[0].Tag())
 	}
 	for i, n := range nodes {
+		if len(out) >= maxProxyDialAttempts {
+			break
+		}
 		if i == pick || len(n.chain) == 0 {
 			continue
 		}
 		out = append(out, n.chain[0])
+	}
+	for i := 1; i < len(selected.chain) && len(out) < maxProxyDialAttempts; i++ {
+		out = append(out, selected.chain[i])
 	}
 	return out
 }
@@ -465,7 +475,9 @@ func (m *Manager) selectionScoreLocked(t *Tunnel, now time.Time) float64 {
 			score += float64(live) * 1.6
 		}
 	}
-	score += float64(t.dialFailures.Load()) * 3000
+	// dialFailures 只是触发独立健康探测的“可疑”计数，不能参与选路评分。
+	// 否则一个不可达目标就会把原本高速的出口错误降权，后续下载反而被
+	// 分配到较慢节点。真正失效的隧道会由 HealthCheck 确认并重建。
 
 	return score
 }
@@ -730,8 +742,9 @@ func (m *Manager) StopTunnel(tag string) bool {
 func (m *Manager) HealthCheck() int {
 	m.mu.Lock()
 	type candidate struct {
-		tag string
-		cfg Config
+		tag    string
+		cfg    Config
+		tunnel *Tunnel
 	}
 	var stale []candidate
 	for tag, t := range m.tunnels {
@@ -739,9 +752,10 @@ func (m *Manager) HealthCheck() int {
 			continue
 		}
 		if t.dialFailures.Load() >= tunnelRebuildAfterFailures {
-			stale = append(stale, candidate{tag: tag, cfg: t.cfg})
+			stale = append(stale, candidate{tag: tag, cfg: t.cfg, tunnel: t})
 		}
 	}
+	healthProbe := m.healthProbe
 	m.mu.Unlock()
 
 	if len(stale) == 0 {
@@ -750,6 +764,26 @@ func (m *Manager) HealthCheck() int {
 
 	rebuilt := 0
 	for _, c := range stale {
+		ctx, cancel := context.WithTimeout(context.Background(), tunnelProbeTimeout)
+		var probeErr error
+		if healthProbe != nil {
+			probeErr = healthProbe(ctx, c.tunnel)
+		} else {
+			probeErr = c.tunnel.probe(ctx)
+		}
+		cancel()
+		if probeErr == nil {
+			// Arbitrary client destinations can time out even when WARP is healthy.
+			// A known-good trace request is the authority for clearing suspicion.
+			m.mu.Lock()
+			if m.tunnels[c.tag] == c.tunnel {
+				c.tunnel.dialFailures.Store(0)
+			}
+			m.mu.Unlock()
+			continue
+		}
+		log.Printf("[proxy] health probe confirmed tunnel %s unhealthy: %v", c.tag, probeErr)
+
 		fresh, err := newTunnel(c.cfg)
 		if err != nil {
 			log.Printf("[proxy] health rebuild tunnel %s failed: %v", c.tag, err)
@@ -758,7 +792,7 @@ func (m *Manager) HealthCheck() int {
 		m.mu.Lock()
 		old := m.tunnels[c.tag]
 		// 期间账号可能已被 reconcile 换掉，确认还是同一份配置再替换。
-		if old == nil || old.cfg != c.cfg {
+		if old == nil || old != c.tunnel || old.cfg != c.cfg {
 			m.mu.Unlock()
 			fresh.Close()
 			continue

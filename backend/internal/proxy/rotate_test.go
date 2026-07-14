@@ -100,7 +100,7 @@ func TestRotateStickyExpires(t *testing.T) {
 	}
 }
 
-// 选中节点之外的其余节点应作为故障转移兜底跟在候选链后面。
+// 三节点场景中，选中节点之外的节点都应进入受限故障转移链。
 func TestRotateIncludesFailoverChain(t *testing.T) {
 	m := newRotateManager("node-a", "node-b", "node-c")
 
@@ -115,6 +115,14 @@ func TestRotateIncludesFailoverChain(t *testing.T) {
 			t.Errorf("duplicate egress %s in failover chain", eg.Tag())
 		}
 		seen[eg.Tag()] = true
+	}
+}
+
+func TestRotateCapsFailoverChain(t *testing.T) {
+	m := newRotateManager("node-a", "node-b", "node-c", "node-d", "node-e")
+	out := m.resolve(RotateUsername, "secret", "1.2.3.4")
+	if len(out) != maxProxyDialAttempts {
+		t.Fatalf("got %d rotate candidates, want %d", len(out), maxProxyDialAttempts)
 	}
 }
 

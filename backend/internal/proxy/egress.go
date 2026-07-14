@@ -20,8 +20,8 @@ func AgentUsername(nodeID string) string {
 // RotateUsername 是「统一轮换」凭据的用户名。客户端用它（配合共享代理密码）时，
 // 服务端在所有逻辑节点之间轮换出口：WARP 池算一个节点，每个在线 agent 各算一个。
 // 按客户端 IP 粘滞一个时间窗避免乱飘，窗口到期轮到下一个；全局 round-robin 把新
-// 分配均匀铺开，既不挤在同一节点、也不让节点乱飘。选中节点故障时链式转移到其余节点。
-// 一条链接遍历所有地区，省得逐个节点复制。
+// 分配均匀铺开，既不挤在同一节点、也不让节点乱飘。选中节点故障时最多尝试三条
+// 跨节点/本机备用出口，避免坏目标让一条连接遍历整个池。
 const RotateUsername = "auto"
 
 // Egress 是一条可拨号的出口通道。WARP 隧道（*Tunnel）和远程 agent 节点
@@ -34,7 +34,7 @@ type Egress interface {
 	Tag() string
 	// Kind 是出口类型标签，仅用于日志（wireguard/masque/agent）。
 	Kind() string
-	// NoteDial 记录一次拨号的耗时与结果，供健康度与排序使用。
+	// NoteDial 记录拨号耗时，并把非目标类错误标记为待独立健康确认。
 	NoteDial(elapsed time.Duration, err error)
 	// AddTx/AddRx 累加经该出口上行/下行的字节数。
 	AddTx(n int64)

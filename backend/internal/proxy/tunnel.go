@@ -66,9 +66,9 @@ const (
 	tunnelProbeURL     = "https://www.cloudflare.com/cdn-cgi/trace"
 	tunnelProbeTimeout = 4 * time.Second
 
-	// 连续拨号失败达到该阈值后，健康监控会原地重建隧道。取值偏高以避免
-	// 偶发抖动触发重建，但仍远快于慢速换绑路径。
-	tunnelRebuildAfterFailures = 4
+	// 可疑拨号失败达到该阈值后，只触发固定 trace 健康确认；确认失败才会
+	// 原地重建。目标本身的错误已被排除，因此两次即可快速发现真实断线。
+	tunnelRebuildAfterFailures = 2
 )
 
 var endpointPreference = struct {
@@ -337,6 +337,9 @@ func (t *Tunnel) noteDial(elapsed time.Duration, err error) {
 		return
 	}
 	if err != nil {
+		if isPermanentTargetDialError(err) {
+			return
+		}
 		t.dialFailures.Add(1)
 		return
 	}
