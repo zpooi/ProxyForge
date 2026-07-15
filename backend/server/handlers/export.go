@@ -389,6 +389,7 @@ func writeClashDNS(w http.ResponseWriter, list []*proxyExport) {
 		"https://doh.pub/dns-query",
 		"https://1.1.1.1/dns-query",
 	}
+	domesticResolvers := secureResolvers[:2]
 
 	fmt.Fprintf(w, "dns:\n")
 	fmt.Fprintf(w, "  enable: true\n")
@@ -409,19 +410,30 @@ func writeClashDNS(w http.ResponseWriter, list []*proxyExport) {
 	for _, r := range secureResolvers {
 		fmt.Fprintf(w, "    - %s\n", r)
 	}
+	// Direct traffic is intentionally limited to mainland destinations by the
+	// rules below. Resolve it with mainland DoH so video/CDN domains receive a
+	// nearby carrier route instead of an overseas edge selected for WARP.
+	fmt.Fprintf(w, "  direct-nameserver:\n")
+	for _, r := range domesticResolvers {
+		fmt.Fprintf(w, "    - %s\n", r)
+	}
+	fmt.Fprintf(w, "  direct-nameserver-follow-policy: false\n")
 	fmt.Fprintf(w, "  proxy-server-nameserver:\n")
 	for _, r := range bootstrapResolvers {
 		fmt.Fprintf(w, "    - %s\n", r)
 	}
-	if len(domains) > 0 {
-		// Keep only the proxy bootstrap lookup outside DoH/proxy routing.
-		fmt.Fprintf(w, "  nameserver-policy:\n")
-		for _, d := range domains {
-			fmt.Fprintf(w, "    %s:\n", clashScalar(d))
-			for _, r := range bootstrapResolvers {
-				fmt.Fprintf(w, "      - %s\n", r)
-			}
+	// Exact proxy-host bootstrap entries take precedence over the broader CN
+	// policy and avoid a DNS dependency loop before the tunnel is connected.
+	fmt.Fprintf(w, "  nameserver-policy:\n")
+	for _, d := range domains {
+		fmt.Fprintf(w, "    %s:\n", clashScalar(d))
+		for _, r := range bootstrapResolvers {
+			fmt.Fprintf(w, "      - %s\n", r)
 		}
+	}
+	fmt.Fprintf(w, "    %s:\n", clashScalar("geosite:cn"))
+	for _, r := range domesticResolvers {
+		fmt.Fprintf(w, "      - %s\n", r)
 	}
 	fmt.Fprintf(w, "\n")
 }
@@ -510,6 +522,16 @@ func writeClashRules(w http.ResponseWriter) {
 		"IP-CIDR6,::1/128,DIRECT,no-resolve",
 		"IP-CIDR6,fc00::/7,DIRECT,no-resolve",
 		"IP-CIDR6,fe80::/10,DIRECT,no-resolve",
+		// Domestic domain rules run before GEOIP so fake-IP connections retain
+		// their domain classification. GEOIP catches literal IPs and unlisted
+		// mainland CDN edges. Domestic QUIC can therefore remain native and fast.
+		"GEOSITE,cn,DIRECT",
+		"GEOIP,CN,DIRECT",
+		// Trojan-over-WebSocket is a TCP stream. Carrying QUIC (UDP/443) inside it
+		// creates head-of-line blocking and can collapse video throughput. Reject
+		// only non-CN QUIC here so browsers fall back to HTTP/2 over the fast TCP
+		// proxy path; other UDP, including WebRTC/STUN, remains supported.
+		"AND,((NETWORK,UDP),(DST-PORT,443)),REJECT",
 		"MATCH,PROXYFORGE",
 	}
 	fmt.Fprintf(w, "\nrules:\n")

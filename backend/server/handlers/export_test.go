@@ -78,11 +78,21 @@ func TestWriteClashAgentNode(t *testing.T) {
 		"url: https://www.gstatic.com/generate_204",
 		"DOMAIN,ipv6.msftconnecttest.com,REJECT",
 		"DOMAIN,ipv6.msftncsi.com,REJECT",
+		"GEOSITE,cn,DIRECT",
+		"GEOIP,CN,DIRECT",
+		"AND,((NETWORK,UDP),(DST-PORT,443)),REJECT",
 		"MATCH,PROXYFORGE",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in output:\n%s", want, out)
 		}
+	}
+	cnDomainAt := strings.Index(out, "  - GEOSITE,cn,DIRECT\n")
+	cnIPAt := strings.Index(out, "  - GEOIP,CN,DIRECT\n")
+	quicRejectAt := strings.Index(out, "  - AND,((NETWORK,UDP),(DST-PORT,443)),REJECT\n")
+	catchAllAt := strings.Index(out, "  - MATCH,PROXYFORGE\n")
+	if cnDomainAt < 0 || cnIPAt < cnDomainAt || quicRejectAt < cnIPAt || catchAllAt < quicRejectAt {
+		t.Errorf("domestic DIRECT and foreign QUIC fallback rules are out of order:\n%s", out)
 	}
 
 	// PROXYFORGE 默认选中会话稳定组，而不是某个写死的 pf 编号或会动态换 IP 的 url-test。
@@ -159,15 +169,16 @@ func TestWriteClashUsesResolvedServerAndKeepsTLSSNI(t *testing.T) {
 	}
 	for _, want := range []string{
 		"dns:",
+		"direct-nameserver:",
+		"direct-nameserver-follow-policy: false",
+		"nameserver-policy:",
+		`"geosite:cn":`,
 		"https://dns.alidns.com/dns-query",
 		"https://doh.pub/dns-query",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("carrier-safe DNS output missing %q:\n%s", want, out)
 		}
-	}
-	if strings.Contains(out, "nameserver-policy:") {
-		t.Errorf("IP-based Trojan server should not need a bootstrap domain policy:\n%s", out)
 	}
 	if strings.Contains(out, "skip-cert-verify") || strings.Contains(out, "type: http") {
 		t.Errorf("Trojan export must verify nginx TLS and must not downgrade to HTTP:\n%s", out)
@@ -217,6 +228,7 @@ func TestWriteClashDomainFallbackUsesMihomoProxyNameservers(t *testing.T) {
 	for _, want := range []string{
 		"proxy-server-nameserver:",
 		`"proxy.example.com":`,
+		`"geosite:cn":`,
 		"      - 223.5.5.5",
 		"https://dns.alidns.com/dns-query",
 		"https://doh.pub/dns-query",
@@ -227,5 +239,10 @@ func TestWriteClashDomainFallbackUsesMihomoProxyNameservers(t *testing.T) {
 	}
 	if strings.Contains(out, `"223.5.5.5,119.29.29.29`) {
 		t.Errorf("nameserver-policy must be a YAML list, not a comma-joined resolver:\n%s", out)
+	}
+	proxyPolicyAt := strings.Index(out, `    "proxy.example.com":`)
+	cnPolicyAt := strings.Index(out, `    "geosite:cn":`)
+	if proxyPolicyAt < 0 || cnPolicyAt < proxyPolicyAt {
+		t.Errorf("exact proxy bootstrap DNS policy must precede the CN policy:\n%s", out)
 	}
 }

@@ -79,6 +79,8 @@ When these variables are omitted and `Proxy public host` is a domain, ProxyForge
 - Legacy HTTP and SOCKS5 listeners remain TCP-only. Local WARP nodes advertise `udp: true`; remote agents advertise it only after connecting with the UDP-capable agent protocol, so older agents fail closed until they are upgraded.
 - The Trojan WebSocket path is derived one-way from the random subscription token so nginx logs do not contain the token itself. TLS certificate verification stays enabled, and BaoTa/nginx must forward WebSocket upgrades to the application.
 - Clash DNS uses encrypted DoH for ordinary target lookups, and Mihomo is asked to use a Chrome TLS fingerprint. Only the proxy domain's bootstrap lookup may use direct DNS.
+- Rule-mode subscriptions route mainland domains and Chinese IP ranges directly, with AliDNS/Tencent DoH for nearby CDN answers; non-mainland traffic continues through ProxyForge.
+- Non-mainland QUIC (UDP/443) is rejected before the proxy catch-all so browsers use HTTP/2 instead of tunneling QUIC through the Trojan WebSocket TCP stream; mainland QUIC remains direct.
 - Empty global proxy passwords are replaced with a random password during startup; aliases never accept an empty password.
 - The web UI keeps only aggregate request throttles. It never bans a client IP for scanner-like paths, request bursts, or failed logins, so devices sharing one NAT exit cannot lock each other out.
 - Agent admission tokens use an `Authorization: Bearer` header instead of URL query parameters.
