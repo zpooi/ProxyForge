@@ -1,9 +1,12 @@
 package main
 
 import (
+	"net"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/zpooi/ProxyForge/backend/internal/agentproto"
 	"github.com/zpooi/ProxyForge/backend/internal/warp"
 )
 
@@ -19,6 +22,53 @@ func TestWarpNodeIdentity(t *testing.T) {
 	}
 	if got := warpNodeName("", "MY", 1); got != "MY WARP #2" {
 		t.Fatalf("regional node name = %q", got)
+	}
+}
+
+func TestRelayAgentUDPPreservesDatagrams(t *testing.T) {
+	echo, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.ParseIP("127.0.0.1")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer echo.Close()
+	go func() {
+		buffer := make([]byte, 1024)
+		n, peer, err := echo.ReadFromUDP(buffer)
+		if err == nil {
+			_, _ = echo.WriteToUDP(append([]byte("reply:"), buffer[:n]...), peer)
+		}
+	}()
+
+	remote, err := net.DialUDP("udp4", nil, echo.LocalAddr().(*net.UDPAddr))
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller, agent := net.Pipe()
+	defer controller.Close()
+	_ = controller.SetDeadline(time.Now().Add(2 * time.Second))
+	done := make(chan struct{})
+	go func() {
+		relayAgentUDP(agent, remote)
+		close(done)
+	}()
+
+	framed := agentproto.NewPacketConn(controller, echo.LocalAddr())
+	if _, err := framed.Write([]byte("ping")); err != nil {
+		t.Fatal(err)
+	}
+	buffer := make([]byte, 64)
+	n, err := framed.Read(buffer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(buffer[:n]) != "reply:ping" {
+		t.Fatalf("agent UDP response = %q", buffer[:n])
+	}
+	_ = controller.Close()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("agent UDP relay did not stop")
 	}
 }
 
@@ -40,6 +90,7 @@ func TestBuildQueryIncludesAgentHostAndWarpEgress(t *testing.T) {
 	}
 
 	for key, want := range map[string]string{
+		"v":            "2",
 		"agent_id":     "agent-123",
 		"agent_name":   "Malaysia VPS",
 		"node_id":      "agent-123-2",

@@ -18,6 +18,7 @@ const (
 	trojanAuthDigestSize = sha256.Size224
 	trojanAuthLineSize   = trojanAuthDigestSize*2 + 2
 	trojanConnectCommand = 0x01
+	trojanUDPCommand     = 0x03
 )
 
 // TrojanCredential derives a protocol-specific credential from an existing
@@ -120,6 +121,10 @@ func (s *mixedServer) handleTrojan(client net.Conn, br *bufio.Reader, clientIP s
 	if _, err := io.ReadFull(br, terminator[:]); err != nil || terminator != [2]byte{'\r', '\n'} {
 		return
 	}
+	if command == trojanUDPCommand {
+		s.relayTrojanUDP(client, br, egresses, &proxySession{username: username, egresses: egresses}, clientIP)
+		return
+	}
 	if command != trojanConnectCommand {
 		return
 	}
@@ -148,42 +153,5 @@ func readTrojanAuth(br *bufio.Reader) ([trojanAuthDigestSize]byte, bool) {
 }
 
 func readTrojanTarget(br *bufio.Reader) (string, int, bool) {
-	atyp, err := br.ReadByte()
-	if err != nil {
-		return "", 0, false
-	}
-	var host string
-	switch atyp {
-	case 0x01:
-		var raw [4]byte
-		if _, err := io.ReadFull(br, raw[:]); err != nil {
-			return "", 0, false
-		}
-		host = net.IP(raw[:]).String()
-	case 0x03:
-		length, err := br.ReadByte()
-		if err != nil || length == 0 {
-			return "", 0, false
-		}
-		raw := make([]byte, int(length))
-		if _, err := io.ReadFull(br, raw); err != nil {
-			return "", 0, false
-		}
-		host = string(raw)
-	case 0x04:
-		var raw [16]byte
-		if _, err := io.ReadFull(br, raw[:]); err != nil {
-			return "", 0, false
-		}
-		host = net.IP(raw[:]).String()
-	default:
-		return "", 0, false
-	}
-
-	var rawPort [2]byte
-	if _, err := io.ReadFull(br, rawPort[:]); err != nil {
-		return "", 0, false
-	}
-	port := int(rawPort[0])<<8 | int(rawPort[1])
-	return host, port, host != "" && port > 0
+	return readTrojanAddress(br)
 }

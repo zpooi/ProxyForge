@@ -424,12 +424,23 @@ func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.R
 // ---------- shared ----------
 
 func (s *mixedServer) dialVia(egresses []Egress, target string) (net.Conn, Egress, error) {
-	return s.dialViaWithPolicy(egresses, target, maxProxyDialAttempts, proxyDialAttemptTTL, proxyDialTotalTTL)
+	return s.dialViaNetworkWithPolicy(egresses, "tcp", target, maxProxyDialAttempts, proxyDialAttemptTTL, proxyDialTotalTTL)
 }
 
 func (s *mixedServer) dialViaWithPolicy(egresses []Egress, target string, maxAttempts int, attemptTTL, totalTTL time.Duration) (net.Conn, Egress, error) {
+	return s.dialViaNetworkWithPolicy(egresses, "tcp", target, maxAttempts, attemptTTL, totalTTL)
+}
+
+func (s *mixedServer) dialUDPVia(egresses []Egress, target string) (net.Conn, Egress, error) {
+	return s.dialViaNetworkWithPolicy(egresses, "udp", target, maxProxyDialAttempts, proxyDialAttemptTTL, proxyDialTotalTTL)
+}
+
+func (s *mixedServer) dialViaNetworkWithPolicy(egresses []Egress, network, target string, maxAttempts int, attemptTTL, totalTTL time.Duration) (net.Conn, Egress, error) {
 	if len(egresses) == 0 {
 		return nil, nil, fmt.Errorf("no egress")
+	}
+	if network != "tcp" && network != "udp" {
+		return nil, nil, fmt.Errorf("unsupported proxy network %q", network)
 	}
 	if maxAttempts < 1 {
 		maxAttempts = 1
@@ -446,17 +457,20 @@ func (s *mixedServer) dialViaWithPolicy(egresses []Egress, target string, maxAtt
 		if eg == nil {
 			continue
 		}
+		if network == "udp" && !eg.SupportsUDP() {
+			continue
+		}
 		attempts++
 		ctx, cancel := context.WithTimeout(overallCtx, attemptTTL)
 		start := time.Now()
-		conn, err := eg.DialContext(ctx, "tcp", target)
+		conn, err := eg.DialContext(ctx, network, target)
 		cancel()
 		eg.NoteDial(time.Since(start), err)
 		if err == nil {
 			return conn, eg, nil
 		}
 		lastErr = err
-		log.Printf("[proxy] dial %s via %s/%s failed: %v", target, eg.Tag(), eg.Kind(), err)
+		log.Printf("[proxy] dial %s/%s via %s/%s failed: %v", network, target, eg.Tag(), eg.Kind(), err)
 		if isPermanentTargetDialError(err) {
 			break
 		}
@@ -465,7 +479,7 @@ func (s *mixedServer) dialViaWithPolicy(egresses []Egress, target string, maxAtt
 		if err := overallCtx.Err(); err != nil {
 			lastErr = err
 		} else {
-			lastErr = fmt.Errorf("no usable egress")
+			lastErr = fmt.Errorf("no usable %s egress", network)
 		}
 	}
 	return nil, nil, lastErr

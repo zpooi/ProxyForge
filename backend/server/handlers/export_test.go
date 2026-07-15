@@ -39,7 +39,7 @@ func TestNodeNameFallsBackToUsername(t *testing.T) {
 func TestWriteClashAgentNode(t *testing.T) {
 	rec := httptest.NewRecorder()
 	writeClash(rec, []*proxyExport{
-		{Name: "proxy1", Username: "proxy1", Password: "pw", ProxyHost: "1.2.3.4", ProxyPort: 7843},
+		{Name: "proxy1", Username: "proxy1", Password: "pw", ProxyHost: "1.2.3.4", ProxyPort: 7843, SupportsUDP: true},
 		{Name: "日本 节点", Username: "node-abc123", Password: "pw", ProxyHost: "1.2.3.4", ProxyPort: 7843, IsAgent: true},
 	})
 	out := rec.Body.String()
@@ -56,10 +56,13 @@ func TestWriteClashAgentNode(t *testing.T) {
 	if strings.Contains(out, `username:`) || strings.Contains(out, `password: "pw"`) {
 		t.Errorf("Trojan export leaked legacy proxy credentials:\n%s", out)
 	}
-	for _, want := range []string{"type: trojan", "network: ws", "udp: false", "client-fingerprint: chrome", "alpn:", "- http/1.1"} {
+	for _, want := range []string{"type: trojan", "network: ws", "udp: true", "udp: false", "client-fingerprint: chrome", "alpn:", "- http/1.1"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("Trojan agent export missing %q:\n%s", want, out)
 		}
+	}
+	if strings.Count(out, "    udp: true\n") != 1 || strings.Count(out, "    udp: false\n") != 1 {
+		t.Errorf("UDP capability must be exported per node:\n%s", out)
 	}
 	// 四个组都应引用节点显示名（带引号）。
 	if n := strings.Count(out, `- "日本 节点"`); n != 4 {
@@ -138,6 +141,7 @@ func TestWriteClashUsesResolvedServerAndKeepsTLSSNI(t *testing.T) {
 		TrojanDialHost: "203.0.113.9",
 		TrojanPort:     443,
 		TrojanWSPath:   "/api/v1/connect/token123",
+		SupportsUDP:    true,
 	}})
 	out := rec.Body.String()
 	for _, want := range []string{
@@ -146,6 +150,7 @@ func TestWriteClashUsesResolvedServerAndKeepsTLSSNI(t *testing.T) {
 		`sni: "proxy.example.com"`,
 		"port: 443",
 		"network: ws",
+		"udp: true",
 		`path: "/api/v1/connect/token123"`,
 	} {
 		if !strings.Contains(out, want) {

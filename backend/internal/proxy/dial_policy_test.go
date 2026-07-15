@@ -13,6 +13,7 @@ type policyEgress struct {
 	err   error
 	wait  bool
 	calls int
+	noUDP bool
 }
 
 func (e *policyEgress) DialContext(ctx context.Context, _, _ string) (net.Conn, error) {
@@ -25,6 +26,7 @@ func (e *policyEgress) DialContext(ctx context.Context, _, _ string) (net.Conn, 
 }
 func (e *policyEgress) Tag() string                   { return e.tag }
 func (e *policyEgress) Kind() string                  { return "test" }
+func (e *policyEgress) SupportsUDP() bool             { return !e.noUDP }
 func (e *policyEgress) NoteDial(time.Duration, error) {}
 func (e *policyEgress) AddTx(int64)                   {}
 func (e *policyEgress) AddRx(int64)                   {}
@@ -49,6 +51,20 @@ func TestDialViaLimitsFailoverAttempts(t *testing.T) {
 		if item.calls != want {
 			t.Fatalf("egress %d calls = %d, want %d", i, item.calls, want)
 		}
+	}
+}
+
+func TestDialUDPViaSkipsStreamOnlyEgress(t *testing.T) {
+	streamOnly := &policyEgress{tag: "agent-v1", noUDP: true}
+	udp := &policyEgress{tag: "warp", err: errors.New("expected UDP dial")}
+	_, _, err := (&mixedServer{}).dialViaNetworkWithPolicy(
+		[]Egress{streamOnly, udp}, "udp", "1.1.1.1:53", 3, time.Second, time.Second,
+	)
+	if err == nil {
+		t.Fatal("UDP dial unexpectedly succeeded")
+	}
+	if streamOnly.calls != 0 || udp.calls != 1 {
+		t.Fatalf("UDP calls = stream-only:%d capable:%d", streamOnly.calls, udp.calls)
 	}
 }
 

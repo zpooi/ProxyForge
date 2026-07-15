@@ -75,7 +75,8 @@ When these variables are omitted and `Proxy public host` is a domain, ProxyForge
 ## Security defaults
 
 - The proxy port accepts HTTP and SOCKS5 directly; when TLS is enabled it also accepts HTTPS-proxy connections on the same port.
-- Clash/Mihomo subscriptions use Trojan over TLS WebSocket on the management domain's HTTPS port 443. Legacy HTTP/SOCKS5 credentials are not reused in the subscription; a separate per-node credential is derived with HMAC-SHA-256.
+- Clash/Mihomo subscriptions use Trojan over TLS WebSocket on the management domain's HTTPS port 443. TCP and framed Trojan UDP are both carried through the selected WARP exit; clients must use VPN/TUN routing if browser UDP such as WebRTC must not bypass the proxy. Legacy HTTP/SOCKS5 credentials are not reused in the subscription; a separate per-node credential is derived with HMAC-SHA-256.
+- Legacy HTTP and SOCKS5 listeners remain TCP-only. Local WARP nodes advertise `udp: true`; remote agents advertise it only after connecting with the UDP-capable agent protocol, so older agents fail closed until they are upgraded.
 - The Trojan WebSocket path is derived one-way from the random subscription token so nginx logs do not contain the token itself. TLS certificate verification stays enabled, and BaoTa/nginx must forward WebSocket upgrades to the application.
 - Clash DNS uses encrypted DoH for ordinary target lookups, and Mihomo is asked to use a Chrome TLS fingerprint. Only the proxy domain's bootstrap lookup may use direct DNS.
 - Empty global proxy passwords are replaced with a random password during startup; aliases never accept an empty password.

@@ -14,6 +14,7 @@ import (
 	"log"
 	"net"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -296,9 +297,23 @@ func (e *agentEgress) DialContext(ctx context.Context, network, address string) 
 	}
 	_ = stream.SetDeadline(deadline)
 
-	if err := agentproto.WriteTarget(stream, address); err != nil {
+	if network != "tcp" && network != "udp" {
 		_ = stream.Close()
-		return nil, fmt.Errorf("agent write target: %w", err)
+		return nil, fmt.Errorf("agent unsupported network %q", network)
+	}
+	if network == "udp" && !e.SupportsUDP() {
+		_ = stream.Close()
+		return nil, fmt.Errorf("agent %s does not support UDP", e.conn.meta.NodeID)
+	}
+	var requestErr error
+	if agentproto.SupportsUDPVersion(e.conn.meta.Version) {
+		requestErr = agentproto.WriteRequest(stream, network, address)
+	} else {
+		requestErr = agentproto.WriteTarget(stream, address)
+	}
+	if requestErr != nil {
+		_ = stream.Close()
+		return nil, fmt.Errorf("agent write target: %w", requestErr)
 	}
 	ok, err := agentproto.ReadStatus(stream)
 	if err != nil {
@@ -311,11 +326,30 @@ func (e *agentEgress) DialContext(ctx context.Context, network, address string) 
 	}
 	// 握手完成，清掉拨号 deadline，转发阶段不限时。
 	_ = stream.SetDeadline(time.Time{})
+	if network == "udp" {
+		return agentproto.NewPacketConn(stream, udpTargetAddr(address)), nil
+	}
 	return stream, nil
 }
 
 func (e *agentEgress) Tag() string  { return proxy.NodeUsernamePrefix + e.conn.meta.NodeID }
 func (e *agentEgress) Kind() string { return "agent-warp" }
+func (e *agentEgress) SupportsUDP() bool {
+	return e != nil && e.conn != nil && agentproto.SupportsUDPVersion(e.conn.meta.Version)
+}
+
+func udpTargetAddr(target string) net.Addr {
+	host, rawPort, err := net.SplitHostPort(target)
+	if err != nil {
+		return nil
+	}
+	ip := net.ParseIP(strings.Trim(host, "[]"))
+	port, err := strconv.Atoi(rawPort)
+	if ip == nil || err != nil || port <= 0 || port > 65535 {
+		return nil
+	}
+	return &net.UDPAddr{IP: ip, Port: port}
+}
 
 func (e *agentEgress) NoteDial(elapsed time.Duration, err error) {
 	if err == nil && elapsed > 0 {

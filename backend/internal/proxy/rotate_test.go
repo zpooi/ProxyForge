@@ -15,6 +15,7 @@ func (f *fakeEgress) DialContext(context.Context, string, string) (net.Conn, err
 }
 func (f *fakeEgress) Tag() string                   { return f.tag }
 func (f *fakeEgress) Kind() string                  { return "agent" }
+func (f *fakeEgress) SupportsUDP() bool             { return false }
 func (f *fakeEgress) NoteDial(time.Duration, error) {}
 func (f *fakeEgress) AddTx(int64)                   {}
 func (f *fakeEgress) AddRx(int64)                   {}

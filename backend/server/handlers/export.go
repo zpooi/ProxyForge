@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zpooi/ProxyForge/backend/internal/agentproto"
 	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 )
 
@@ -136,6 +137,7 @@ func (h *Handlers) collectActiveExports(r *http.Request) ([]*proxyExport, error)
 			TrojanDialHost: trojan.DialHost,
 			TrojanPort:     trojan.Port,
 			TrojanWSPath:   trojan.Path,
+			SupportsUDP:    true,
 		})
 	}
 
@@ -189,9 +191,9 @@ func (h *Handlers) collectAgentExports(host, clashHost string, proxyPort int, pr
 	if h.Hub == nil {
 		return nil
 	}
-	online := map[string]bool{}
+	online := map[string]string{}
 	for _, o := range h.Hub.Snapshot() {
-		online[o.NodeID] = true
+		online[o.NodeID] = o.Meta.Version
 	}
 	nodes, err := h.DB.ListAgentNodes()
 	if err != nil {
@@ -201,7 +203,8 @@ func (h *Handlers) collectAgentExports(host, clashHost string, proxyPort int, pr
 	usedNames := map[string]int{}
 	var out []*proxyExport
 	for _, n := range nodes {
-		if !n.Enabled || !online[n.NodeID] {
+		version, isOnline := online[n.NodeID]
+		if !n.Enabled || !isOnline {
 			continue
 		}
 		label := agentDisplayName(n.Name, n.Country, n.NodeID)
@@ -230,6 +233,7 @@ func (h *Handlers) collectAgentExports(host, clashHost string, proxyPort int, pr
 			TrojanDialHost: trojan.DialHost,
 			TrojanPort:     trojan.Port,
 			TrojanWSPath:   trojan.Path,
+			SupportsUDP:    agentproto.SupportsUDPVersion(version),
 		})
 	}
 	return out
@@ -258,6 +262,7 @@ type proxyExport struct {
 	TrojanDialHost string // pre-resolved carrier-facing address for Clash
 	TrojanPort     int
 	TrojanWSPath   string
+	SupportsUDP    bool
 }
 
 // NodeName 返回 Clash 里的节点显示名。优先用 Name，兜底回退到 Username，
@@ -519,7 +524,7 @@ func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	fmt.Fprintf(w, "    server: %s\n", clashScalar(p.ClashServer()))
 	fmt.Fprintf(w, "    port: %d\n", p.ClashPort())
 	fmt.Fprintf(w, "    password: %s\n", clashScalar(proxy.TrojanCredential(p.Username, p.Password)))
-	fmt.Fprintf(w, "    udp: false\n")
+	fmt.Fprintf(w, "    udp: %t\n", p.SupportsUDP)
 	// Mihomo's uTLS browser fingerprint avoids the distinctive default Go TLS
 	// ClientHello on carrier-facing connections.
 	fmt.Fprintf(w, "    client-fingerprint: chrome\n")

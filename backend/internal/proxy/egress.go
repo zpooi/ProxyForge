@@ -28,6 +28,9 @@ const RotateUsername = "auto"
 // （agentEgress）都实现它，代理监听器 dialVia/relay 只依赖这个接口，从而
 // 对「本机 WARP 出口」和「远程 Agent WARP 出口」一视同仁地转发、计流量、记失败。
 type Egress interface {
+	// SupportsUDP reports whether DialContext preserves UDP datagram
+	// boundaries. Stream-only remote agents must fail closed here.
+	SupportsUDP() bool
 	// DialContext 经该出口拨号到 target（host:port）。
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 	// Tag 是出口的稳定标识：WARP 用账号 tag，agent 用 node-<id>。用于日志与流量归属。
@@ -44,8 +47,9 @@ type Egress interface {
 // 编译期断言：*Tunnel 必须满足 Egress。
 var _ Egress = (*Tunnel)(nil)
 
-func (t *Tunnel) Tag() string  { return t.cfg.Tag }
-func (t *Tunnel) Kind() string { return t.transport }
+func (t *Tunnel) Tag() string       { return t.cfg.Tag }
+func (t *Tunnel) Kind() string      { return t.transport }
+func (t *Tunnel) SupportsUDP() bool { return t != nil && t.tnet != nil }
 func (t *Tunnel) AddTx(n int64) {
 	if t != nil {
 		t.txBytes.Add(n)

@@ -197,13 +197,13 @@ func serveStream(stream *yamux.Stream, dial func(context.Context, string, string
 	defer stream.Close()
 
 	_ = stream.SetDeadline(time.Now().Add(localDialTimeout))
-	target, err := agentproto.ReadTarget(stream)
+	network, target, err := agentproto.ReadRequest(stream)
 	if err != nil {
 		return
 	}
 
 	dialCtx, cancel := context.WithTimeout(context.Background(), localDialTimeout)
-	remote, err := dial(dialCtx, "tcp", target)
+	remote, err := dial(dialCtx, network, target)
 	cancel()
 	if err != nil {
 		_ = agentproto.WriteStatus(stream, false)
@@ -216,6 +216,10 @@ func serveStream(stream *yamux.Stream, dial func(context.Context, string, string
 	}
 	// 握手完成，转发阶段不限时。
 	_ = stream.SetDeadline(time.Time{})
+	if network == "udp" {
+		relayAgentUDP(stream, remote)
+		return
+	}
 
 	done := make(chan struct{}, 2)
 	go func() {
@@ -231,6 +235,44 @@ func serveStream(stream *yamux.Stream, dial func(context.Context, string, string
 		done <- struct{}{}
 	}()
 	<-done
+	<-done
+}
+
+func relayAgentUDP(stream net.Conn, remote net.Conn) {
+	framed := agentproto.NewPacketConn(stream, remote.RemoteAddr())
+	done := make(chan struct{}, 2)
+
+	go func() {
+		buffer := make([]byte, 65535)
+		for {
+			n, err := framed.Read(buffer)
+			if err != nil {
+				break
+			}
+			if written, err := remote.Write(buffer[:n]); err != nil || written != n {
+				break
+			}
+		}
+		_ = remote.Close()
+		done <- struct{}{}
+	}()
+	go func() {
+		buffer := make([]byte, 65535)
+		for {
+			n, err := remote.Read(buffer)
+			if err != nil {
+				break
+			}
+			if written, err := framed.Write(buffer[:n]); err != nil || written != n {
+				break
+			}
+		}
+		_ = stream.Close()
+		done <- struct{}{}
+	}()
+	<-done
+	_ = stream.Close()
+	_ = remote.Close()
 	<-done
 }
 
