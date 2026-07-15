@@ -1,9 +1,6 @@
 package handlers
 
 import (
-	"context"
-	"errors"
-	"net"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -118,45 +115,24 @@ func TestWriteClashEmptyFallsBackToDirect(t *testing.T) {
 	}
 }
 
-func TestResolveProxyDialHostUsesIPv4AndFallsBackToDomain(t *testing.T) {
-	lookup := func(_ context.Context, network, host string) ([]net.IP, error) {
-		if network != "ip4" || host != "proxy.example.com" {
-			t.Fatalf("unexpected lookup %q %q", network, host)
-		}
-		return []net.IP{net.ParseIP("203.0.113.9")}, nil
-	}
-	if got := resolveProxyDialHostWith(context.Background(), "proxy.example.com", lookup); got != "203.0.113.9" {
-		t.Fatalf("resolved Clash server = %q, want IPv4", got)
-	}
-
-	failing := func(context.Context, string, string) ([]net.IP, error) {
-		return nil, errors.New("dns unavailable")
-	}
-	if got := resolveProxyDialHostWith(context.Background(), "proxy.example.com", failing); got != "proxy.example.com" {
-		t.Fatalf("failed lookup should keep domain, got %q", got)
-	}
-}
-
-func TestWriteClashUsesResolvedServerAndKeepsTLSSNI(t *testing.T) {
+func TestWriteClashKeepsDomainForClientLocalResolution(t *testing.T) {
 	rec := httptest.NewRecorder()
 	writeClash(rec, []*proxyExport{{
-		Name:           "pf-001",
-		Username:       "pf-001",
-		Password:       "pw",
-		ProxyHost:      "proxy.example.com",
-		ProxyDialHost:  "203.0.113.9",
-		ProxyPort:      7843,
-		TLS:            true,
-		TrojanHost:     "proxy.example.com",
-		TrojanDialHost: "203.0.113.9",
-		TrojanPort:     443,
-		TrojanWSPath:   "/api/v1/connect/token123",
-		SupportsUDP:    true,
+		Name:         "pf-001",
+		Username:     "pf-001",
+		Password:     "pw",
+		ProxyHost:    "proxy.example.com",
+		ProxyPort:    7843,
+		TLS:          true,
+		TrojanHost:   "proxy.example.com",
+		TrojanPort:   443,
+		TrojanWSPath: "/api/v1/connect/token123",
+		SupportsUDP:  true,
 	}})
 	out := rec.Body.String()
 	for _, want := range []string{
 		"type: trojan",
-		`server: "203.0.113.9"`,
+		`server: "proxy.example.com"`,
 		`sni: "proxy.example.com"`,
 		"port: 443",
 		"network: ws",
@@ -164,7 +140,7 @@ func TestWriteClashUsesResolvedServerAndKeepsTLSSNI(t *testing.T) {
 		`path: "/api/v1/connect/token123"`,
 	} {
 		if !strings.Contains(out, want) {
-			t.Errorf("resolved Clash export missing %q:\n%s", want, out)
+			t.Errorf("domain-based Clash export missing %q:\n%s", want, out)
 		}
 	}
 	for _, want := range []string{
