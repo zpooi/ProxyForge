@@ -11,6 +11,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/go-chi/chi/v5"
+	"github.com/zpooi/ProxyForge/backend/internal/proxy"
 )
 
 const (
@@ -47,7 +48,7 @@ func (h *Handlers) TrojanWebSocket(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	netConn := websocket.NetConn(context.Background(), c, websocket.MessageBinary)
+	netConn := proxy.MarkWebSocketRelayConn(websocket.NetConn(context.Background(), c, websocket.MessageBinary))
 	h.Manager.ServeTrojan(netConn, requestClientIP(r))
 	_ = netConn.Close()
 	_ = c.Close(websocket.StatusNormalClosure, "session ended")

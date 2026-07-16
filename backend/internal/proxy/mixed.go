@@ -501,7 +501,9 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 	}()
 
 	go func() {
-		n, _ := copyRelay(client, remote)
+		downstream, flushDownstream := relayDownstreamWriter(client)
+		n, _ := copyRelay(downstream, remote)
+		_ = flushDownstream()
 		eg.AddRx(n)
 		downBytes = n
 		if tc, ok := client.(interface{ CloseWrite() error }); ok {
