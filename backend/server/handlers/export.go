@@ -224,6 +224,13 @@ type proxyExport struct {
 	SupportsUDP   bool
 }
 
+// Clash traffic deliberately stays TCP-only. UDP carried inside Trojan/WSS
+// combines datagram loss with the outer TCP stream's head-of-line blocking,
+// which can starve sustained video downloads. The server-side Trojan UDP
+// implementation remains available so this policy can be reversed without a
+// protocol migration.
+const clashProxyUDPEnabled = false
+
 // NodeName 返回 Clash 里的节点显示名。优先用 Name，兜底回退到 Username，
 // 避免空名字生成非法 YAML。
 func (p *proxyExport) NodeName() string {
@@ -480,11 +487,10 @@ func writeClashRules(w http.ResponseWriter) {
 		// mainland CDN edges. Domestic QUIC can therefore remain native and fast.
 		"GEOSITE,cn,DIRECT",
 		"GEOIP,CN,DIRECT",
-		// Trojan-over-WebSocket is a TCP stream. Carrying QUIC (UDP/443) inside it
-		// creates head-of-line blocking and can collapse video throughput. Reject
-		// only non-CN QUIC here so browsers fall back to HTTP/2 over the fast TCP
-		// proxy path; other UDP, including WebRTC/STUN, remains supported.
-		"AND,((NETWORK,UDP),(DST-PORT,443)),REJECT",
+		// Foreign UDP must fail closed instead of bypassing the proxy. This makes
+		// browsers fall back from QUIC to HTTP/2 and prevents WebRTC/STUN from
+		// exposing the direct WAN address. Mainland UDP already matched DIRECT.
+		"NETWORK,UDP,REJECT",
 		"MATCH,PROXYFORGE",
 	}
 	fmt.Fprintf(w, "\nrules:\n")
@@ -499,7 +505,7 @@ func writeClashProxy(w http.ResponseWriter, p *proxyExport) {
 	fmt.Fprintf(w, "    server: %s\n", clashScalar(p.ClashServer()))
 	fmt.Fprintf(w, "    port: %d\n", p.ClashPort())
 	fmt.Fprintf(w, "    password: %s\n", clashScalar(proxy.TrojanCredential(p.Username, p.Password)))
-	fmt.Fprintf(w, "    udp: %t\n", p.SupportsUDP)
+	fmt.Fprintf(w, "    udp: %t\n", clashProxyUDPEnabled && p.SupportsUDP)
 	// Mihomo's uTLS browser fingerprint avoids the distinctive default Go TLS
 	// ClientHello on carrier-facing connections.
 	fmt.Fprintf(w, "    client-fingerprint: chrome\n")

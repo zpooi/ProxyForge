@@ -75,13 +75,13 @@ When these variables are omitted and `Proxy public host` is a domain, ProxyForge
 ## Security defaults
 
 - The proxy port accepts HTTP and SOCKS5 directly; when TLS is enabled it also accepts HTTPS-proxy connections on the same port.
-- Clash/Mihomo subscriptions use Trojan over TLS WebSocket on the management domain's HTTPS port 443. TCP and framed Trojan UDP are both carried through the selected WARP exit; clients must use VPN/TUN routing if browser UDP such as WebRTC must not bypass the proxy. Legacy HTTP/SOCKS5 credentials are not reused in the subscription; a separate per-node credential is derived with HMAC-SHA-256.
-- Legacy HTTP and SOCKS5 listeners remain TCP-only. Local WARP nodes advertise `udp: true`; remote agents advertise it only after connecting with the UDP-capable agent protocol, so older agents fail closed until they are upgraded.
+- Clash/Mihomo subscriptions use Trojan over TLS WebSocket on the management domain's HTTPS port 443. Exported nodes deliberately advertise `udp: false`: mainland UDP remains direct, while foreign UDP fails closed so QUIC falls back to HTTP/2 and WebRTC/STUN cannot bypass the proxy. Legacy HTTP/SOCKS5 credentials are not reused in the subscription; a separate per-node credential is derived with HMAC-SHA-256.
+- The server retains framed Trojan UDP support for compatibility and a future opt-in, but generated Clash/Mihomo subscriptions keep it disabled to avoid UDP-over-WebSocket head-of-line blocking.
 - The Trojan WebSocket path is derived one-way from the random subscription token so nginx logs do not contain the token itself. TLS certificate verification stays enabled, and BaoTa/nginx must forward WebSocket upgrades to the application.
 - Trojan subscriptions keep the public hostname as `server`; Mihomo resolves it locally with `proxy-server-nameserver` so CDN/anycast routing is selected for the client network rather than being pinned to an IP resolved near the VPS.
 - Clash DNS uses encrypted DoH for ordinary target lookups, and Mihomo is asked to use a Chrome TLS fingerprint. Only the proxy domain's bootstrap lookup may use direct DNS.
 - Rule-mode subscriptions route mainland domains and Chinese IP ranges directly, with AliDNS/Tencent DoH for nearby CDN answers; non-mainland traffic continues through ProxyForge.
-- Non-mainland QUIC (UDP/443) is rejected before the proxy catch-all so browsers use HTTP/2 instead of tunneling QUIC through the Trojan WebSocket TCP stream; mainland QUIC remains direct.
+- All non-mainland UDP is rejected before the proxy catch-all. Browsers therefore use HTTP/2 instead of tunneling QUIC through the Trojan WebSocket TCP stream; mainland UDP remains direct.
 - Empty global proxy passwords are replaced with a random password during startup; aliases never accept an empty password.
 - The web UI keeps only aggregate request throttles. It never bans a client IP for scanner-like paths, request bursts, or failed logins, so devices sharing one NAT exit cannot lock each other out.
 - Agent admission tokens use an `Authorization: Bearer` header instead of URL query parameters.

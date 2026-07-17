@@ -53,13 +53,13 @@ func TestWriteClashAgentNode(t *testing.T) {
 	if strings.Contains(out, `username:`) || strings.Contains(out, `password: "pw"`) {
 		t.Errorf("Trojan export leaked legacy proxy credentials:\n%s", out)
 	}
-	for _, want := range []string{"type: trojan", "network: ws", "udp: true", "udp: false", "client-fingerprint: chrome", "alpn:", "- http/1.1"} {
+	for _, want := range []string{"type: trojan", "network: ws", "udp: false", "client-fingerprint: chrome", "alpn:", "- http/1.1"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("Trojan agent export missing %q:\n%s", want, out)
 		}
 	}
-	if strings.Count(out, "    udp: true\n") != 1 || strings.Count(out, "    udp: false\n") != 1 {
-		t.Errorf("UDP capability must be exported per node:\n%s", out)
+	if strings.Contains(out, "    udp: true\n") || strings.Count(out, "    udp: false\n") != 2 {
+		t.Errorf("all Clash nodes must fail closed for UDP:\n%s", out)
 	}
 	// 四个组都应引用节点显示名（带引号）。
 	if n := strings.Count(out, `- "日本 节点"`); n != 4 {
@@ -77,7 +77,7 @@ func TestWriteClashAgentNode(t *testing.T) {
 		"DOMAIN,ipv6.msftncsi.com,REJECT",
 		"GEOSITE,cn,DIRECT",
 		"GEOIP,CN,DIRECT",
-		"AND,((NETWORK,UDP),(DST-PORT,443)),REJECT",
+		"NETWORK,UDP,REJECT",
 		"MATCH,PROXYFORGE",
 	} {
 		if !strings.Contains(out, want) {
@@ -86,10 +86,10 @@ func TestWriteClashAgentNode(t *testing.T) {
 	}
 	cnDomainAt := strings.Index(out, "  - GEOSITE,cn,DIRECT\n")
 	cnIPAt := strings.Index(out, "  - GEOIP,CN,DIRECT\n")
-	quicRejectAt := strings.Index(out, "  - AND,((NETWORK,UDP),(DST-PORT,443)),REJECT\n")
+	udpRejectAt := strings.Index(out, "  - NETWORK,UDP,REJECT\n")
 	catchAllAt := strings.Index(out, "  - MATCH,PROXYFORGE\n")
-	if cnDomainAt < 0 || cnIPAt < cnDomainAt || quicRejectAt < cnIPAt || catchAllAt < quicRejectAt {
-		t.Errorf("domestic DIRECT and foreign QUIC fallback rules are out of order:\n%s", out)
+	if cnDomainAt < 0 || cnIPAt < cnDomainAt || udpRejectAt < cnIPAt || catchAllAt < udpRejectAt {
+		t.Errorf("domestic DIRECT and foreign UDP rejection rules are out of order:\n%s", out)
 	}
 
 	// PROXYFORGE 默认选中会话稳定组，而不是某个写死的 pf 编号或会动态换 IP 的 url-test。
@@ -136,7 +136,7 @@ func TestWriteClashKeepsDomainForClientLocalResolution(t *testing.T) {
 		`sni: "proxy.example.com"`,
 		"port: 443",
 		"network: ws",
-		"udp: true",
+		"udp: false",
 		`path: "/api/v1/connect/token123"`,
 	} {
 		if !strings.Contains(out, want) {
