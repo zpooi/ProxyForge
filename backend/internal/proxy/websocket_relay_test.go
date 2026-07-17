@@ -88,6 +88,15 @@ func TestRelayDownstreamWriterOnlyBatchesMarkedWebSocket(t *testing.T) {
 	}
 }
 
+func TestWebSocketRelayBatchingUsesBoundedInteractiveDelay(t *testing.T) {
+	if webSocketRelayBatchDelay <= time.Millisecond || webSocketRelayBatchDelay > 5*time.Millisecond {
+		t.Fatalf("WebSocket batch delay = %v, want more coalescing than 1ms without exceeding 5ms", webSocketRelayBatchDelay)
+	}
+	if webSocketRelayBatchSize != 64<<10 {
+		t.Fatalf("WebSocket batch size = %d, want 65536", webSocketRelayBatchSize)
+	}
+}
+
 func writeLengths(writes [][]byte) []int {
 	out := make([]int, len(writes))
 	for i := range writes {

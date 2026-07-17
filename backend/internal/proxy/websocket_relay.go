@@ -15,7 +15,7 @@ const (
 	// Batch enough data to amortize that overhead, while the short deadline
 	// keeps interactive responses from waiting for a full buffer.
 	webSocketRelayBatchSize  = 64 << 10
-	webSocketRelayBatchDelay = time.Millisecond
+	webSocketRelayBatchDelay = 4 * time.Millisecond
 )
 
 type webSocketRelayConn struct {
