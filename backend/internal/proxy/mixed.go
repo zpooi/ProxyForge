@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -22,6 +21,7 @@ type mixedServer struct {
 	resolve       func(username, password, clientIP string) []Egress
 	resolveTrojan func(auth [trojanAuthDigestSize]byte, clientIP string) (string, []Egress)
 	onUsage       func(ProxyUsage)
+	activity      *activityTracker
 
 	tlsConfig *tls.Config
 
@@ -272,8 +272,17 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader, clientIP s
 	}
 
 	target := net.JoinHostPort(host, strconv.Itoa(port))
+	username := ""
+	if session != nil {
+		username = session.username
+	}
 	remote, eg, err := s.dialVia(session.egresses, target)
 	if err != nil {
+		egTag := ""
+		if eg != nil {
+			egTag = eg.Tag()
+		}
+		s.activity.dialFail(clientIP, username, target, egTag, "SOCKS5", err)
 		s.socks5Reply(client, 0x05)
 		return
 	}
@@ -284,7 +293,7 @@ func (s *mixedServer) handleSOCKS5(client net.Conn, br *bufio.Reader, clientIP s
 	}
 
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, eg, session, clientIP)
+	s.relay(client, br, remote, eg, session, clientIP, target, "SOCKS5")
 }
 
 func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader, clientIP string) *proxySession {
@@ -312,6 +321,7 @@ func (s *mixedServer) socks5Auth(client net.Conn, br *bufio.Reader, clientIP str
 	username := string(uname)
 	egresses := s.resolve(username, string(passwd), clientIP)
 	if len(egresses) == 0 {
+		s.activity.authFail(clientIP, username, "SOCKS5", "账号或密码无效 / 无可用出口")
 		_, _ = client.Write([]byte{0x01, 0x01})
 		return nil
 	}
@@ -360,18 +370,22 @@ func (s *mixedServer) httpAuthSession(req *http.Request, clientIP string) *proxy
 	auth := req.Header.Get("Proxy-Authorization")
 	const prefix = "Basic "
 	if !strings.HasPrefix(auth, prefix) {
+		s.activity.authFail(clientIP, "", "HTTP", "未提供代理账号")
 		return nil
 	}
 	dec, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
 	if err != nil {
+		s.activity.authFail(clientIP, "", "HTTP", "鉴权头无效")
 		return nil
 	}
 	user, pass, ok := strings.Cut(string(dec), ":")
 	if !ok {
+		s.activity.authFail(clientIP, "", "HTTP", "鉴权头格式错误")
 		return nil
 	}
 	egresses := s.resolve(user, pass, clientIP)
 	if len(egresses) == 0 {
+		s.activity.authFail(clientIP, user, "HTTP", "账号或密码无效 / 无可用出口")
 		return nil
 	}
 	return &proxySession{username: user, egresses: egresses}
@@ -381,8 +395,17 @@ func (s *mixedServer) httpConnect(client net.Conn, br *bufio.Reader, hostport st
 	if !strings.Contains(hostport, ":") {
 		hostport = hostport + ":443"
 	}
+	username := ""
+	if session != nil {
+		username = session.username
+	}
 	remote, eg, err := s.dialVia(session.egresses, hostport)
 	if err != nil {
+		egTag := ""
+		if eg != nil {
+			egTag = eg.Tag()
+		}
+		s.activity.dialFail(clientIP, username, hostport, egTag, "HTTP", err)
 		_, _ = client.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
 		return
 	}
@@ -392,7 +415,7 @@ func (s *mixedServer) httpConnect(client net.Conn, br *bufio.Reader, hostport st
 		return
 	}
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, eg, session, clientIP)
+	s.relay(client, br, remote, eg, session, clientIP, hostport, "HTTP")
 }
 
 func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.Request, session *proxySession, clientIP string) {
@@ -403,8 +426,17 @@ func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.R
 	if !strings.Contains(host, ":") {
 		host = host + ":80"
 	}
+	username := ""
+	if session != nil {
+		username = session.username
+	}
 	remote, eg, err := s.dialVia(session.egresses, host)
 	if err != nil {
+		egTag := ""
+		if eg != nil {
+			egTag = eg.Tag()
+		}
+		s.activity.dialFail(clientIP, username, host, egTag, "HTTP", err)
 		_, _ = client.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
 		return
 	}
@@ -418,7 +450,7 @@ func (s *mixedServer) httpForward(client net.Conn, br *bufio.Reader, req *http.R
 		return
 	}
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, eg, session, clientIP)
+	s.relay(client, br, remote, eg, session, clientIP, host, "HTTP")
 }
 
 // ---------- shared ----------
@@ -470,7 +502,7 @@ func (s *mixedServer) dialViaNetworkWithPolicy(egresses []Egress, network, targe
 			return conn, eg, nil
 		}
 		lastErr = err
-		log.Printf("[proxy] dial %s/%s via %s/%s failed: %v", network, target, eg.Tag(), eg.Kind(), err)
+		logCN("拨号失败 · 目标 %s · 出口 %s · 类型 %s · %v", target, displayEgress(eg.Tag()), eg.Kind(), err)
 		if isPermanentTargetDialError(err) {
 			break
 		}
@@ -485,10 +517,20 @@ func (s *mixedServer) dialViaNetworkWithPolicy(egresses []Egress, network, targe
 	return nil, nil, lastErr
 }
 
-func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, eg Egress, session *proxySession, clientIP string) {
+func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, eg Egress, session *proxySession, clientIP, target, protocol string) {
 	done := make(chan struct{}, 2)
 	var upBytes int64
 	var downBytes int64
+
+	username := ""
+	if session != nil {
+		username = session.username
+	}
+	egTag := ""
+	if eg != nil {
+		egTag = eg.Tag()
+	}
+	sessionID := s.activity.begin(clientIP, username, target, egTag, protocol)
 
 	go func() {
 		n, _ := copyRelay(remote, br)
@@ -515,11 +557,9 @@ func (s *mixedServer) relay(client net.Conn, br *bufio.Reader, remote net.Conn, 
 	<-done
 	<-done
 
+	s.activity.end(sessionID, upBytes, downBytes)
+
 	if s.onUsage != nil && eg != nil && (upBytes > 0 || downBytes > 0) {
-		username := ""
-		if session != nil {
-			username = session.username
-		}
 		s.onUsage(ProxyUsage{
 			ClientIP:   clientIP,
 			Username:   username,

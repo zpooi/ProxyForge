@@ -5,8 +5,10 @@ import {
 	append_styles,
 	attr,
 	binding_callbacks,
+	destroy_each,
 	detach,
 	element,
+	empty,
 	init,
 	insert,
 	listen,
@@ -22,11 +24,17 @@ import { onMount, tick } from 'svelte';
 import { fetchJSON } from '../lib/api.js';
 
 function add_css(target) {
-	append_styles(target, "svelte-rpl2na", ".logs-heading.svelte-rpl2na.svelte-rpl2na.svelte-rpl2na{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.logs-heading.svelte-rpl2na h2.svelte-rpl2na.svelte-rpl2na{margin-bottom:5px}.logs-heading.svelte-rpl2na p.svelte-rpl2na.svelte-rpl2na{margin:0;color:var(--text-3);font-size:13px}.log-panel.svelte-rpl2na.svelte-rpl2na.svelte-rpl2na{overflow:hidden;border:1px solid var(--border);border-radius:var(--radius);background:#111827;box-shadow:var(--shadow-sm)}.log-toolbar.svelte-rpl2na.svelte-rpl2na.svelte-rpl2na{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-bottom:1px solid #283449;color:#93a4bd;background:#172033;font-size:12px}.log-toolbar.svelte-rpl2na strong.svelte-rpl2na.svelte-rpl2na{color:#e5edf8}.live-dot.svelte-rpl2na.svelte-rpl2na.svelte-rpl2na{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 3px rgba(52, 211, 153, 0.13)}.log-output.svelte-rpl2na.svelte-rpl2na.svelte-rpl2na{width:100%;height:calc(100vh - 230px);min-height:420px;margin:0;overflow:auto;padding:16px;color:#d6deeb;background:#111827;font:12px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2}@media(max-width: 760px){.logs-heading.svelte-rpl2na.svelte-rpl2na.svelte-rpl2na{flex-direction:column}.logs-heading.svelte-rpl2na .page-actions.svelte-rpl2na.svelte-rpl2na{width:100%}.logs-heading.svelte-rpl2na .page-actions.svelte-rpl2na>.svelte-rpl2na{flex:1 1 auto}.log-output.svelte-rpl2na.svelte-rpl2na.svelte-rpl2na{height:calc(100dvh - 290px);min-height:360px;padding:13px;font-size:11px}}");
+	append_styles(target, "svelte-iw886l", ".logs-heading.svelte-iw886l.svelte-iw886l.svelte-iw886l{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.logs-heading.svelte-iw886l h2.svelte-iw886l.svelte-iw886l{margin-bottom:5px}.logs-heading.svelte-iw886l p.svelte-iw886l.svelte-iw886l{margin:0;color:var(--text-3);font-size:13px}.log-panel.svelte-iw886l.svelte-iw886l.svelte-iw886l{overflow:hidden;border:1px solid var(--border);border-radius:var(--radius);background:#111827;box-shadow:var(--shadow-sm)}.log-toolbar.svelte-iw886l.svelte-iw886l.svelte-iw886l{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-bottom:1px solid #283449;color:#93a4bd;background:#172033;font-size:12px}.log-toolbar.svelte-iw886l strong.svelte-iw886l.svelte-iw886l{color:#e5edf8}.live-dot.svelte-iw886l.svelte-iw886l.svelte-iw886l{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 3px rgba(52, 211, 153, 0.13)}.log-output.svelte-iw886l.svelte-iw886l.svelte-iw886l{width:100%;height:calc(100vh - 230px);min-height:420px;margin:0;overflow:auto;padding:12px 16px;color:#d6deeb;background:#111827;font:12.5px/1.7 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace}.log-line.svelte-iw886l.svelte-iw886l.svelte-iw886l{display:grid;grid-template-columns:72px minmax(0, 1fr);gap:10px;padding:2px 0}.log-time.svelte-iw886l.svelte-iw886l.svelte-iw886l{color:#7dd3fc;font-variant-numeric:tabular-nums;user-select:none}.log-text.svelte-iw886l.svelte-iw886l.svelte-iw886l{color:#e5edf8;overflow-wrap:anywhere;white-space:pre-wrap}.log-empty.svelte-iw886l.svelte-iw886l.svelte-iw886l{color:#93a4bd;padding:8px 0}@media(max-width: 760px){.logs-heading.svelte-iw886l.svelte-iw886l.svelte-iw886l{flex-direction:column}.logs-heading.svelte-iw886l .page-actions.svelte-iw886l.svelte-iw886l{width:100%}.logs-heading.svelte-iw886l .page-actions.svelte-iw886l>.svelte-iw886l{flex:1 1 auto}.log-output.svelte-iw886l.svelte-iw886l.svelte-iw886l{height:calc(100dvh - 290px);min-height:360px;padding:12px;font-size:11px}.log-line.svelte-iw886l.svelte-iw886l.svelte-iw886l{grid-template-columns:58px minmax(0, 1fr);gap:8px}}");
 }
 
-// (73:4) {#if !followTail}
-function create_if_block_1(ctx) {
+function get_each_context(ctx, list, i) {
+	const child_ctx = ctx.slice();
+	child_ctx[14] = list[i];
+	return child_ctx;
+}
+
+// (90:4) {#if !followTail}
+function create_if_block_4(ctx) {
 	let button;
 	let mounted;
 	let dispose;
@@ -36,13 +44,13 @@ function create_if_block_1(ctx) {
 			button = element("button");
 			button.textContent = "回到最新";
 			attr(button, "type", "button");
-			attr(button, "class", "secondary svelte-rpl2na");
+			attr(button, "class", "secondary svelte-iw886l");
 		},
 		m(target, anchor) {
 			insert(target, button, anchor);
 
 			if (!mounted) {
-				dispose = listen(button, "click", /*jumpToLatest*/ ctx[9]);
+				dispose = listen(button, "click", /*jumpToLatest*/ ctx[10]);
 				mounted = true;
 			}
 		},
@@ -55,8 +63,8 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (83:0) {#if error}
-function create_if_block(ctx) {
+// (100:0) {#if error}
+function create_if_block_3(ctx) {
 	let div;
 	let t0;
 	let t1;
@@ -78,6 +86,181 @@ function create_if_block(ctx) {
 		},
 		d(detaching) {
 			if (detaching) detach(div);
+		}
+	};
+}
+
+// (113:4) {:else}
+function create_else_block(ctx) {
+	let each_1_anchor;
+	let each_value = /*logLines*/ ctx[7];
+	let each_blocks = [];
+
+	for (let i = 0; i < each_value.length; i += 1) {
+		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+	}
+
+	return {
+		c() {
+			for (let i = 0; i < each_blocks.length; i += 1) {
+				each_blocks[i].c();
+			}
+
+			each_1_anchor = empty();
+		},
+		m(target, anchor) {
+			for (let i = 0; i < each_blocks.length; i += 1) {
+				if (each_blocks[i]) {
+					each_blocks[i].m(target, anchor);
+				}
+			}
+
+			insert(target, each_1_anchor, anchor);
+		},
+		p(ctx, dirty) {
+			if (dirty & /*logLines*/ 128) {
+				each_value = /*logLines*/ ctx[7];
+				let i;
+
+				for (i = 0; i < each_value.length; i += 1) {
+					const child_ctx = get_each_context(ctx, each_value, i);
+
+					if (each_blocks[i]) {
+						each_blocks[i].p(child_ctx, dirty);
+					} else {
+						each_blocks[i] = create_each_block(child_ctx);
+						each_blocks[i].c();
+						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
+					}
+				}
+
+				for (; i < each_blocks.length; i += 1) {
+					each_blocks[i].d(1);
+				}
+
+				each_blocks.length = each_value.length;
+			}
+		},
+		d(detaching) {
+			destroy_each(each_blocks, detaching);
+			if (detaching) detach(each_1_anchor);
+		}
+	};
+}
+
+// (111:36) 
+function create_if_block_1(ctx) {
+	let div;
+
+	return {
+		c() {
+			div = element("div");
+			div.textContent = "当天暂无日志";
+			attr(div, "class", "log-empty svelte-iw886l");
+		},
+		m(target, anchor) {
+			insert(target, div, anchor);
+		},
+		p: noop,
+		d(detaching) {
+			if (detaching) detach(div);
+		}
+	};
+}
+
+// (109:4) {#if loading && !content}
+function create_if_block(ctx) {
+	let div;
+
+	return {
+		c() {
+			div = element("div");
+			div.textContent = "正在读取日志…";
+			attr(div, "class", "log-empty svelte-iw886l");
+		},
+		m(target, anchor) {
+			insert(target, div, anchor);
+		},
+		p: noop,
+		d(detaching) {
+			if (detaching) detach(div);
+		}
+	};
+}
+
+// (116:10) {#if row.time}
+function create_if_block_2(ctx) {
+	let span;
+	let t_value = /*row*/ ctx[14].time + "";
+	let t;
+
+	return {
+		c() {
+			span = element("span");
+			t = text(t_value);
+			attr(span, "class", "log-time svelte-iw886l");
+		},
+		m(target, anchor) {
+			insert(target, span, anchor);
+			append(span, t);
+		},
+		p(ctx, dirty) {
+			if (dirty & /*logLines*/ 128 && t_value !== (t_value = /*row*/ ctx[14].time + "")) set_data(t, t_value);
+		},
+		d(detaching) {
+			if (detaching) detach(span);
+		}
+	};
+}
+
+// (114:6) {#each logLines as row}
+function create_each_block(ctx) {
+	let div;
+	let t0;
+	let span;
+	let t1_value = /*row*/ ctx[14].text + "";
+	let t1;
+	let t2;
+	let if_block = /*row*/ ctx[14].time && create_if_block_2(ctx);
+
+	return {
+		c() {
+			div = element("div");
+			if (if_block) if_block.c();
+			t0 = space();
+			span = element("span");
+			t1 = text(t1_value);
+			t2 = space();
+			attr(span, "class", "log-text svelte-iw886l");
+			attr(div, "class", "log-line svelte-iw886l");
+		},
+		m(target, anchor) {
+			insert(target, div, anchor);
+			if (if_block) if_block.m(div, null);
+			append(div, t0);
+			append(div, span);
+			append(span, t1);
+			append(div, t2);
+		},
+		p(ctx, dirty) {
+			if (/*row*/ ctx[14].time) {
+				if (if_block) {
+					if_block.p(ctx, dirty);
+				} else {
+					if_block = create_if_block_2(ctx);
+					if_block.c();
+					if_block.m(div, t0);
+				}
+			} else if (if_block) {
+				if_block.d(1);
+				if_block = null;
+			}
+
+			if (dirty & /*logLines*/ 128 && t1_value !== (t1_value = /*row*/ ctx[14].text + "")) set_data(t1, t1_value);
+		},
+		d(detaching) {
+			if (detaching) detach(div);
+			if (if_block) if_block.d();
 		}
 	};
 }
@@ -104,24 +287,31 @@ function create_fragment(ctx) {
 	let t11;
 	let t12;
 	let span1;
-	let t13_value = (/*loading*/ ctx[3] ? '正在载入…' : '实时更新中') + "";
+	let t13_value = (/*loading*/ ctx[3] ? '正在载入…' : '实时更新中 · 含连接开始/结束与活跃汇总') + "";
 	let t13;
 	let t14;
-	let pre;
-	let t15_value = (/*content*/ ctx[0] || (/*loading*/ ctx[3] ? '正在读取日志…' : '当天暂无日志')) + "";
-	let t15;
+	let div4;
 	let mounted;
 	let dispose;
-	let if_block0 = !/*followTail*/ ctx[5] && create_if_block_1(ctx);
-	let if_block1 = /*error*/ ctx[2] && create_if_block(ctx);
+	let if_block0 = !/*followTail*/ ctx[5] && create_if_block_4(ctx);
+	let if_block1 = /*error*/ ctx[2] && create_if_block_3(ctx);
+
+	function select_block_type(ctx, dirty) {
+		if (/*loading*/ ctx[3] && !/*content*/ ctx[0]) return create_if_block;
+		if (/*logLines*/ ctx[7].length === 0) return create_if_block_1;
+		return create_else_block;
+	}
+
+	let current_block_type = select_block_type(ctx, -1);
+	let if_block2 = current_block_type(ctx);
 
 	return {
 		c() {
 			div2 = element("div");
 			div0 = element("div");
 
-			div0.innerHTML = `<h2 class="svelte-rpl2na">实时日志</h2> 
-    <p class="svelte-rpl2na">仅保留当天的程序日志，每 2 秒自动更新。</p>`;
+			div0.innerHTML = `<h2 class="svelte-iw886l">实时日志</h2> 
+    <p class="svelte-iw886l">中文实时日志：谁在连接、用哪个账号/出口、是否还在用。每 2 秒自动更新，仅保留当天。</p>`;
 
 			t3 = space();
 			div1 = element("div");
@@ -145,20 +335,20 @@ function create_fragment(ctx) {
 			span1 = element("span");
 			t13 = text(t13_value);
 			t14 = space();
-			pre = element("pre");
-			t15 = text(t15_value);
+			div4 = element("div");
+			if_block2.c();
 			attr(button, "type", "button");
-			attr(button, "class", "secondary svelte-rpl2na");
+			attr(button, "class", "secondary svelte-iw886l");
 			button.disabled = /*refreshing*/ ctx[4];
-			attr(a, "class", "export-link svelte-rpl2na");
+			attr(a, "class", "export-link svelte-iw886l");
 			attr(a, "href", "/api/logs/download");
-			attr(div1, "class", "page-actions svelte-rpl2na");
-			attr(div2, "class", "logs-heading svelte-rpl2na");
-			attr(span0, "class", "live-dot svelte-rpl2na");
-			attr(strong, "class", "svelte-rpl2na");
-			attr(div3, "class", "log-toolbar svelte-rpl2na");
-			attr(pre, "class", "log-output svelte-rpl2na");
-			attr(section, "class", "log-panel svelte-rpl2na");
+			attr(div1, "class", "page-actions svelte-iw886l");
+			attr(div2, "class", "logs-heading svelte-iw886l");
+			attr(span0, "class", "live-dot svelte-iw886l");
+			attr(strong, "class", "svelte-iw886l");
+			attr(div3, "class", "log-toolbar svelte-iw886l");
+			attr(div4, "class", "log-output svelte-iw886l");
+			attr(section, "class", "log-panel svelte-iw886l");
 		},
 		m(target, anchor) {
 			insert(target, div2, anchor);
@@ -184,14 +374,14 @@ function create_fragment(ctx) {
 			append(div3, span1);
 			append(span1, t13);
 			append(section, t14);
-			append(section, pre);
-			append(pre, t15);
-			/*pre_binding*/ ctx[10](pre);
+			append(section, div4);
+			if_block2.m(div4, null);
+			/*div4_binding*/ ctx[11](div4);
 
 			if (!mounted) {
 				dispose = [
-					listen(button, "click", /*refresh*/ ctx[7]),
-					listen(pre, "scroll", /*handleScroll*/ ctx[8])
+					listen(button, "click", /*refresh*/ ctx[8]),
+					listen(div4, "scroll", /*handleScroll*/ ctx[9])
 				];
 
 				mounted = true;
@@ -202,7 +392,7 @@ function create_fragment(ctx) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
-					if_block0 = create_if_block_1(ctx);
+					if_block0 = create_if_block_4(ctx);
 					if_block0.c();
 					if_block0.m(div1, t4);
 				}
@@ -221,7 +411,7 @@ function create_fragment(ctx) {
 				if (if_block1) {
 					if_block1.p(ctx, dirty);
 				} else {
-					if_block1 = create_if_block(ctx);
+					if_block1 = create_if_block_3(ctx);
 					if_block1.c();
 					if_block1.m(t9.parentNode, t9);
 				}
@@ -231,8 +421,19 @@ function create_fragment(ctx) {
 			}
 
 			if (dirty & /*date*/ 2 && t11_value !== (t11_value = (/*date*/ ctx[1] || '今天') + "")) set_data(t11, t11_value);
-			if (dirty & /*loading*/ 8 && t13_value !== (t13_value = (/*loading*/ ctx[3] ? '正在载入…' : '实时更新中') + "")) set_data(t13, t13_value);
-			if (dirty & /*content, loading*/ 9 && t15_value !== (t15_value = (/*content*/ ctx[0] || (/*loading*/ ctx[3] ? '正在读取日志…' : '当天暂无日志')) + "")) set_data(t15, t15_value);
+			if (dirty & /*loading*/ 8 && t13_value !== (t13_value = (/*loading*/ ctx[3] ? '正在载入…' : '实时更新中 · 含连接开始/结束与活跃汇总') + "")) set_data(t13, t13_value);
+
+			if (current_block_type === (current_block_type = select_block_type(ctx, dirty)) && if_block2) {
+				if_block2.p(ctx, dirty);
+			} else {
+				if_block2.d(1);
+				if_block2 = current_block_type(ctx);
+
+				if (if_block2) {
+					if_block2.c();
+					if_block2.m(div4, null);
+				}
+			}
 		},
 		i: noop,
 		o: noop,
@@ -243,14 +444,32 @@ function create_fragment(ctx) {
 			if (if_block1) if_block1.d(detaching);
 			if (detaching) detach(t9);
 			if (detaching) detach(section);
-			/*pre_binding*/ ctx[10](null);
+			if_block2.d();
+			/*div4_binding*/ ctx[11](null);
 			mounted = false;
 			run_all(dispose);
 		}
 	};
 }
 
+function formatLogLines(raw) {
+	if (!raw) return [];
+
+	return String(raw).split(/\r?\n/).filter(line => line.length > 0).map(line => {
+		// 常见：15:04:05 message  或  2006/01/02 15:04:05 message
+		let m = line.match(/^(\d{2}:\d{2}:\d{2})\s+(.*)$/);
+
+		if (m) return { time: m[1], text: m[2] };
+		m = line.match(/^\d{4}\/\d{2}\/\d{2}\s+(\d{2}:\d{2}:\d{2})\s+(.*)$/);
+		if (m) return { time: m[1], text: m[2] };
+		m = line.match(/^\d{4}-\d{2}-\d{2}\s+(\d{2}:\d{2}:\d{2})[,\s]+(.*)$/);
+		if (m) return { time: m[1], text: m[2] };
+		return { time: '', text: line };
+	});
+}
+
 function instance($$self, $$props, $$invalidate) {
+	let logLines;
 	let content = '';
 	let date = '';
 	let offset = 0;
@@ -318,12 +537,19 @@ function instance($$self, $$props, $$invalidate) {
 		};
 	});
 
-	function pre_binding($$value) {
+	function div4_binding($$value) {
 		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
 			logView = $$value;
 			$$invalidate(6, logView);
 		});
 	}
+
+	$$self.$$.update = () => {
+		if ($$self.$$.dirty & /*content*/ 1) {
+			// 把标准 log 行拆成「时间 + 正文」，展示成类似 GRA 的中文实时日志。
+			$: $$invalidate(7, logLines = formatLogLines(content));
+		}
+	};
 
 	return [
 		content,
@@ -333,10 +559,11 @@ function instance($$self, $$props, $$invalidate) {
 		refreshing,
 		followTail,
 		logView,
+		logLines,
 		refresh,
 		handleScroll,
 		jumpToLatest,
-		pre_binding
+		div4_binding
 	];
 }
 

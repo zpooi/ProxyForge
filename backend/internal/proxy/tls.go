@@ -121,7 +121,7 @@ func (r *dynamicCertificateResolver) getCertificate(hello *tls.ClientHelloInfo) 
 	if reloader == nil || reloader.certFile != certFile || reloader.keyFile != keyFile {
 		reloader = &fileCertificateReloader{serverName: host, certFile: certFile, keyFile: keyFile}
 		r.reloaders[host] = reloader
-		log.Printf("[proxy] discovered trusted TLS certificate for %s at %s", host, certFile)
+		log.Printf("发现 trusted TLS certificate for %s at %s", host, certFile)
 	}
 	r.mu.Unlock()
 	return reloader.getCertificate(hello)

@@ -101,7 +101,7 @@ func newTunnel(cfg Config) (*Tunnel, error) {
 		if wgErr == nil {
 			return wg, nil
 		}
-		log.Printf("[proxy] tunnel %s: WireGuard fast path unavailable, falling back to MASQUE: %v", cfg.Tag, wgErr)
+		log.Printf("隧道 %s · WireGuard 不可用 · 回退 MASQUE · %v", cfg.Tag, wgErr)
 		masqueTunnel, masqueErr := newMasqueTunnel(cfg)
 		if masqueErr == nil {
 			return masqueTunnel, nil
@@ -178,7 +178,7 @@ func newWireGuardTunnelWithPolicy(cfg Config, maxAttempts int, probeTimeout time
 
 		status := t.wireGuardStatus()
 		t.Close()
-		log.Printf("[proxy] tunnel %s endpoint %s probe failed: %v (%s)", cfg.Tag, candidate.String(), err, status)
+		log.Printf("隧道探测失败 · %s · 端点 %s · %v · %s", cfg.Tag, candidate.String(), err, status)
 		failures = append(failures, fmt.Sprintf("%s/%s: %v (%s)", candidate.String(), candidate.source, err, status))
 	}
 

@@ -5,7 +5,6 @@ import (
 	"crypto/subtle"
 	"crypto/tls"
 	"fmt"
-	"log"
 	"math"
 	"sort"
 	"strings"
@@ -64,6 +63,9 @@ type Manager struct {
 	// 未接入时为 nil。放在 Manager 上是为了让代理监听器的 resolve 能统一分发
 	// 本机 WARP 出口和远程 agent 出口。
 	agentResolver AgentResolver
+
+	// activity 跟踪当前活跃代理会话，输出中文可读的「谁在用」日志。
+	activity *activityTracker
 }
 
 // rotateAssignment 记录一个客户端在当前时间窗内被粘滞分配到的逻辑节点。
@@ -110,6 +112,7 @@ func NewManager(database *db.DB) *Manager {
 		pickCount:    make(map[string]int64),
 		ipPickCount:  make(map[string]int64),
 		rotateSticky: make(map[string]rotateAssignment),
+		activity:     newActivityTracker(),
 	}
 	if database != nil {
 		m.usageQueue = make(chan ProxyUsage, 1024)
@@ -533,7 +536,7 @@ func (m *Manager) Reconcile() error {
 	for tag, t := range m.tunnels {
 		want, ok := desired[tag]
 		if !ok || want != t.cfg {
-			log.Printf("[proxy] stopping tunnel %s", tag)
+			logCN("停止隧道 · %s", tag)
 			t.Close()
 			delete(m.tunnels, tag)
 			delete(m.lastPicked, tag)
@@ -589,7 +592,7 @@ func (m *Manager) startTunnels(toStart map[string]Config, desired map[string]Con
 	var firstErr error
 	for r := range results {
 		if r.err != nil {
-			log.Printf("[proxy] start tunnel %s failed: %v", r.tag, r.err)
+			logCN("启动隧道失败 · %s · %v", r.tag, r.err)
 			if firstErr == nil {
 				firstErr = r.err
 			}
@@ -598,7 +601,7 @@ func (m *Manager) startTunnels(toStart map[string]Config, desired map[string]Con
 		m.mu.Lock()
 		if current, exists := m.tunnels[r.tag]; exists || desired[r.tag] != r.cfg {
 			if current != nil {
-				log.Printf("[proxy] tunnel %s already running, discarding duplicate", r.tag)
+				logCN("隧道已在运行 · 丢弃重复实例 · %s", r.tag)
 			}
 			m.mu.Unlock()
 			r.tun.Close()
@@ -606,7 +609,7 @@ func (m *Manager) startTunnels(toStart map[string]Config, desired map[string]Con
 		}
 		m.tunnels[r.tag] = r.tun
 		m.mu.Unlock()
-		log.Printf("[proxy] tunnel %s ready (%s endpoint %s)", r.tag, r.tun.transport, r.tun.endpoint)
+		logCN("隧道就绪 · %s · 传输 %s · 端点 %s", r.tag, r.tun.transport, r.tun.endpoint)
 	}
 	return firstErr
 }
@@ -616,7 +619,7 @@ func (m *Manager) reconcileServerLocked() error {
 		// 端口变化或 TLS 开关变化都需要重启监听（TLS 配置在监听建立时固化）。
 		if m.proxyPort <= 0 || m.server.port() != m.proxyPort || m.serverTLSRequested != m.proxyTLS ||
 			m.serverTLSName != m.tlsServerName || m.serverCertFile != m.tlsCertFile || m.serverKeyFile != m.tlsKeyFile {
-			log.Printf("[proxy] stopping proxy on :%d", m.server.port())
+			logCN("停止代理监听 · 端口 %d", m.server.port())
 			m.server.Close()
 			m.server = nil
 		}
@@ -630,19 +633,20 @@ func (m *Manager) reconcileServerLocked() error {
 		if m.proxyTLS {
 			cfg, err := newProxyTLSConfig(m.tlsServerName, m.tlsCertFile, m.tlsKeyFile)
 			if err != nil {
-				log.Printf("[proxy] trusted TLS config unavailable, using self-signed compatibility certificate: %v", err)
+				logCN("可信 TLS 证书不可用 · 改用自签兼容证书 · %v", err)
 				cfg, err = newDynamicProxyTLSConfig(m.tlsServerName)
 				if err != nil {
-					log.Printf("[proxy] TLS compatibility certificate unavailable; HTTP/SOCKS5 remain enabled: %v", err)
+					logCN("TLS 兼容证书不可用 · HTTP/SOCKS5 仍可用 · %v", err)
 				}
 			}
 			tlsConfig = cfg
 		}
 		srv, err := startProxy(bindAddr, m.proxyPort, m.resolve, m.recordUsage, tlsConfig)
 		if err != nil {
-			log.Printf("[proxy] start proxy on :%d failed: %v", m.proxyPort, err)
+			logCN("代理监听启动失败 · 端口 %d · %v", m.proxyPort, err)
 			return err
 		}
+		srv.activity = m.activity
 		m.server = srv
 		m.serverTLS = tlsConfig != nil
 		m.serverTLSRequested = m.proxyTLS
@@ -650,9 +654,9 @@ func (m *Manager) reconcileServerLocked() error {
 		m.serverCertFile = m.tlsCertFile
 		m.serverKeyFile = m.tlsKeyFile
 		if m.serverTLS {
-			log.Printf("[proxy] proxy listening on :%d with HTTP/SOCKS5 and optional TLS (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
+			logCN("代理已监听 · 端口 %d · 协议 HTTP/SOCKS5 + 可选 TLS", m.proxyPort)
 		} else {
-			log.Printf("[proxy] proxy listening on :%d (webshare: tag=precise egress, random=stable pool)", m.proxyPort)
+			logCN("代理已监听 · 端口 %d · 协议 HTTP/SOCKS5", m.proxyPort)
 		}
 	}
 	return nil
@@ -694,7 +698,7 @@ func (m *Manager) runUsageWriter() {
 
 func (m *Manager) persistUsage(usage ProxyUsage) {
 	if err := m.db.AddClientUsage(usage.ClientIP, usage.Username, usage.AccountTag, usage.UpBytes, usage.DownBytes); err != nil {
-		log.Printf("[proxy] record client usage %s failed: %v", usage.ClientIP, err)
+		logCN("记录流量失败 · 客户端 %s · %v", usage.ClientIP, err)
 	}
 }
 
@@ -709,6 +713,9 @@ func (m *Manager) Stop() {
 		delete(m.tunnels, tag)
 	}
 	m.mu.Unlock()
+	if m.activity != nil {
+		m.activity.close()
+	}
 
 	m.usageStopOnce.Do(func() {
 		if m.usageDone == nil {
@@ -782,11 +789,11 @@ func (m *Manager) HealthCheck() int {
 			m.mu.Unlock()
 			continue
 		}
-		log.Printf("[proxy] health probe confirmed tunnel %s unhealthy: %v", c.tag, probeErr)
+		logCN("健康检查确认隧道异常 · %s · %v", c.tag, probeErr)
 
 		fresh, err := newTunnel(c.cfg)
 		if err != nil {
-			log.Printf("[proxy] health rebuild tunnel %s failed: %v", c.tag, err)
+			logCN("重建隧道失败 · %s · %v", c.tag, err)
 			continue
 		}
 		m.mu.Lock()
@@ -801,7 +808,7 @@ func (m *Manager) HealthCheck() int {
 		m.mu.Unlock()
 		old.Close()
 		rebuilt++
-		log.Printf("[proxy] health rebuilt tunnel %s (%s endpoint %s)", c.tag, fresh.transport, fresh.endpoint)
+		logCN("隧道已重建 · %s · 传输 %s · 端点 %s", c.tag, fresh.transport, fresh.endpoint)
 	}
 	return rebuilt
 }

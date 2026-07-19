@@ -22,8 +22,8 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lmsgprefix)
-	log.SetPrefix("[ProxyForge] ")
+	log.SetFlags(log.Ltime)
+	log.SetPrefix("")
 
 	dbPath := envOr("DB_PATH", "data.db")
 	projectRoot := envOr("PROJECT_ROOT", ".")
@@ -67,7 +67,7 @@ func main() {
 	// 启动时在后台对齐一次，避免 WARP 探测阻塞 Web 管理端口监听。
 	go func() {
 		if err := sched.Reconcile(); err != nil {
-			log.Printf("initial reconcile: %v", err)
+			log.Printf("启动对齐失败 · %v", err)
 		}
 	}()
 
@@ -91,7 +91,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("listening on %s (project root: %s, db: %s)", listenAddr, projectRoot, dbPath)
+		log.Printf("管理面板已启动 · 地址 %s · 数据库 %s", listenAddr, dbPath)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("http server: %v", err)
 		}
@@ -101,14 +101,14 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig
-	log.Println("shutting down...")
+	log.Println("正在关闭…")
 
 	cancel()
 	manager.Stop()
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		log.Printf("http shutdown: %v", err)
+		log.Printf("HTTP 关闭异常 · %v", err)
 	}
 }
 

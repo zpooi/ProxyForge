@@ -121,9 +121,9 @@ func (h *Hub) Accept(conn net.Conn, meta Meta) error {
 	h.mu.Unlock()
 
 	if err := h.db.UpsertAgentNode(meta.NodeID, meta.Name, meta.PublicIP, meta.Country, meta.Colo); err != nil {
-		log.Printf("[agenthub] upsert node %s failed: %v", meta.NodeID, err)
+		log.Printf("Agent 上线登记失败 · 节点 %s · %v", meta.NodeID, err)
 	}
-	log.Printf("[agenthub] agent online: node=%s ip=%s country=%s colo=%s", meta.NodeID, meta.PublicIP, meta.Country, meta.Colo)
+	log.Printf("Agent 上线 · 节点 %s · IP %s · 国家 %s · 机房 %s", meta.NodeID, meta.PublicIP, meta.Country, meta.Colo)
 
 	// 阻塞直到会话结束（对端断开或 ping 失败）。
 	h.pingLoop(ac)
@@ -135,7 +135,7 @@ func (h *Hub) Accept(conn net.Conn, meta Meta) error {
 	h.mu.Unlock()
 	ac.close()
 	_ = h.db.TouchAgentNode(meta.NodeID)
-	log.Printf("[agenthub] agent offline: node=%s", meta.NodeID)
+	log.Printf("Agent 下线 · 节点 %s", meta.NodeID)
 	return nil
 }
 
@@ -270,7 +270,7 @@ func (ac *agentConn) close() {
 type logWriter struct{}
 
 func (logWriter) Write(p []byte) (int, error) {
-	log.Printf("[agenthub/yamux] %s", strings.TrimRight(string(p), "\n"))
+	log.Printf("Agent 通道 · %s", strings.TrimRight(string(p), "\n"))
 	return len(p), nil
 }
 

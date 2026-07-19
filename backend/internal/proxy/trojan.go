@@ -94,6 +94,7 @@ func (m *Manager) ServeTrojan(conn net.Conn, clientIP string) {
 	s := &mixedServer{
 		resolveTrojan: m.resolveTrojan,
 		onUsage:       m.recordUsage,
+		activity:      m.activity,
 	}
 	s.handleTrojan(conn, bufio.NewReader(conn), clientIP)
 }
@@ -106,6 +107,7 @@ func (s *mixedServer) handleTrojan(client net.Conn, br *bufio.Reader, clientIP s
 	}
 	username, egresses := s.resolveTrojan(auth, clientIP)
 	if username == "" || len(egresses) == 0 {
+		s.activity.authFail(clientIP, username, "Trojan", "凭据无效 / 无可用出口")
 		return
 	}
 
@@ -129,14 +131,20 @@ func (s *mixedServer) handleTrojan(client net.Conn, br *bufio.Reader, clientIP s
 		return
 	}
 
-	remote, eg, err := s.dialVia(egresses, net.JoinHostPort(host, strconv.Itoa(port)))
+	target := net.JoinHostPort(host, strconv.Itoa(port))
+	remote, eg, err := s.dialVia(egresses, target)
 	if err != nil {
+		egTag := ""
+		if eg != nil {
+			egTag = eg.Tag()
+		}
+		s.activity.dialFail(clientIP, username, target, egTag, "Trojan", err)
 		return
 	}
 	defer remote.Close()
 
 	_ = client.SetDeadline(time.Time{})
-	s.relay(client, br, remote, eg, &proxySession{username: username, egresses: egresses}, clientIP)
+	s.relay(client, br, remote, eg, &proxySession{username: username, egresses: egresses}, clientIP, target, "Trojan")
 }
 
 func readTrojanAuth(br *bufio.Reader) ([trojanAuthDigestSize]byte, bool) {

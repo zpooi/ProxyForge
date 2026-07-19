@@ -54,6 +54,23 @@
     if (logView) logView.scrollTop = logView.scrollHeight;
   }
 
+  // 把标准 log 行拆成「时间 + 正文」，展示成类似 GRA 的中文实时日志。
+  $: logLines = formatLogLines(content);
+
+  function formatLogLines(raw) {
+    if (!raw) return [];
+    return String(raw).split(/\r?\n/).filter((line) => line.length > 0).map((line) => {
+      // 常见：15:04:05 message  或  2006/01/02 15:04:05 message
+      let m = line.match(/^(\d{2}:\d{2}:\d{2})\s+(.*)$/);
+      if (m) return { time: m[1], text: m[2] };
+      m = line.match(/^\d{4}\/\d{2}\/\d{2}\s+(\d{2}:\d{2}:\d{2})\s+(.*)$/);
+      if (m) return { time: m[1], text: m[2] };
+      m = line.match(/^\d{4}-\d{2}-\d{2}\s+(\d{2}:\d{2}:\d{2})[,\s]+(.*)$/);
+      if (m) return { time: m[1], text: m[2] };
+      return { time: '', text: line };
+    });
+  }
+
   onMount(() => {
     refresh();
     const timer = window.setInterval(refresh, 2000);
@@ -67,7 +84,7 @@
 <div class="logs-heading">
   <div>
     <h2>实时日志</h2>
-    <p>仅保留当天的程序日志，每 2 秒自动更新。</p>
+    <p>中文实时日志：谁在连接、用哪个账号/出口、是否还在用。每 2 秒自动更新，仅保留当天。</p>
   </div>
   <div class="page-actions">
     {#if !followTail}
@@ -86,9 +103,22 @@
   <div class="log-toolbar">
     <span class="live-dot"></span>
     <strong>{date || '今天'}</strong>
-    <span>{loading ? '正在载入…' : '实时更新中'}</span>
+    <span>{loading ? '正在载入…' : '实时更新中 · 含连接开始/结束与活跃汇总'}</span>
   </div>
-  <pre class="log-output" bind:this={logView} on:scroll={handleScroll}>{content || (loading ? '正在读取日志…' : '当天暂无日志')}</pre>
+  <div class="log-output" bind:this={logView} on:scroll={handleScroll}>
+    {#if loading && !content}
+      <div class="log-empty">正在读取日志…</div>
+    {:else if logLines.length === 0}
+      <div class="log-empty">当天暂无日志</div>
+    {:else}
+      {#each logLines as row}
+        <div class="log-line">
+          {#if row.time}<span class="log-time">{row.time}</span>{/if}
+          <span class="log-text">{row.text}</span>
+        </div>
+      {/each}
+    {/if}
+  </div>
 </section>
 
 <style>
@@ -144,13 +174,30 @@
     min-height: 420px;
     margin: 0;
     overflow: auto;
-    padding: 16px;
+    padding: 12px 16px;
     color: #d6deeb;
     background: #111827;
-    font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    white-space: pre-wrap;
+    font: 12.5px/1.7 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  }
+  .log-line {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    padding: 2px 0;
+  }
+  .log-time {
+    color: #7dd3fc;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+  .log-text {
+    color: #e5edf8;
     overflow-wrap: anywhere;
-    tab-size: 2;
+    white-space: pre-wrap;
+  }
+  .log-empty {
+    color: #93a4bd;
+    padding: 8px 0;
   }
 
   @media (max-width: 760px) {
@@ -160,8 +207,12 @@
     .log-output {
       height: calc(100dvh - 290px);
       min-height: 360px;
-      padding: 13px;
+      padding: 12px;
       font-size: 11px;
+    }
+    .log-line {
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 8px;
     }
   }
 </style>

@@ -125,7 +125,7 @@ func (s *Scheduler) healthCheckLoop(ctx context.Context) {
 	defer ticker.Stop()
 	for {
 		if rebuilt := s.manager.HealthCheck(); rebuilt > 0 {
-			log.Printf("[scheduler] health check rebuilt %d tunnel(s)", rebuilt)
+			log.Printf("健康检查 · 重建 %d 条隧道", rebuilt)
 		}
 		select {
 		case <-ctx.Done():
@@ -161,17 +161,17 @@ func (s *Scheduler) probeProxySlots(ctx context.Context) {
 	defer s.finishWork()
 
 	if changed, _, err := s.rebindProxySlots(); err != nil {
-		log.Printf("[scheduler] realtime probe pre-bind: %v", err)
+		log.Printf("实时探测 · 预绑定失败 · %v", err)
 	} else if changed > 0 {
-		log.Printf("[scheduler] realtime probe pre-bound %d slot(s)", changed)
+		log.Printf("实时探测 · 预绑定 %d 个槽位", changed)
 		if err := s.reconcileManager(); err != nil {
-			log.Printf("[scheduler] realtime probe reconcile after pre-bind: %v", err)
+			log.Printf("实时探测 · 预绑定后对齐失败 · %v", err)
 		}
 	}
 
 	slots, err := s.db.ListProxySlots()
 	if err != nil {
-		log.Printf("[scheduler] realtime probe list slots: %v", err)
+		log.Printf("实时探测 · 读取槽位失败 · %v", err)
 		return
 	}
 	password, _, _ := s.db.GetSetting(db.SettingProxyPassword)
@@ -203,14 +203,14 @@ func (s *Scheduler) probeProxySlots(ctx context.Context) {
 		acceptedIP, restartTunnel := s.acceptSlotPublicIP(slot, result.PublicIP)
 		if restartTunnel && s.manager.StopTunnel(slot.AccountTag) {
 			needsReconcile = true
-			log.Printf("[scheduler] stopped drifted tunnel %s to recover stable IP", slot.AccountTag)
+			log.Printf("实时探测 · 出口 IP 漂移 · 已停隧道 %s 以恢复固定 IP", slot.AccountTag)
 		}
 		if !acceptedIP {
 			failures++
 			continue
 		}
 		if err := s.db.UpdateAccountRealtimeProbe(*slot.AccountID, result.PublicIP, result.Colo, result.Country, result.LatencyMs); err != nil {
-			log.Printf("[scheduler] realtime probe update %s: %v", slot.AccountTag, err)
+			log.Printf("实时探测 · 更新账号 %s 失败 · %v", slot.AccountTag, err)
 		}
 		if slot.LastError != "" || slot.ProbeFailures > 0 || slot.IPDriftFailures > 0 {
 			_ = s.db.MarkProxySlotError(slot.ID, "")
@@ -219,23 +219,23 @@ func (s *Scheduler) probeProxySlots(ctx context.Context) {
 
 	if needsReconcile {
 		if err := s.reconcileManager(); err != nil {
-			log.Printf("[scheduler] realtime probe reconcile after IP drift restart: %v", err)
+			log.Printf("实时探测 · IP 漂移重启后对齐失败 · %v", err)
 		}
 	}
 
 	if failures > 0 {
 		changed, _, err := s.rebindProxySlots()
 		if err != nil {
-			log.Printf("[scheduler] realtime probe heal slots: %v", err)
+			log.Printf("实时探测 · 修复槽位失败 · %v", err)
 		} else if changed > 0 {
-			log.Printf("[scheduler] realtime probe healed %d slot(s) after %d failure(s)", changed, failures)
+			log.Printf("实时探测 · 修复 %d 个槽位 · 失败 %d 次", changed, failures)
 			if err := s.reconcileManager(); err != nil {
-				log.Printf("[scheduler] realtime probe reconcile after heal: %v", err)
+				log.Printf("实时探测 · 修复后对齐失败 · %v", err)
 			}
 		}
 	}
 	if checked > 0 {
-		log.Printf("[scheduler] realtime probe checked %d slot(s), failures=%d", checked, failures)
+		log.Printf("实时探测 · 检查 %d 个槽位 · 失败 %d", checked, failures)
 	}
 }
 
@@ -246,9 +246,9 @@ func (s *Scheduler) acceptSlotPublicIP(slot *models.ProxySlot, publicIP string) 
 	}
 	if strings.TrimSpace(slot.PinnedPublicIP) == "" {
 		if err := s.db.SetProxySlotPinnedIP(slot.ID, publicIP); err != nil {
-			log.Printf("[scheduler] pin stable IP for slot %s failed: %v", slot.Username, err)
+			log.Printf("固定出口 · 槽位 %s 钉 IP 失败 · %v", slot.Username, err)
 		} else {
-			log.Printf("[scheduler] proxy slot %s pinned stable IP %s", slot.Username, publicIP)
+			log.Printf("固定出口 · 槽位 %s 已钉 IP %s", slot.Username, publicIP)
 		}
 		return true, false
 	}
@@ -256,7 +256,7 @@ func (s *Scheduler) acceptSlotPublicIP(slot *models.ProxySlot, publicIP string) 
 		return true, false
 	}
 	_ = s.db.MarkProxySlotIPDrift(slot.ID, formatSlotIPDrift(slot.IPDriftFailures+1, slot.PinnedPublicIP, publicIP))
-	log.Printf("[scheduler] proxy slot %s detected IP drift on %s: expected %s, got %s",
+	log.Printf("固定出口 · 槽位 %s IP 漂移 · 隧道 %s · 期望 %s · 实际 %s",
 		slot.Username, slot.AccountTag, slot.PinnedPublicIP, publicIP)
 	return false, true
 }
@@ -275,13 +275,13 @@ func (s *Scheduler) autoRefill(ctx context.Context) {
 	defer s.finishWork()
 
 	if wait := time.Until(s.refillBackoffUntil); wait > 0 {
-		log.Printf("[scheduler] auto-refill backoff active for %.0fs", wait.Seconds())
+		log.Printf("自动补号 · 退避中 · 剩余 %.0f 秒", wait.Seconds())
 		if changed, err := s.healProxySlots(ctx, false); err != nil {
-			log.Printf("[scheduler] auto-refill backoff heal slots: %v", err)
+			log.Printf("自动补号 · 退避期修复槽位失败 · %v", err)
 		} else if changed > 0 {
-			log.Printf("[scheduler] auto-refill backoff healed %d slot(s)", changed)
+			log.Printf("自动补号 · 退避期修复 %d 个槽位", changed)
 			if err := s.reconcileManager(); err != nil {
-				log.Printf("[scheduler] auto-refill backoff reconcile after heal: %v", err)
+				log.Printf("自动补号 · 退避期修复后对齐失败 · %v", err)
 			}
 		}
 		return
@@ -289,32 +289,32 @@ func (s *Scheduler) autoRefill(ctx context.Context) {
 
 	slotCount := s.proxySlotCount()
 	if err := s.db.EnsureProxySlots(slotCount); err != nil {
-		log.Printf("[scheduler] auto-refill ensure proxy slots: %v", err)
+		log.Printf("自动补号 · 确保槽位失败 · %v", err)
 		return
 	}
 	if deleted, err := s.pruneStoredBadAccounts(); err != nil {
-		log.Printf("[scheduler] auto-refill prune bad accounts: %v", err)
+		log.Printf("自动补号 · 清理劣质账号失败 · %v", err)
 		return
 	} else if deleted > 0 {
-		log.Printf("[scheduler] auto-refill pruned %d bad/slow account(s)", deleted)
+		log.Printf("自动补号 · 已清理 %d 个劣质/慢速账号", deleted)
 	}
 
 	active, err := s.db.ListActiveAccounts()
 	if err != nil {
-		log.Printf("[scheduler] auto-refill list active accounts: %v", err)
+		log.Printf("自动补号 · 读取活跃账号失败 · %v", err)
 		return
 	}
 	healthy := healthyAccountCount(active)
 	uniqueHealthy := healthyUniqueIPCount(active)
 	if len(active) > 0 && healthy == 0 && s.manager.RunningCount() == 0 {
-		log.Printf("[scheduler] auto-refill skipped: active WARP accounts exist but no healthy tunnel is running; waiting for WARP connectivity to recover")
+		log.Printf("自动补号 · 已有 WARP 账号但无健康隧道 · 等待连通恢复")
 		return
 	}
 	target := s.targetWarpPoolSize(slotCount)
 	need := requiredAccountRegistrations(slotCount, target, active)
 	if need <= 0 {
 		if _, err := s.healProxySlots(ctx, true); err != nil {
-			log.Printf("[scheduler] auto-refill heal slots: %v", err)
+			log.Printf("自动补号 · 修复槽位失败 · %v", err)
 		}
 		return
 	}
@@ -322,24 +322,24 @@ func (s *Scheduler) autoRefill(ctx context.Context) {
 		need = maxAutoRegisterBatch
 	}
 
-	log.Printf("[scheduler] auto-refill: active=%d healthy=%d unique_ips=%d target_pool=%d, registering %d account(s)", len(active), healthy, uniqueHealthy, target, need)
+	log.Printf("自动补号 · 活跃 %d · 健康 %d · 唯一 IP %d · 目标池 %d · 注册 %d 个", len(active), healthy, uniqueHealthy, target, need)
 	runID, _ := s.db.StartRun("auto-generate")
 	inserted, err := s.GenerateAccounts(ctx, need)
 	if err != nil {
 		s.noteRefillError(err)
 		_ = s.db.FinishRun(runID, "failed", fmt.Sprintf("auto-refill: inserted %d before error: %v", inserted, err), nil, nil)
-		log.Printf("[scheduler] auto-refill failed after %d inserts: %v", inserted, err)
+		log.Printf("自动补号 · 插入 %d 个后失败 · %v", inserted, err)
 		return
 	}
 	changed, err := s.healProxySlots(ctx, true)
 	if err != nil {
 		_ = s.db.FinishRun(runID, "failed", fmt.Sprintf("auto-refill: registered %d, heal slots: %v", inserted, err), nil, nil)
-		log.Printf("[scheduler] auto-refill heal failed after %d inserts: %v", inserted, err)
+		log.Printf("自动补号 · 插入 %d 个后修复失败 · %v", inserted, err)
 		return
 	}
 	_ = s.db.FinishRun(runID, "success",
 		fmt.Sprintf("registered %d account(s), target pool %d, changed %d slot(s)", inserted, target, changed), nil, nil)
-	log.Printf("[scheduler] auto-refill done: registered %d account(s), changed %d slot(s)", inserted, changed)
+	log.Printf("自动补号完成 · 注册 %d 个账号 · 变更 %d 个槽位", inserted, changed)
 }
 
 func (s *Scheduler) hasAdminUser() bool {
@@ -357,7 +357,7 @@ func (s *Scheduler) noteRefillError(err error) {
 		delay = 30 * time.Minute
 	}
 	s.refillBackoffUntil = time.Now().Add(delay)
-	log.Printf("[scheduler] auto-refill backoff until %s after error: %v", s.refillBackoffUntil.Format(time.RFC3339), err)
+	log.Printf("自动补号 · 错误后退避至 %s · %v", s.refillBackoffUntil.Format(time.RFC3339), err)
 }
 
 func (s *Scheduler) Trigger(kind string) error {
@@ -445,14 +445,14 @@ func (s *Scheduler) finishWork() {
 
 func (s *Scheduler) runDedup(ctx context.Context) {
 	runID, _ := s.db.StartRun("dedup")
-	log.Printf("[scheduler] dedup run %d started", runID)
+	log.Printf("去重任务 #%d 开始", runID)
 
 	if err := s.db.EnsureProxySlots(s.proxySlotCount()); err != nil {
 		_ = s.db.FinishRun(runID, "failed", fmt.Sprintf("ensure slots: %v", err), nil, nil)
 		return
 	}
 	if err := s.reconcileManager(); err != nil {
-		log.Printf("[scheduler] reconcile before dedup: %v", err)
+		log.Printf("去重前对齐失败 · %v", err)
 	}
 	deletedStored, err := s.pruneStoredBadAccounts()
 	if err != nil {
@@ -495,13 +495,13 @@ func (s *Scheduler) runDedup(ctx context.Context) {
 		detail += ", skipped auto-register because every active WARP test failed"
 	}
 	_ = s.db.FinishRun(runID, "success", detail, &kept, &disabled)
-	log.Printf("[scheduler] dedup run %d done: %s", runID, detail)
+	log.Printf("去重任务 #%d 完成 · %s", runID, detail)
 }
 
 func (s *Scheduler) runTest(ctx context.Context) {
 	runID, _ := s.db.StartRun("test")
 	if err := s.reconcileManager(); err != nil {
-		log.Printf("[scheduler] reconcile before test: %v", err)
+		log.Printf("测速前对齐失败 · %v", err)
 	}
 	accounts, err := s.db.ListActiveAccounts()
 	if err != nil {
@@ -533,11 +533,11 @@ func (s *Scheduler) TestOne(id int64) {
 	go func() {
 		ctx := context.Background()
 		if err := s.reconcileManager(); err != nil {
-			log.Printf("[scheduler] test-one reconcile: %v", err)
+			log.Printf("单测对齐失败 · %v", err)
 		}
 		a, err := s.db.GetAccount(id)
 		if err != nil || a == nil {
-			log.Printf("[scheduler] test-one: account %d not found: %v", id, err)
+			log.Printf("单测 · 账号 %d 不存在 · %v", id, err)
 			return
 		}
 		password, _, _ := s.db.GetSetting(db.SettingProxyPassword)
@@ -545,22 +545,22 @@ func (s *Scheduler) TestOne(id int64) {
 		r := tester.TestAccount(ctx, a)
 		if r.Err != nil {
 			_ = s.db.UpdateAccountTestError(id, r.Err.Error())
-			log.Printf("[scheduler] test-one %s failed: %v", a.Tag, r.Err)
+			log.Printf("单测失败 · %s · %v", a.Tag, r.Err)
 			updated, _ := s.db.GetAccount(id)
 			if updated != nil && updated.Status == "error" {
 				_ = s.db.DeleteAccount(id)
-				log.Printf("[scheduler] deleted failed WARP %s after repeated retests: %v", a.Tag, r.Err)
+				log.Printf("已删除反复测速失败的 WARP · %s · %v", a.Tag, r.Err)
 			}
 		} else {
 			_ = s.db.UpdateAccountTestResult(id, r.PublicIP, r.Colo, r.Country, r.LatencyMs, r.SpeedBps, r.PacketLoss, r.Score)
-			log.Printf("[scheduler] test-one %s: ip=%s score=%.0f", a.Tag, r.PublicIP, r.Score)
+			log.Printf("单测完成 · %s · IP %s · 评分 %.0f", a.Tag, r.PublicIP, r.Score)
 			if bad, reason := badQuality(r.LatencyMs, r.SpeedBps, r.PacketLoss); bad {
 				_ = s.db.DeleteAccount(id)
-				log.Printf("[scheduler] deleted low-quality WARP %s after retest: %s", a.Tag, reason)
+				log.Printf("已删除低质量 WARP · %s · %s", a.Tag, reason)
 			}
 		}
 		if _, err := s.healProxySlots(ctx, true); err != nil {
-			log.Printf("[scheduler] test-one heal slots: %v", err)
+			log.Printf("单测 · 修复槽位失败 · %v", err)
 		}
 		_ = s.reconcileManager()
 	}()
@@ -569,7 +569,7 @@ func (s *Scheduler) TestOne(id int64) {
 func (s *Scheduler) runReconcile(ctx context.Context) {
 	runID, _ := s.db.StartRun("reconcile")
 	if err := s.reconcileManager(); err != nil {
-		log.Printf("[scheduler] reconcile before slot heal: %v", err)
+		log.Printf("槽位修复 · 对齐前失败 · %v", err)
 	}
 	changed, err := s.healProxySlots(ctx, false)
 	if err != nil {
@@ -598,7 +598,7 @@ func (s *Scheduler) Reconcile() error {
 	}()
 
 	if err := s.reconcileManager(); err != nil {
-		log.Printf("[scheduler] initial reconcile before slot heal: %v", err)
+		log.Printf("槽位修复 · 启动对齐失败 · %v", err)
 	}
 	if _, err := s.healProxySlots(context.Background(), false); err != nil {
 		return err
@@ -621,24 +621,24 @@ func (s *Scheduler) GenerateAccounts(ctx context.Context, n int) (int, error) {
 	defer func() {
 		if inserted > 0 {
 			if err := s.reconcileManager(); err != nil {
-				log.Printf("[scheduler] reconcile after registration: %v", err)
+				log.Printf("注册后对齐失败 · %v", err)
 			}
 			if ctx.Err() == nil {
 				results := s.testAccounts(ctx, insertedAccounts)
 				deleted := s.pruneTestResults(insertedAccounts, results)
 				if deleted > 0 {
-					log.Printf("[scheduler] deleted %d new WARP account(s) after initial quality test", deleted)
+					log.Printf("初测后删除 %d 个新 WARP 账号", deleted)
 					if err := s.reconcileManager(); err != nil {
-						log.Printf("[scheduler] reconcile after initial quality prune: %v", err)
+						log.Printf("初测清理后对齐失败 · %v", err)
 					}
 				}
 				changed, _, err := s.rebindProxySlots()
 				if err != nil {
-					log.Printf("[scheduler] rebind after initial quality test: %v", err)
+					log.Printf("初测后重绑失败 · %v", err)
 				} else if changed > 0 {
-					log.Printf("[scheduler] rebound %d proxy slot(s) after initial quality test", changed)
+					log.Printf("初测后重绑 %d 个槽位", changed)
 					if err := s.reconcileManager(); err != nil {
-						log.Printf("[scheduler] reconcile after initial quality rebind: %v", err)
+						log.Printf("初测重绑后对齐失败 · %v", err)
 					}
 				}
 			}
@@ -661,7 +661,7 @@ func (s *Scheduler) GenerateAccounts(ctx context.Context, n int) (int, error) {
 			}
 		}
 		if lastErr != nil {
-			log.Printf("[scheduler] register failed: %v", lastErr)
+			log.Printf("注册失败 · %v", lastErr)
 			return inserted, lastErr
 		}
 
@@ -671,7 +671,7 @@ func (s *Scheduler) GenerateAccounts(ctx context.Context, n int) (int, error) {
 		}
 		masqueCfg, err := s.warp.EnrollMasque(ctx, acct.DeviceID, acct.AccessToken, tag)
 		if err != nil {
-			log.Printf("[scheduler] enroll MASQUE for %s failed: %v", tag, err)
+			log.Printf("注册 MASQUE 失败 · %s · %v", tag, err)
 			return inserted, err
 		}
 		acct.MasquePrivateKey = masqueCfg.PrivateKey
@@ -707,7 +707,7 @@ func (s *Scheduler) GenerateAccounts(ctx context.Context, n int) (int, error) {
 			MasqueEndpointV6:     acct.MasqueEndpointV6,
 		}
 		if err := s.db.InsertAccount(a); err != nil {
-			log.Printf("[scheduler] insert account %s: %v", tag, err)
+			log.Printf("写入账号失败 · %s · %v", tag, err)
 			continue
 		}
 		insertedAccounts = append(insertedAccounts, a)
@@ -754,7 +754,7 @@ func (s *Scheduler) healProxySlots(ctx context.Context, allowRegister bool) (int
 		return changed, nil
 	}
 	if err := s.reconcileManager(); err != nil {
-		log.Printf("[scheduler] reconcile before testing new accounts: %v", err)
+		log.Printf("测新号前对齐失败 · %v", err)
 	}
 	if _, _, err := s.testActiveAndDedupe(ctx); err != nil {
 		return changed, err
@@ -846,7 +846,7 @@ func (s *Scheduler) rebindProxySlots() (changed, missing int, err error) {
 			usedIP[candidate.LastPublicIP] = true
 		}
 		changed++
-		log.Printf("[scheduler] proxy slot %s bound to %s (%s)", slot.Username, candidate.Tag, candidate.LastPublicIP)
+		log.Printf("槽位绑定 · %s → %s（%s）", slot.Username, candidate.Tag, candidate.LastPublicIP)
 	}
 	return changed, missing, nil
 }
@@ -1116,7 +1116,7 @@ func (s *Scheduler) pruneStoredBadAccounts() (int, error) {
 			return deleted, fmt.Errorf("delete %s: %w", a.Tag, err)
 		}
 		deleted++
-		log.Printf("[scheduler] deleted WARP %s during prune: %s", a.Tag, reason)
+		log.Printf("清理删除 WARP · %s · %s", a.Tag, reason)
 	}
 	return deleted, nil
 }
@@ -1148,11 +1148,11 @@ func (s *Scheduler) pruneTestResults(accounts []*models.Account, results map[int
 			continue
 		}
 		if err := s.db.DeleteAccount(a.ID); err != nil {
-			log.Printf("[scheduler] delete bad WARP %s failed: %v", a.Tag, err)
+			log.Printf("删除劣质 WARP 失败 · %s · %v", a.Tag, err)
 			continue
 		}
 		deleted++
-		log.Printf("[scheduler] deleted bad WARP %s: %s", a.Tag, reason)
+		log.Printf("清理删除劣质 WARP · %s · %s", a.Tag, reason)
 	}
 	return deleted
 }
@@ -1273,14 +1273,14 @@ func (s *Scheduler) applyDedup(accounts []*models.Account, results map[int64]tes
 			} else {
 				if bound[a.ID] {
 					kept++
-					log.Printf("[scheduler] kept duplicate bound WARP %s for IP %s; waiting for replacement before rebinding", a.Tag, ip)
+					log.Printf("保留重复绑定 WARP · %s · IP %s · 等待替换后再重绑", a.Tag, ip)
 					continue
 				}
 				if err := s.db.DeleteAccount(a.ID); err != nil {
-					log.Printf("[scheduler] delete duplicate WARP %s for IP %s failed: %v", a.Tag, ip, err)
+					log.Printf("删除重复 WARP 失败 · %s · IP %s · %v", a.Tag, ip, err)
 					continue
 				}
-				log.Printf("[scheduler] deleted duplicate WARP %s for IP %s; kept %s", a.Tag, ip, keeper.Tag)
+				log.Printf("已删除重复 WARP · %s · IP %s · 保留 %s", a.Tag, ip, keeper.Tag)
 				disabled++
 			}
 		}
@@ -1352,7 +1352,7 @@ func (s *Scheduler) reconcileManager() error {
 func (s *Scheduler) refreshMissingClientIDs(ctx context.Context) {
 	accounts, err := s.db.ListActiveAccounts()
 	if err != nil {
-		log.Printf("[scheduler] refresh client_id list accounts: %v", err)
+		log.Printf("刷新 client_id · 读取账号失败 · %v", err)
 		return
 	}
 	for _, a := range accounts {
@@ -1361,18 +1361,18 @@ func (s *Scheduler) refreshMissingClientIDs(ctx context.Context) {
 		}
 		cfg, err := s.warp.GetDeviceConfig(ctx, a.DeviceID, a.AccessToken)
 		if err != nil {
-			log.Printf("[scheduler] refresh client_id for %s failed: %v", a.Tag, err)
+			log.Printf("刷新 client_id 失败 · %s · %v", a.Tag, err)
 			continue
 		}
 		if cfg.ClientID == "" {
-			log.Printf("[scheduler] refresh client_id for %s returned empty client_id", a.Tag)
+			log.Printf("刷新 client_id 为空 · %s", a.Tag)
 			continue
 		}
 		if err := s.db.UpdateAccountClientID(a.ID, cfg.ClientID); err != nil {
-			log.Printf("[scheduler] save client_id for %s failed: %v", a.Tag, err)
+			log.Printf("保存 client_id 失败 · %s · %v", a.Tag, err)
 			continue
 		}
-		log.Printf("[scheduler] refreshed WARP client_id for %s", a.Tag)
+		log.Printf("已刷新 WARP client_id · %s", a.Tag)
 	}
 }
 
@@ -1384,7 +1384,7 @@ func (s *Scheduler) refreshMissingMasque(ctx context.Context) {
 	}
 	accounts, err := s.db.ListActiveAccounts()
 	if err != nil {
-		log.Printf("[scheduler] refresh MASQUE list accounts: %v", err)
+		log.Printf("刷新 MASQUE · 读取账号失败 · %v", err)
 		return
 	}
 	for _, a := range accounts {
@@ -1392,19 +1392,19 @@ func (s *Scheduler) refreshMissingMasque(ctx context.Context) {
 			continue
 		}
 		if a.DeviceID == "" || a.AccessToken == "" {
-			log.Printf("[scheduler] refresh MASQUE skipped for %s: missing device token", a.Tag)
+			log.Printf("刷新 MASQUE 跳过 · %s · 缺少 device token", a.Tag)
 			continue
 		}
 		cfg, err := s.warp.EnrollMasque(ctx, a.DeviceID, a.AccessToken, a.Tag)
 		if err != nil {
-			log.Printf("[scheduler] refresh MASQUE for %s failed: %v", a.Tag, err)
+			log.Printf("刷新 MASQUE 失败 · %s · %v", a.Tag, err)
 			continue
 		}
 		if err := s.db.UpdateAccountMasque(a.ID, cfg.PrivateKey, cfg.EndpointPubKey, cfg.EndpointV4, cfg.EndpointV6, cfg.AddressV4, cfg.AddressV6); err != nil {
-			log.Printf("[scheduler] save MASQUE for %s failed: %v", a.Tag, err)
+			log.Printf("保存 MASQUE 失败 · %s · %v", a.Tag, err)
 			continue
 		}
-		log.Printf("[scheduler] refreshed MASQUE config for %s", a.Tag)
+		log.Printf("已刷新 MASQUE 配置 · %s", a.Tag)
 	}
 }
 
