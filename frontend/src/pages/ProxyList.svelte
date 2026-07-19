@@ -19,6 +19,9 @@
   let error = '';
   let copied = '';
   let subUrl = '';
+  // Trojan 分享链接（每行一个 trojan://），给 GRA / sing-box 节点列表整段粘贴。
+  let shareUrl = '';
+  let shareText = '';
   // 统一轮换凭据：一条连接串，服务端在所有节点（本机 + 各地区 agent）间自动粘滞轮换。
   let rotate = null;
   // 打开中的复制菜单，用 fixed 定位避开表格 overflow 裁剪。
@@ -41,10 +44,21 @@
     try {
       const data = await fetchJSON('/api/subscription');
       if (data.token) {
-        subUrl = `${window.location.origin}${data.path}?token=${data.token}`;
+        subUrl = `${window.location.origin}${data.path || '/sub/clash'}?token=${data.token}`;
+        shareUrl = `${window.location.origin}${data.share_path || '/sub/share'}?token=${data.token}`;
       }
     } catch (err) {
       error = err.message;
+    }
+  }
+
+  // 拉取可直接粘贴到 GRA 的 trojan:// 列表（与 Clash 订阅同源节点）。
+  async function loadShareLinks() {
+    try {
+      const data = await fetchJSON('/api/export?format=share-json');
+      shareText = (data && data.text) || '';
+    } catch (err) {
+      shareText = '';
     }
   }
 
@@ -83,6 +97,7 @@
   onMount(() => {
     loadAccounts();
     loadSubscription();
+    loadShareLinks();
     loadRotate();
     const timer = setInterval(loadAccounts, 5000);
     // 菜单靠 fixed 定位，滚动或改变尺寸后位置会失效，直接关掉。
@@ -155,6 +170,30 @@
     }
   }
 
+  async function copyShareLinks() {
+    // 优先复制已生成的 trojan:// 列表；失败时退回分享订阅 URL。
+    let text = shareText;
+    if (!text && shareUrl) {
+      try {
+        const res = await fetch(shareUrl, { credentials: 'same-origin' });
+        if (res.ok) text = await res.text();
+      } catch (err) {
+        // fall through
+      }
+    }
+    if (!text) text = shareUrl;
+    if (!text) return;
+    try {
+      await writeClipboard(text.trim());
+      copied = 'share';
+      setTimeout(() => {
+        if (copied === 'share') copied = '';
+      }, 1600);
+    } catch (err) {
+      error = '复制失败：' + err.message;
+    }
+  }
+
   function displaySubscriptionURL(value) {
     if (!value) return '生成中…';
     return value.replace(/(token=)([^&\s]+)/, (_, prefix, token) => {
@@ -210,6 +249,26 @@
   {#if subUrl}
     <p class="sub-hint">Clash / Mihomo 添加为订阅；节点使用 Trojan + TLS + WebSocket（443）。链接含 token，请勿外泄。</p>
   {/if}
+  {#if shareUrl || shareText}
+    <div class="share-block">
+      <div class="share-summary">
+        <strong>Trojan 分享链接</strong>
+        <span>GRA / sing-box · 每行一个 trojan://</span>
+      </div>
+      <button
+        type="button"
+        class="copy-trigger share-trigger"
+        class:done={copied === 'share'}
+        title={copied === 'share' ? '已复制' : '复制 trojan:// 节点列表'}
+        aria-label={copied === 'share' ? '已复制' : '复制 trojan:// 节点列表'}
+        on:click={copyShareLinks}
+      >
+        <Icon name={copied === 'share' ? 'check' : 'copy'} size={18} />
+        <span class="share-btn-label">{copied === 'share' ? '已复制' : '复制节点'}</span>
+      </button>
+    </div>
+    <p class="sub-hint">粘贴到 GRA「节点列表」即可解析；与上方 Clash 订阅是同一批节点（Trojan + TLS + WS）。</p>
+  {/if}
   {#if rotate && rotate.host}
     <div class="rotate-block">
       <div class="rotate-summary">
@@ -258,6 +317,7 @@
     min-height: 40px;
     padding: 8px;
   }
+  .share-block,
   .rotate-block {
     display: flex;
     align-items: center;
@@ -270,6 +330,34 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: var(--shadow-sm);
+  }
+  .share-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+  }
+  .share-summary strong {
+    color: var(--text);
+    font-size: 14px;
+  }
+  .share-summary span {
+    color: var(--text-3);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .share-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 6px 12px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .share-btn-label {
+    font-size: 13px;
+    white-space: nowrap;
   }
   .rotate-summary {
     display: flex;

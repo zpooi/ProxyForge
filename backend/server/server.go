@@ -56,6 +56,7 @@ func (s *Server) Router() http.Handler {
 
 	// 免登录订阅端点，靠 URL token 鉴权，供 Clash 客户端定时同步。
 	r.Get("/sub/clash", h.ClashSubscription)
+	r.Get("/sub/share", h.ShareSubscription)
 	// Clash/Mihomo uses Trojan over this authenticated WebSocket endpoint.
 	// nginx terminates the public TLS connection on port 443.
 	r.Get(handlers.TrojanWebSocketRoute, h.TrojanWebSocket)

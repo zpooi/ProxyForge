@@ -76,6 +76,7 @@ When these variables are omitted and `Proxy public host` is a domain, ProxyForge
 
 - The proxy port accepts HTTP and SOCKS5 directly; when TLS is enabled it also accepts HTTPS-proxy connections on the same port.
 - Clash/Mihomo subscriptions use Trojan over TLS WebSocket on the management domain's HTTPS port 443. Exported nodes deliberately advertise `udp: false`: mainland UDP remains direct, while foreign UDP fails closed so QUIC falls back to HTTP/2 and WebRTC/STUN cannot bypass the proxy. Legacy HTTP/SOCKS5 credentials are not reused in the subscription; a separate per-node credential is derived with HMAC-SHA-256.
+- Clients that only accept node share URIs (GRA / sing-box node lists) can use `/sub/share?token=...` or the panel **Trojan 分享链接** button. Each line is a `trojan://` link with the same TLS + WebSocket parameters as the Clash export.
 - The server retains framed Trojan UDP support for compatibility and a future opt-in, but generated Clash/Mihomo subscriptions keep it disabled to avoid UDP-over-WebSocket head-of-line blocking.
 - The Trojan WebSocket path is derived one-way from the random subscription token so nginx logs do not contain the token itself. TLS certificate verification stays enabled, and BaoTa/nginx must forward WebSocket upgrades to the application.
 - Trojan subscriptions keep the public hostname as `server`; Mihomo resolves it locally with `proxy-server-nameserver` so CDN/anycast routing is selected for the client network rather than being pinned to an IP resolved near the VPS.

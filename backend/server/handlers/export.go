@@ -22,11 +22,25 @@ func (h *Handlers) ExportProxies(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	format := r.URL.Query().Get("format")
-	if format == "clash" {
+	format := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
+	switch format {
+	case "clash":
 		w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
 		w.Header().Set("Content-Disposition", "attachment; filename=proxyforge-clash.yaml")
 		writeClash(w, active)
+		return
+	case "uri", "share", "trojan":
+		// One trojan:// link per line for GRA / sing-box node lists.
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Content-Disposition", "attachment; filename=proxyforge-share.txt")
+		writeShareLinks(w, active)
+		return
+	case "uri-json", "share-json":
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"items": shareLinkItems(active),
+			"text":  strings.TrimSpace(shareLinksText(active)),
+		})
 		return
 	}
 
@@ -533,8 +547,9 @@ func (h *Handlers) SubscriptionToken(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"token": token,
-		"path":  "/sub/clash",
+		"token":      token,
+		"path":       "/sub/clash",
+		"share_path": "/sub/share",
 	})
 }
 
@@ -555,6 +570,25 @@ func (h *Handlers) ClashSubscription(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
 	w.Header().Set("Content-Disposition", "attachment; filename=proxyforge-clash.yaml")
 	writeClash(w, active)
+}
+
+// ShareSubscription 是免登录的 Trojan 分享链接端点：每行一个 trojan://，
+// 供 GRA / sing-box 等只认节点 URI 的客户端整段粘贴到「节点列表」。
+func (h *Handlers) ShareSubscription(w http.ResponseWriter, r *http.Request) {
+	got := r.URL.Query().Get("token")
+	if !h.subscriptionTokenValid(got) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	active, err := h.collectActiveExports(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Disposition", "attachment; filename=proxyforge-share.txt")
+	writeShareLinks(w, active)
 }
 
 func (h *Handlers) ensureSubscriptionToken() (string, error) {
